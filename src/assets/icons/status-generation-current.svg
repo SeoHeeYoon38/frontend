@@ -1,0 +1,21 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="16" height="42" viewBox="0 0 16 42" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Indicator" clip-path="url(#clip0_0_12)">
+<g id="Dot">
+<circle cx="8" cy="9" r="8" fill="#6B6BCC"/>
+<circle cx="8" cy="9" r="10" stroke="#6B6BCC" stroke-opacity="0.25" stroke-width="4"/>
+</g>
+<g id="Path dots" clip-path="url(#clip1_0_12)">
+<circle id="Ellipse" cx="8" cy="26.5" r="1.5" fill="#C9CAD6"/>
+<circle id="Ellipse_2" cx="8" cy="33.5" r="1.5" fill="#C9CAD6"/>
+<circle id="Ellipse_3" cx="8" cy="40.5" r="1.5" fill="#C9CAD6"/>
+</g>
+</g>
+<defs>
+<clipPath id="clip0_0_12">
+<rect width="16" height="42" fill="white"/>
+</clipPath>
+<clipPath id="clip1_0_12">
+<rect width="3" height="21" fill="white" transform="translate(6.5 21)"/>
+</clipPath>
+</defs>
+</svg>

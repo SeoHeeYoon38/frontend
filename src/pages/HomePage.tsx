@@ -1,12 +1,20 @@
-import { Link } from 'react-router'
+import { mockHomeData } from "../data/mocks/homeData";
+import HomeIntro from "../components/home/HomeIntro";
+import MyTripsSection from "../components/home/MyTripsSection";
+import RecommendedCourses from "../components/home/RecommendedCourses";
+import SharedTripsSection from "../components/home/SharedTripsSection";
 
 function HomePage() {
+  const data = mockHomeData;
+
   return (
-    <main>
-      <h1>DOTLO</h1>
-      <Link to="/trips/new">여행 만들기</Link>
-    </main>
-  )
+    <>
+      <HomeIntro name={data.userName} trip={data.nextTrip} />
+      <MyTripsSection trips={data.trips} />
+      <RecommendedCourses courses={data.courses} />
+      <SharedTripsSection trips={data.sharedTrips} />
+    </>
+  );
 }
 
-export default HomePage
+export default HomePage;

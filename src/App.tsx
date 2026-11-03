@@ -1,18 +1,12 @@
-import { BrowserRouter, Route, Routes } from 'react-router'
-import HomePage from './pages/HomePage'
-import TripCreatePage from './pages/TripCreatePage'
-import TripPlanPage from './pages/TripPlanPage'
-
+import { Outlet, ScrollRestoration } from "react-router";
+import { GlobalStyle } from "./styles/GlobalStyle";
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/trips/new" element={<TripCreatePage />} />
-        <Route path="/trips/plan" element={<TripPlanPage />} />
-      </Routes>
-    </BrowserRouter>
-  )
+    <>
+      <GlobalStyle />
+      <Outlet />
+      <ScrollRestoration />
+    </>
+  );
 }
-
-export default App
+export default App;
