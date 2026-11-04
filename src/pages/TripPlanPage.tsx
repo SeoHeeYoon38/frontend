@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router'
+import { routes } from '../config/routes'
 import heroPhoto from '../assets/course-completion/hero-photo.png'
 import aiAvatar from '../assets/course-completion/ai-avatar.png'
 import routeMap from '../assets/course-completion/route-map.png'
@@ -168,6 +170,7 @@ function PlaceTimeline({ places, onRemove }: { places: Place[]; onRemove: (id: n
 }
 
 function TripPlanPage() {
+  const navigate = useNavigate()
   const [activeDay, setActiveDay] = useState(0)
   const [places, setPlaces] = useState(initialPlaces)
   const [notice, setNotice] = useState('')
@@ -198,7 +201,7 @@ function TripPlanPage() {
               <img src={backIcon} alt="" />
             </button>
             <strong>AI 여행 코스</strong>
-            <button type="button" aria-label="설정 열기">
+            <button type="button" aria-label="설정 열기" onClick={() => navigate(routes.tripSettings)}>
               <img src={settingsIcon} alt="" />
             </button>
           </nav>
