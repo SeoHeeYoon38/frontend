@@ -3,6 +3,7 @@ import App from "../App";
 import Layout from "../components/common/Layout";
 import HomePage from "../pages/HomePage";
 import { routes } from "../config/routes";
+
 const router = createBrowserRouter([
   {
     path: routes.home,
@@ -30,8 +31,14 @@ const router = createBrowserRouter([
           Component: (await import("../pages/TripCreatePage")).default,
         }),
       },
-
+      {
+        path: routes.tripPlan,
+        lazy: async () => ({
+          Component: (await import("../pages/TripPlanPage")).default,
+        }),
+      },
     ],
   },
 ]);
+
 export default router;
