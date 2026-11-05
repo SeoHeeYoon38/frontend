@@ -10,10 +10,6 @@
   color: inherit;
 }
 
-.course-page-shell {
-  background: #eef0f4;
-}
-
 .course-page {
   position: relative;
   width: min(100%, 402px);
