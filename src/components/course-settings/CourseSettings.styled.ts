@@ -1,6 +1,6 @@
 import styled from "styled-components";
 
-const focusStyle = `
+const focusRing = `
   outline: 3px solid rgba(91, 79, 232, 0.45);
   outline-offset: 2px;
 `;
@@ -31,7 +31,7 @@ export const Page = styled.main`
 
   button:focus-visible,
   input:focus-visible {
-    ${focusStyle}
+    ${focusRing}
   }
 
   @media (max-width: 402px) {
