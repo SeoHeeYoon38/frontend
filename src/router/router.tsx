@@ -37,6 +37,12 @@ const router = createBrowserRouter([
           Component: (await import("../pages/TripPlanPage")).default,
         }),
       },
+      {
+        path: routes.tripSettings,
+        lazy: async () => ({
+          Component: (await import("../pages/CourseSettingsPage")).default,
+        }),
+      },
     ],
   },
 ]);
