@@ -154,7 +154,7 @@ function CourseSettingsSheet({
                       type="button"
                       onClick={() =>
                         onNotice(
-                          `${target.label} 공유는 모바일 앱에서 사용할 수 있어요.`,
+                          `${target.label} 공유 목업을 확인했어요.`,
                         )
                       }
                     >

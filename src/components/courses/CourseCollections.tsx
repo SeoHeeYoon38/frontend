@@ -1,5 +1,7 @@
 import type { CourseTheme, TravelCourse } from "../../types/course";
 import * as S from "./CourseCollections.styled";
+import { Link } from "react-router";
+import { tripPlanPath } from "../../utils/navigation";
 interface CourseCollectionsProps {
   popularCourses: TravelCourse[];
   themes: CourseTheme[];
@@ -19,7 +21,12 @@ function CourseCollections({
         </S.Heading>
         <S.Carousel>
           {popularCourses.map((course) => (
-            <S.PopularCard key={course.id}>
+            <S.PopularCard
+              as={Link}
+              to={tripPlanPath("courses", course.id)}
+              aria-label={`${course.title.replace("\n", " ")} 일정 보기`}
+              key={course.id}
+            >
               <S.Cover src={course.image} alt={course.city} />
               <S.Scrim />
               <S.PopularText>
@@ -60,7 +67,12 @@ function CourseCollections({
         </S.Heading>
         <S.TravelerList>
           {travelerCourses.map((course) => (
-            <S.TravelerRow key={course.id}>
+            <S.TravelerRow
+              as={Link}
+              to={tripPlanPath("courses", course.id)}
+              aria-label={`${course.title.replace("\n", " ")} 일정 보기`}
+              key={course.id}
+            >
               <S.TravelerText>
                 <S.TravelerMeta>
                   {course.city}

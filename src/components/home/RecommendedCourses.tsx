@@ -3,6 +3,8 @@ import { useState, type UIEvent } from "react";
 import type { CourseSummary } from "../../types/home";
 import * as S from "./RecommendedCourses.styled";
 import * as C from "./common.styled";
+import { Link, useNavigate } from "react-router";
+import { routes } from "../../config/routes";
 
 interface RecommendedCoursesProps {
   courses: CourseSummary[];
@@ -10,6 +12,7 @@ interface RecommendedCoursesProps {
 
 function RecommendedCourses({ courses }: RecommendedCoursesProps) {
   const [activeIndex, setActiveIndex] = useState(0);
+  const navigate = useNavigate();
 
   function handleScroll(event: UIEvent<HTMLDivElement>) {
     const cardSize = S.CARD_WIDTH + S.CARD_GAP;
@@ -21,7 +24,7 @@ function RecommendedCourses({ courses }: RecommendedCoursesProps) {
     <C.Section aria-label="이런 여행 어때요?">
       <C.Heading>
         <h2>이런 여행 어때요?</h2>
-        <button type="button">
+        <button type="button" onClick={() => navigate(routes.courses)}>
           더보기
           <img src={chevron} alt="" />
         </button>
@@ -30,7 +33,12 @@ function RecommendedCourses({ courses }: RecommendedCoursesProps) {
         <>
           <S.Carousel aria-label="추천 코스" onScroll={handleScroll}>
             {courses.map((course) => (
-              <S.Card key={course.id}>
+              <S.Card
+                as={Link}
+                to={routes.courses}
+                aria-label={`${course.title.replace("\n", " ")} 코스 둘러보기`}
+                key={course.id}
+              >
                 <C.Cover
                   loading="lazy"
                   decoding="async"

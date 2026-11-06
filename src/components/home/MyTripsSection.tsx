@@ -4,6 +4,8 @@ import * as S from "./MyTripsSection.styled";
 import { useState } from "react";
 import type { TripSummary } from "../../types/home";
 import calendar from "../../assets/icons/calendar-outline.svg";
+import { Link } from "react-router";
+import { tripPlanPath } from "../../utils/navigation";
 
 interface MyTripsSectionProps {
   trips: TripSummary[];
@@ -42,7 +44,12 @@ function MyTripsSection({ trips }: MyTripsSectionProps) {
       </S.Tabs>
       <S.List>
         {visibleTrips.map((trip) => (
-          <S.TripRow key={trip.id}>
+          <S.TripRow
+            as={Link}
+            to={tripPlanPath("home")}
+            aria-label={`${trip.title} 일정 보기`}
+            key={trip.id}
+          >
             <S.Photo
               loading="lazy"
               decoding="async"

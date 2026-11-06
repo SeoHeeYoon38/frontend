@@ -1,13 +1,15 @@
-import { useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import statusIcons from "../assets/course-completion/status-icons.svg";
 import backIcon from "../assets/course-settings/back.svg";
 import CourseSettingsMenu from "../components/course-settings/CourseSettingsMenu";
 import CourseSettingsSheet from "../components/course-settings/CourseSettingsSheet";
 import useCourseSettings from "../hooks/useCourseSettings";
 import * as S from "../components/course-settings/CourseSettings.styled";
+import { settingsBackPath } from "../utils/navigation";
 
 function CourseSettingsPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const {
     activeSheet,
     tripName,
@@ -38,7 +40,7 @@ function CourseSettingsPage() {
           <button
             type="button"
             aria-label="이전 화면으로 이동"
-            onClick={() => navigate(-1)}
+            onClick={() => navigate(settingsBackPath(location.search))}
           >
             <img src={backIcon} alt="" />
           </button>

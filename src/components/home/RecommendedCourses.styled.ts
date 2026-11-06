@@ -25,6 +25,7 @@ export const Card = styled.div`
   scroll-snap-align: start;
   color: white;
   background: black;
+  cursor: pointer;
 `;
 export const Badges = styled.div`
   position: absolute;

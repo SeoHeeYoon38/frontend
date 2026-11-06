@@ -31,6 +31,8 @@ export const TripRow = styled.div`
   display: flex;
   gap: 14px;
   align-items: center;
+  border-radius: 12px;
+  cursor: pointer;
   h3 {
     margin: 5px 0 0;
     font-size: 15px;
