@@ -149,7 +149,7 @@ export const mockFlights: Omit<Flight, "date">[] = [
   {
     code: "KE723",
     airline: "대한항공",
-    departure: "09:35",
+    departure: "09:30",
     arrival: "11:20",
     from: "인천 ICN",
     to: "간사이 KIX",
@@ -179,6 +179,15 @@ export const mockTripScenario = {
   analysisDelay: 100,
   generationDelay: 1250,
   generationFailures: 0,
+};
+
+export const mockSavedPlaceCounts: Record<string, number> = {
+  오사카: 47,
+  도쿄: 32,
+  교토: 24,
+  후쿠오카: 0,
+  방콕: 18,
+  다낭: 21,
 };
 
 export const mockTripCatalog: Record<

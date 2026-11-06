@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import AiEditLoading from "../components/course-completion/AiEditLoading";
 import AiEditSheet from "../components/course-completion/AiEditSheet";
 import CourseHero from "../components/course-completion/CourseHero";
@@ -10,15 +10,22 @@ import PlaceDetail from "../components/course-completion/PlaceDetail";
 import PlacePickerSheet from "../components/course-completion/PlacePickerSheet";
 import "../components/course-completion/CourseCompletion.css";
 import "../components/course-completion/CourseEdit.css";
-import { routes } from "../config/routes";
 import useCoursePlan from "../hooks/useCoursePlan";
+import {
+  readPlanOrigin,
+  tripPlanBackPath,
+  tripSettingsPath,
+} from "../utils/navigation";
 
 function TripPlanPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const planOrigin = readPlanOrigin(location.search);
   const {
     activeDay,
     aiRequest,
     displayPlaces,
+    isSaved,
     notice,
     places,
     planVariant,
@@ -39,6 +46,7 @@ function TripPlanPage() {
     removePlace,
     removeSelectedPlace,
     saveManualEdit,
+    savePlan,
     toggleCandidate,
     undoAiResult,
   } = useCoursePlan();
@@ -91,8 +99,8 @@ function TripPlanPage() {
       <main className="course-page">
         <CourseHero
           variant={overviewVariant === "default" ? "default" : "ai"}
-          onBack={() => navigate(-1)}
-          onOpenSettings={() => navigate(routes.tripSettings)}
+          onBack={() => navigate(tripPlanBackPath(location.search))}
+          onOpenSettings={() => navigate(tripSettingsPath(planOrigin))}
         />
 
         <div className="course-content">
@@ -125,7 +133,9 @@ function TripPlanPage() {
           ) : planVariant === "applied" ? (
             <div className="course-cta__row">
               <button className="is-secondary" type="button" onClick={() => setScreen("schedule-edit")}>일정 수정</button>
-              <button type="button">내 여행에 저장하기</button>
+              <button type="button" onClick={savePlan} disabled={isSaved}>
+                {isSaved ? "저장 완료" : "내 여행에 저장하기"}
+              </button>
             </div>
           ) : (
             <button type="button" onClick={() => setScreen("ai-edit")}>AI 수정 요청</button>

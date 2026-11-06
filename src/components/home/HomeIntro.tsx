@@ -7,6 +7,7 @@ import pen from "../../assets/icons/action-pen.svg";
 import manualChevron from "../../assets/icons/nav-chevron-right-muted.svg";
 import arrow from "../../assets/icons/nav-arrow-right-circle.svg";
 import { routes } from "../../config/routes";
+import { tripPlanPath } from "../../utils/navigation";
 import * as S from "./HomeIntro.styled";
 import * as C from "./common.styled";
 
@@ -65,7 +66,11 @@ function HomeIntro({ name, trip }: HomeIntroProps) {
         </S.ManualAction>
       </S.Create>
       {trip && (
-        <S.Card>
+        <S.Card
+          as={Link}
+          to={tripPlanPath("home")}
+          aria-label={`${trip.title} 일정 보기`}
+        >
           <C.Cover src={trip.coverImage} alt={`${trip.city} 여행`} />
           <C.Scrim />
           <S.Badge>

@@ -60,6 +60,7 @@ export const Card = styled.div`
   overflow: hidden;
   box-shadow: 0 10px 24px -4px #0d0a332e;
   color: white;
+  cursor: pointer;
 `;
 export const Badge = styled.span`
   position: absolute;

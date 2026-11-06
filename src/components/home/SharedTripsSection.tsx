@@ -2,6 +2,8 @@ import * as C from "./common.styled";
 import * as S from "./SharedTripsSection.styled";
 import type { SharedTrip } from "../../types/home";
 import calendar from "../../assets/icons/calendar-outline-large.svg";
+import { Link } from "react-router";
+import { tripPlanPath } from "../../utils/navigation";
 
 interface SharedTripsSectionProps {
   trips: SharedTrip[];
@@ -14,7 +16,12 @@ function SharedTripsSection({ trips }: SharedTripsSectionProps) {
         <h2>친구가 공유한 여행</h2>
       </C.Heading>
       {trips.map(({ trip, invitedBy, inviterAvatar }) => (
-        <S.Card key={trip.id}>
+        <S.Card
+          as={Link}
+          to={tripPlanPath("home")}
+          aria-label={`${trip.title} 공유 일정 보기`}
+          key={trip.id}
+        >
           <S.Info>
             <b>{trip.countdownLabel}</b>
             <h3>{trip.title}</h3>

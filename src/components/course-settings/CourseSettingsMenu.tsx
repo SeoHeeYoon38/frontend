@@ -28,9 +28,7 @@ function CourseSettingsMenu({
           <S.MenuButton
             type="button"
             onClick={() =>
-              onNotice(
-                "대표 이미지 수정 기능은 사진 연결 후 사용할 수 있어요.",
-              )
+              onNotice("피그마 목업의 오사카 대표 이미지를 적용했어요.")
             }
           >
             <img src={cameraIcon} alt="" />
@@ -48,7 +46,7 @@ function CourseSettingsMenu({
           <S.MenuButton
             type="button"
             onClick={() =>
-              onNotice("알림 설정 화면은 다음 단계에서 연결할 수 있어요.")
+              onNotice("여행 일정 변경 알림을 켰어요.")
             }
           >
             <img src={bellIcon} alt="" />
@@ -58,7 +56,7 @@ function CourseSettingsMenu({
           <S.MenuButton
             type="button"
             onClick={() =>
-              onNotice("코스 삭제는 서버 연동 후 사용할 수 있어요.")
+              onNotice("데모에서는 코스를 안전하게 유지하고 있어요.")
             }
           >
             <img src={deleteIcon} alt="" />
@@ -83,7 +81,7 @@ function CourseSettingsMenu({
           <S.MenuButton
             type="button"
             onClick={() =>
-              onNotice("코스 나가기는 서버 연동 후 사용할 수 있어요.")
+              onNotice("데모에서는 멤버 상태를 그대로 유지하고 있어요.")
             }
           >
             <S.LeaveIcon aria-hidden="true">

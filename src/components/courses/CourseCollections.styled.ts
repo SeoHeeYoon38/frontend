@@ -57,6 +57,7 @@ export const PopularCard = styled.article`
   flex: 0 0 220px;
   scroll-snap-align: start;
   color: white;
+  cursor: pointer;
 `;
 export const PopularText = styled.div`
   position: absolute;
@@ -125,6 +126,10 @@ export const TravelerRow = styled.article`
   display: flex;
   gap: 14px;
   align-items: center;
+  border-radius: 14px;
+  color: inherit;
+  cursor: pointer;
+  text-decoration: none;
 `;
 export const TravelerText = styled.div`
   display: flex;

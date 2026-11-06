@@ -8,6 +8,7 @@ export const Card = styled.div`
   background: white;
   border-radius: 16px;
   box-shadow: 0 2px 8px #0000000d;
+  cursor: pointer;
   @media (max-width: 360px) {
     gap: 8px;
     padding: 10px;

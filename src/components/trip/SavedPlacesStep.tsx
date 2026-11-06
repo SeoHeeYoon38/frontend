@@ -8,6 +8,7 @@ import type {
 import {
   mockTripCatalog,
   mockCourseStopDetails,
+  mockSavedPlaceCounts,
 } from "../../data/mocks/tripData";
 import { importMockPlaces } from "../../data/mocks/tripService";
 import { mergePlaces, placesError, toggleId } from "../../utils/trip";
@@ -263,7 +264,13 @@ function SavedPlacesStep({
                     {draft.source === "manual"
                       ? " 추천 장소"
                       : "에 저장한 장소"}{" "}
-                    <b>{draft.places.length}곳</b>
+                    <b>
+                      {draft.source === "mock"
+                        ? (mockSavedPlaceCounts[draft.city] ??
+                          draft.places.length)
+                        : draft.places.length}
+                      곳
+                    </b>
                   </span>
                   <label>
                     <P.Checkbox

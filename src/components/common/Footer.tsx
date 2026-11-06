@@ -10,10 +10,10 @@ function Footer() {
       <Link to={routes.home} aria-current="page">
         <img src={home} alt="" />홈
       </Link>
-      <button type="button">
+      <Link to={routes.courses}>
         <img src={trips} alt="" />
         저장 코스
-      </button>
+      </Link>
       <button type="button">
         <img src={profile} alt="" />
         마이

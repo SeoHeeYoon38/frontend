@@ -64,7 +64,7 @@ function TripCreatePage() {
             <br />
             만들고 있어요
           </h1>
-          <p>5초 정도 걸려요</p>
+          <p>20초 정도 걸려요</p>
         </div>
         <S.GenerationSteps>
           {phases.map((phase, index) => (

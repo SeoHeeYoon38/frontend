@@ -9,6 +9,10 @@ import type {
   CoursePlanVariant,
   CourseScreen,
 } from "../types/courseCompletion";
+import {
+  isFigmaCoursePlanSaved,
+  saveFigmaCoursePlan,
+} from "../data/mocks/flowData";
 
 function useCoursePlan() {
   const [activeDay, setActiveDay] = useState(0);
@@ -17,6 +21,7 @@ function useCoursePlan() {
   const [planVariant, setPlanVariant] =
     useState<CoursePlanVariant>("default");
   const [notice, setNotice] = useState("");
+  const [isSaved, setIsSaved] = useState(isFigmaCoursePlanSaved);
   const [aiRequest, setAiRequest] = useState(
     "첫날은 좀 여유롭게, 카페는 빼도 괜찮아요",
   );
@@ -142,10 +147,17 @@ function useCoursePlan() {
     setNotice("1일차 수정 내용을 저장했어요.");
   };
 
+  const savePlan = () => {
+    saveFigmaCoursePlan();
+    setIsSaved(true);
+    setNotice("오사카 3박 4일 일정을 내 여행에 저장했어요.");
+  };
+
   return {
     activeDay,
     aiRequest,
     displayPlaces,
+    isSaved,
     notice,
     places,
     planVariant,
@@ -166,6 +178,7 @@ function useCoursePlan() {
     removePlace,
     removeSelectedPlace,
     saveManualEdit,
+    savePlan,
     toggleCandidate,
     undoAiResult,
   };
