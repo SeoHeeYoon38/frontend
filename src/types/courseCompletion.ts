@@ -15,10 +15,33 @@ export interface CoursePlace {
   travel?: string;
   distance?: string;
   travelTone?: TravelTone;
+  description?: string;
+  changeLabel?: string;
+  fixed?: boolean;
 }
 
 export interface CourseMapPin {
   number: number;
   left: string;
   top: string;
+}
+
+export type CourseScreen =
+  | "plan"
+  | "place-detail"
+  | "ai-edit"
+  | "ai-loading"
+  | "ai-result"
+  | "schedule-edit"
+  | "place-add"
+  | "place-replace";
+
+export type CoursePlanVariant = "default" | "applied";
+
+export interface CourseCandidate {
+  id: number;
+  name: string;
+  category: string;
+  distance: string;
+  image: string;
 }

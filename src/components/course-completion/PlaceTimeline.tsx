@@ -5,10 +5,11 @@ import type { CoursePlace } from "../../types/courseCompletion";
 
 interface PlaceTimelineProps {
   places: CoursePlace[];
-  onRemove: (id: number) => void;
+  onOpen: (id: number) => void;
+  onRemove?: (id: number) => void;
 }
 
-function PlaceTimeline({ places, onRemove }: PlaceTimelineProps) {
+function PlaceTimeline({ places, onOpen, onRemove }: PlaceTimelineProps) {
   return (
     <div className="place-timeline">
       {places.map((place, index) => (
@@ -23,7 +24,15 @@ function PlaceTimeline({ places, onRemove }: PlaceTimelineProps) {
             />
           </div>
           <div className="place-stop__content">
-            <article className="place-card">
+            <article
+              className="place-card"
+              role="button"
+              tabIndex={0}
+              onClick={() => onOpen(place.id)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") onOpen(place.id);
+              }}
+            >
               <img
                 className="place-card__handle"
                 src={dragHandleIcon}
@@ -31,6 +40,7 @@ function PlaceTimeline({ places, onRemove }: PlaceTimelineProps) {
               />
               <img className="place-card__thumbnail" src={place.image} alt="" />
               <div className="place-card__copy">
+                {place.changeLabel && <span className="place-card__change">{place.changeLabel}</span>}
                 <strong>{place.name}</strong>
                 <div className="place-card__meta">
                   <img src={place.icon} alt="" />
@@ -39,14 +49,19 @@ function PlaceTimeline({ places, onRemove }: PlaceTimelineProps) {
                   <span>{place.detail}</span>
                 </div>
               </div>
-              <button
-                className="place-card__remove"
-                type="button"
-                onClick={() => onRemove(place.id)}
-                aria-label={`${place.name} 삭제`}
-              >
-                <img src={removeIcon} alt="" />
-              </button>
+              {onRemove && (
+                <button
+                  className="place-card__remove"
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onRemove(place.id);
+                  }}
+                  aria-label={`${place.name} 삭제`}
+                >
+                  <img src={removeIcon} alt="" />
+                </button>
+              )}
             </article>
             {place.travel && (
               <div className="place-move">
