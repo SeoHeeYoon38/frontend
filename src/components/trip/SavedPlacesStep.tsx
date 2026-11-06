@@ -60,6 +60,8 @@ function SavedPlacesStep({
   const [tab, setTab] = useState<"saved" | "courses">("saved");
   const [category, setCategory] = useState<"전체" | PlaceCategory>("전체");
   const [query, setQuery] = useState("");
+  const [placeToMatch, setPlaceToMatch] = useState<TripPlace | null>(null);
+  const [matchQuery, setMatchQuery] = useState("");
   const [busy, setBusy] = useState(false);
   useEffect(() => {
     onLoadingChange(busy);
@@ -73,6 +75,12 @@ function SavedPlacesStep({
   const request = useRef<AbortController | null>(null);
   useEffect(() => () => request.current?.abort(), []);
   const { places: catalog, courses } = mockTripCatalog[draft.city];
+  const matchKeyword = matchQuery.trim().toLowerCase();
+  const matchResults = matchKeyword
+    ? catalog.filter((candidate) =>
+        candidate.title.toLowerCase().includes(matchKeyword),
+      )
+    : [];
   const recommendedPlaces = showAllRecommended ? catalog : catalog.slice(0, 4);
   const selectedIds = new Set(draft.selectedPlaceIds);
   const pendingSelection = new Set(pendingIds);
@@ -166,20 +174,15 @@ function SavedPlacesStep({
           />
         </label>
         {place.needsMatch && (
-          <select
-            aria-label={`${place.title} 매칭 후보`}
-            defaultValue=""
-            onChange={(event) => matchPlace(place, event.target.value)}
+          <P.MatchButton
+            type="button"
+            onClick={() => {
+              setMatchQuery("");
+              setPlaceToMatch(place);
+            }}
           >
-            <option value="" disabled>
-              장소 확인
-            </option>
-            {catalog.map((candidate) => (
-              <option key={candidate.id} value={candidate.id}>
-                {candidate.title}
-              </option>
-            ))}
-          </select>
+            장소 직접 검색
+          </P.MatchButton>
         )}
       </P.PlaceRow>
     );
@@ -431,6 +434,41 @@ function SavedPlacesStep({
             </S.Primary>
           )}
         </S.Footer>
+      )}
+      {placeToMatch && (
+        <TripSheet
+          title="장소 이름으로 검색"
+          onClose={() => setPlaceToMatch(null)}
+        >
+          <S.Help>이 핀이 가리키는 장소의 이름을 입력해 주세요.</S.Help>
+          <S.Search>
+            <img src={searchIcon} alt="" />
+            <input
+              type="search"
+              aria-label="매칭할 장소 이름"
+              placeholder="장소 이름을 입력해 주세요"
+              value={matchQuery}
+              onChange={(event) => setMatchQuery(event.target.value)}
+            />
+          </S.Search>
+          {matchKeyword && matchResults.length === 0 && (
+            <S.Help role="status">검색 결과가 없어요.</S.Help>
+          )}
+          <P.PlaceList>
+            {matchResults.map((candidate) => (
+              <P.MatchButton
+                key={candidate.id}
+                type="button"
+                onClick={() => {
+                  matchPlace(placeToMatch, candidate.id);
+                  setPlaceToMatch(null);
+                }}
+              >
+                {candidate.title} · {candidate.category}
+              </P.MatchButton>
+            ))}
+          </P.PlaceList>
+        </TripSheet>
       )}
       {course && (
         <TripSheet

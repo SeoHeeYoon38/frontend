@@ -165,14 +165,19 @@ export const PlaceRow = styled.div`
     margin: 4px 0 0;
     line-height: 1.5;
   }
-  select {
-    flex-basis: 100%;
-    max-width: 100%;
-    font-size: 12px;
-  }
   input {
     flex-shrink: 0;
   }
+`;
+export const MatchButton = styled.button`
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d0d0d8;
+  border-radius: 8px;
+  background: white;
+  color: #090738;
+  text-align: left;
+  cursor: pointer;
 `;
 export const Checkbox = styled.input`
   appearance: none;
