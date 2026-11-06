@@ -214,6 +214,19 @@ for (const city of mockTripCities)
   mockSavedPlacesByCity[city.name] =
     city.name === "후쿠오카" ? [] : mockTripCatalog[city.name].places;
 
+mockSavedPlacesByCity["오사카"] = [
+  {
+    id: "osaka-unnamed-pin",
+    title: "34.6873, 135.5262",
+    city: "오사카",
+    category: "명소",
+    description: "구글맵에서 저장한 핀",
+    image: "",
+    needsMatch: true,
+  },
+  ...mockSavedPlacesByCity["오사카"],
+];
+
 export const mockCourseStopDetails = [
   { time: "09:00", move: "도보 18분", distance: "1.2km" },
   { time: "12:00", move: "도보 18분", distance: "1.2km" },
