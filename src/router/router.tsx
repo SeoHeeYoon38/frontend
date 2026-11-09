@@ -43,6 +43,12 @@ const router = createBrowserRouter([
           Component: (await import("../pages/CourseSettingsPage")).default,
         }),
       },
+      {
+        path: routes.tripCommunity,
+        lazy: async () => ({
+          Component: (await import("../pages/CourseCommunityPage")).default,
+        }),
+      },
     ],
   },
 ]);

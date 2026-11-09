@@ -4,4 +4,5 @@ export const routes = {
   createTrip: "/trips/new",
   tripPlan: "/trips/plan",
   tripSettings: "/trips/settings",
+  tripCommunity: "/trips/community",
 } as const;

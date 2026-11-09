@@ -5,7 +5,11 @@ import CourseSettingsMenu from "../components/course-settings/CourseSettingsMenu
 import CourseSettingsSheet from "../components/course-settings/CourseSettingsSheet";
 import useCourseSettings from "../hooks/useCourseSettings";
 import * as S from "../components/course-settings/CourseSettings.styled";
-import { settingsBackPath } from "../utils/navigation";
+import {
+  readPlanOrigin,
+  settingsBackPath,
+  tripCommunityPath,
+} from "../utils/navigation";
 
 function CourseSettingsPage() {
   const navigate = useNavigate();
@@ -50,6 +54,9 @@ function CourseSettingsPage() {
 
         <CourseSettingsMenu
           onOpenSheet={openSheet}
+          onOpenCommunity={() =>
+            navigate(tripCommunityPath(readPlanOrigin(location.search)))
+          }
           onNotice={setNotice}
         />
         <S.LiveRegion aria-live="polite">{notice}</S.LiveRegion>

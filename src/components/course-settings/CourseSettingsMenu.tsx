@@ -8,11 +8,13 @@ import * as S from "./CourseSettings.styled";
 
 interface CourseSettingsMenuProps {
   onOpenSheet: (sheet: CourseSettingsSheet) => void;
+  onOpenCommunity: () => void;
   onNotice: (message: string) => void;
 }
 
 function CourseSettingsMenu({
   onOpenSheet,
+  onOpenCommunity,
   onNotice,
 }: CourseSettingsMenuProps) {
   return (
@@ -71,6 +73,11 @@ function CourseSettingsMenu({
       <S.SettingsSection aria-labelledby="member-heading">
         <h2 id="member-heading">멤버</h2>
         <S.MenuList>
+          <S.MenuButton type="button" onClick={onOpenCommunity}>
+            <img src={memberIcon} alt="" />
+            <span>함께 계획하기</span>
+            <S.Chevron aria-hidden="true">›</S.Chevron>
+          </S.MenuButton>
           <S.MenuButton type="button" onClick={() => onOpenSheet("invite")}>
             <img src={memberIcon} alt="" />
             <span>친구 초대</span>
