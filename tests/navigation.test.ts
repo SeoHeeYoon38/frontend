@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   readPlanOrigin,
   settingsBackPath,
+  tripCommunityPath,
   tripPlanBackPath,
   tripPlanPath,
   tripSettingsPath,
@@ -21,5 +22,6 @@ test("일정 결과와 설정 화면의 뒤로가기는 앱 안에서 이어진�
   assert.equal(tripPlanBackPath("?from=courses"), "/courses");
   assert.equal(tripPlanBackPath("?from=generated"), "/");
   assert.equal(tripSettingsPath("generated"), "/trips/settings?from=generated");
+  assert.equal(tripCommunityPath("generated"), "/trips/community?from=generated");
   assert.equal(settingsBackPath("?from=courses"), "/trips/plan?from=courses");
 });

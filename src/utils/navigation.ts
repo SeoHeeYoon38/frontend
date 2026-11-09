@@ -24,6 +24,10 @@ export function tripSettingsPath(origin: PlanOrigin): string {
   return `${routes.tripSettings}?${new URLSearchParams({ from: origin }).toString()}`;
 }
 
+export function tripCommunityPath(origin: PlanOrigin): string {
+  return `${routes.tripCommunity}?${new URLSearchParams({ from: origin }).toString()}`;
+}
+
 export function tripPlanBackPath(search: string): string {
   return readPlanOrigin(search) === "courses" ? routes.courses : routes.home;
 }
