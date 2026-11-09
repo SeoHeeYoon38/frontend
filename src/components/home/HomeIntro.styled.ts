@@ -142,9 +142,6 @@ export const ManualAction = styled.button`
   > img {
     flex-shrink: 0;
   }
-  &[aria-disabled="true"] {
-    cursor: default;
-  }
 `;
 export const ManualIcon = styled.span`
   display: grid;

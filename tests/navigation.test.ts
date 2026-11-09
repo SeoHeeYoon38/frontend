@@ -8,6 +8,7 @@ import {
   tripPlanPath,
   tripSettingsPath,
 } from "../src/utils/navigation.ts";
+import { routes } from "../src/config/routes.ts";
 
 test("일정 결과 경로에 진입 출처와 코스가 유지된다", () => {
   assert.equal(
@@ -26,4 +27,9 @@ test("일정 결과와 설정 화면의 뒤로가기는 앱 안에서 이어진�
   assert.equal(tripSettingsPath("generated"), "/trips/settings?from=generated");
   assert.equal(tripCommunityPath("generated"), "/trips/community?from=generated");
   assert.equal(settingsBackPath("?from=courses"), "/trips/plan?from=courses");
+});
+
+test("홈의 주요 탭과 알림 경로가 앱 안에 등록된다", () => {
+  assert.equal(routes.notifications, "/notifications");
+  assert.equal(routes.myTrips, "/my-trips");
 });

@@ -54,7 +54,7 @@ function HomeIntro({ name, trip }: HomeIntroProps) {
             <S.Character src={courseCharacter} alt="" $variant="course" />
           </S.Action>
         </S.Actions>
-        <S.ManualAction type="button" aria-disabled="true">
+        <S.ManualAction as={Link} to={`${routes.createTrip}?mode=manual`}>
           <S.ManualIcon>
             <img src={pen} alt="" />
           </S.ManualIcon>

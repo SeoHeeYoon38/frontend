@@ -68,7 +68,7 @@ function Header({
             <S.Logo to={routes.home} aria-label="닷로 홈">
               <img src={logo} alt="Dotlo" />
             </S.Logo>
-            <S.NotificationButton type="button" aria-label="알림">
+            <S.NotificationButton to={routes.notifications} aria-label="알림">
               <img src={bell} alt="" />
             </S.NotificationButton>
           </S.Header>

@@ -15,6 +15,12 @@ const router = createBrowserRouter([
         children: [{ index: true, element: <HomePage /> }],
       },
       {
+        path: routes.notifications,
+        lazy: async () => ({
+          Component: (await import("../pages/NotificationsPage")).default,
+        }),
+      },
+      {
         element: <Layout variant="myTrips" />,
         children: [
           {

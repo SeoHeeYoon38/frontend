@@ -1,5 +1,6 @@
 export const routes = {
   home: "/",
+  notifications: "/notifications",
   myTrips: "/my-trips",
   courses: "/courses",
   createTrip: "/trips/new",
