@@ -1,6 +1,8 @@
 import { useState } from "react";
+import { useLocation } from "react-router";
 import useTripCreate from "../hooks/useTripCreate";
 import Layout from "../components/common/Layout";
+import DirectTripBuilder from "../components/direct-trip/DirectTripBuilder";
 import TripInfoStep from "../components/trip/TripInfoStep";
 import SavedPlacesStep from "../components/trip/SavedPlacesStep";
 import PreferencesStep from "../components/trip/PreferencesStep";
@@ -11,9 +13,11 @@ import generationCyan from "../assets/icons/effect-generation-cyan.svg";
 import done from "../assets/icons/status-generation-done.svg";
 import current from "../assets/icons/status-generation-current.svg";
 import pending from "../assets/icons/status-generation-pending.svg";
+import { isDirectTripMode } from "../utils/navigation";
 import * as S from "./TripCreatePage.styled";
 
 function TripCreatePage() {
+  const location = useLocation();
   const [importing, setImporting] = useState(false);
   const {
     draft,
@@ -27,6 +31,11 @@ function TripCreatePage() {
     back,
     generate,
   } = useTripCreate();
+
+  if (isDirectTripMode(location.search)) {
+    return <DirectTripBuilder />;
+  }
+
   let content = (
     <TripInfoStep draft={draft} onChange={update} onNext={() => move(2)} />
   );
