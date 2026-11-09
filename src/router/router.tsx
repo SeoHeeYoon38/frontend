@@ -32,6 +32,23 @@ const router = createBrowserRouter([
         ],
       },
       {
+        element: <Layout variant="my" />,
+        children: [
+          {
+            path: routes.my,
+            lazy: async () => ({
+              Component: (await import("../pages/MyPage")).default,
+            }),
+          },
+        ],
+      },
+      {
+        path: routes.savedItems,
+        lazy: async () => ({
+          Component: (await import("../pages/SavedItemsPage")).default,
+        }),
+      },
+      {
         element: <Layout variant="courses" />,
         children: [
           {

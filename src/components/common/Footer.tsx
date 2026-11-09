@@ -14,10 +14,10 @@ function Footer() {
         <img src={trips} alt="" />
         마이트립
       </NavLink>
-      <button type="button">
+      <NavLink to={routes.my}>
         <img src={profile} alt="" />
         마이
-      </button>
+      </NavLink>
     </S.Nav>
   );
 }
