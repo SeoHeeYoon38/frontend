@@ -27,6 +27,45 @@ export const List = styled.div`
   gap: 16px;
   padding-top: 4px;
 `;
+
+export const Empty = styled.div`
+  display: flex;
+  min-height: 129px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 7px 0;
+  text-align: center;
+
+  p {
+    margin: 0;
+    font-size: 16px;
+    line-height: 24px;
+  }
+
+  p + p {
+    margin-top: 11px;
+    color: #5c5c63;
+    font-size: 13px;
+    line-height: 18px;
+  }
+`;
+
+export const CreateButton = styled.button`
+  display: flex;
+  width: 138px;
+  height: 42px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #dedede;
+  border-radius: 35px;
+  background: #fff;
+  box-shadow: 0 1px 2px #00000014;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 22px;
+`;
 export const TripRow = styled.div`
   display: flex;
   gap: 14px;

@@ -4,7 +4,7 @@ import tokyo from "../../assets/images/city-tokyo.webp";
 import fukuoka from "../../assets/images/city-fukuoka.webp";
 import type { NotificationItem } from "../../types/notifications";
 
-export const mockNotifications: NotificationItem[] = [
+const receivedNotifications: NotificationItem[] = [
   {
     id: "osaka-countdown",
     group: "오늘",
@@ -76,3 +76,10 @@ export const mockNotifications: NotificationItem[] = [
     thumbnail: fukuoka,
   },
 ];
+
+const notificationScenarios: Record<"empty" | "received", NotificationItem[]> = {
+  empty: [],
+  received: receivedNotifications,
+};
+
+export const mockNotifications = notificationScenarios.received;
