@@ -1,6 +1,6 @@
 import styled from "styled-components";
 
-export const Shell = styled.div`
+export const Shell = styled.div<{ $empty: boolean }>`
   width: 100%;
   max-width: 402px;
   min-height: 100dvh;
@@ -9,6 +9,10 @@ export const Shell = styled.div`
   background: #fff;
   color: #1a1a1a;
   font-family: "Noto Sans KR", Arial, sans-serif;
+  ${({ $empty }) => $empty && `
+    display: flex;
+    flex-direction: column;
+  `}
 
   button {
     border: 0;
@@ -35,8 +39,8 @@ export const Navigation = styled.header`
   }
 
   img {
-    width: 22px;
-    height: 22px;
+    width: 6.42px;
+    height: 12.83px;
   }
 
   h1 {
@@ -199,6 +203,45 @@ export const Empty = styled.div`
   text-align: center;
   place-items: center;
   font-size: 14px;
+`;
+
+export const EmptyBody = styled.main`
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0 20px min(9dvh, 80px);
+  text-align: center;
+  word-break: keep-all;
+
+  h2 {
+    margin: 20px 0 8px;
+    font-size: 17px;
+    line-height: 24px;
+    letter-spacing: -0.085px;
+  }
+
+  p {
+    margin: 0;
+    color: #8a8a8e;
+    font-size: 14px;
+    line-height: 20px;
+  }
+`;
+
+export const EmptyIcon = styled.span`
+  display: grid;
+  width: 72px;
+  height: 72px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  background: #f3f5fa;
+
+  img {
+    transform: scale(1.5);
+  }
 `;
 
 export const HomeIndicator = styled.div`

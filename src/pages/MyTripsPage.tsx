@@ -1,10 +1,7 @@
 import { useMemo } from "react";
-import { Link, useSearchParams } from "react-router";
-import aiCharacter from "../assets/images/character-purple.webp";
-import courseCharacter from "../assets/images/character-blue.webp";
+import { useSearchParams } from "react-router";
 import pinIcon from "../assets/course-settings/pin.svg";
-import penIcon from "../assets/icons/action-pen.svg";
-import { routes } from "../config/routes";
+import CreateTripSheet from "../components/common/CreateTripSheet";
 import { pastTrips, upcomingTrips } from "../data/mocks/myTripsData";
 import type { MyTripSummary } from "../types/myTrips";
 import { tripPlanPath } from "../utils/navigation";
@@ -118,45 +115,7 @@ function MyTripsPage() {
         </S.Empty>
       )}
 
-      {isCreateOpen && (
-        <S.Overlay role="presentation" onMouseDown={closeOverlay}>
-          <S.CreateSheet
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="create-trip-title"
-            onMouseDown={(event) => event.stopPropagation()}
-          >
-            <S.Handle />
-            <h2 id="create-trip-title">어떻게 여행을 만들까요?</h2>
-            <Link to={routes.createTrip}>
-              <img src={aiCharacter} alt="" />
-              <span>
-                <strong>AI 맞춤 여행 만들기</strong>
-                <small>취향과 저장 장소로 전체 일정을 짜줘요</small>
-              </span>
-              <b>›</b>
-            </Link>
-            <Link to={routes.courses}>
-              <img src={courseCharacter} alt="" />
-              <span>
-                <strong>인기 코스 둘러보기</strong>
-                <small>많이 선택한 코스를 내 일정에 가져와요</small>
-              </span>
-              <b>›</b>
-            </Link>
-            <Link to={`${routes.createTrip}?mode=direct`}>
-              <S.PenIcon aria-hidden="true">
-                <img src={penIcon} alt="" />
-              </S.PenIcon>
-              <span>
-                <strong>직접 일정 만들기</strong>
-                <small>빈 일정에서 장소를 하나씩 담아요</small>
-              </span>
-              <b>›</b>
-            </Link>
-          </S.CreateSheet>
-        </S.Overlay>
-      )}
+      {isCreateOpen && <CreateTripSheet onClose={closeOverlay} />}
     </S.Page>
   );
 }
