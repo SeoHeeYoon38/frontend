@@ -71,7 +71,7 @@ export const Logo = styled(Link)`
     left: -30.72%;
   }
 `;
-export const NotificationButton = styled.button`
+export const NotificationButton = styled(Link)`
   display: grid;
   place-items: center;
   min-width: 44px;
