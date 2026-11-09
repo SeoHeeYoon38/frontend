@@ -1,11 +1,62 @@
 import styled from "styled-components";
 import { Link } from "react-router";
 export const Header = styled.header`
-  height: 92px;
-  padding: 38px 20px 16px;
+  height: 42px;
+  padding: 0 20px 14px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+`;
+export const MyTripsHeader = styled.header`
+  height: 50px;
+  padding: 2px 20px 0;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+
+  h1 {
+    margin: 0;
+    flex: 1;
+    color: #12133f;
+    font-size: 22px;
+    line-height: 30px;
+    font-weight: 700;
+  }
+
+  a {
+    display: grid;
+    place-items: center;
+    width: 26px;
+    height: 40px;
+  }
+
+  img {
+    width: 24px;
+    height: 24px;
+  }
+`;
+
+export const PlusIcon = styled.span`
+  position: relative;
+  display: block;
+  width: 24px;
+  height: 24px;
+
+  &::before,
+  &::after {
+    content: "";
+    position: absolute;
+    top: 11px;
+    left: 3px;
+    width: 18px;
+    height: 2px;
+    border-radius: 2px;
+    background: #1a1a1a;
+  }
+
+  &::after {
+    transform: rotate(90deg);
+  }
 `;
 export const Logo = styled(Link)`
   position: relative;

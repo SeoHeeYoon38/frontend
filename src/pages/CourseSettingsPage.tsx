@@ -1,6 +1,6 @@
 import { useLocation, useNavigate } from "react-router";
-import statusIcons from "../assets/course-completion/status-icons.svg";
 import backIcon from "../assets/course-settings/back.svg";
+import AppStatusBar from "../components/common/AppStatusBar";
 import CourseSettingsMenu from "../components/course-settings/CourseSettingsMenu";
 import CourseSettingsSheet from "../components/course-settings/CourseSettingsSheet";
 import useCourseSettings from "../hooks/useCourseSettings";
@@ -31,10 +31,7 @@ function CourseSettingsPage() {
   return (
     <S.PageShell>
       <S.Page>
-        <S.StatusBar aria-hidden="true">
-          <span>9:41</span>
-          <img src={statusIcons} alt="" />
-        </S.StatusBar>
+        <AppStatusBar />
 
         <S.Navigation aria-label="코스 설정 탐색">
           <button

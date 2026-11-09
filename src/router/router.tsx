@@ -15,6 +15,17 @@ const router = createBrowserRouter([
         children: [{ index: true, element: <HomePage /> }],
       },
       {
+        element: <Layout variant="myTrips" />,
+        children: [
+          {
+            path: routes.myTrips,
+            lazy: async () => ({
+              Component: (await import("../pages/MyTripsPage")).default,
+            }),
+          },
+        ],
+      },
+      {
         element: <Layout variant="courses" />,
         children: [
           {

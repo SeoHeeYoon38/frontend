@@ -22,9 +22,15 @@ export const Nav = styled.nav`
   }
   > [aria-current="page"] {
     color: #1a1a1a;
+    font-weight: 700;
   }
   img {
     width: 30px;
     height: 30px;
+    opacity: 0.58;
+  }
+  > [aria-current="page"] img {
+    opacity: 1;
+    filter: brightness(0);
   }
 `;

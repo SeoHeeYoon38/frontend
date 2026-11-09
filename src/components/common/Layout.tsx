@@ -4,7 +4,7 @@ import Header from "./Header";
 import Footer from "./Footer";
 import * as S from "./Layout.styled";
 interface LayoutProps {
-  variant?: "home" | "courses" | "trip";
+  variant?: "home" | "courses" | "trip" | "myTrips";
   children?: ReactNode;
   step?: number;
   onBack?: () => void;
@@ -20,6 +20,7 @@ function Layout({
 }: LayoutProps) {
   const isCourses = variant === "courses";
   const isTrip = variant === "trip";
+  const hasBottomNav = variant === "home" || variant === "myTrips";
   return (
     <S.Shell $courses={isCourses || isTrip} $trip={isTrip}>
       <Header
@@ -28,10 +29,14 @@ function Layout({
         onBack={onBack}
         hideProgress={hideProgress}
       />
-      <S.Content $courses={isCourses} $trip={isTrip}>
+      <S.Content
+        $courses={isCourses}
+        $trip={isTrip}
+        $myTrips={variant === "myTrips"}
+      >
         {children ?? <Outlet />}
       </S.Content>
-      {variant === "home" && <Footer />}
+      {hasBottomNav && <Footer />}
     </S.Shell>
   );
 }

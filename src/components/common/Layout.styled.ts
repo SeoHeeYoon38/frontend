@@ -32,13 +32,25 @@ export const Shell = styled.div<{ $courses: boolean; $trip?: boolean }>`
     outline-offset: 4px;
   }
 `;
-export const Content = styled.main<{ $courses: boolean; $trip?: boolean }>`
+export const Content = styled.main<{
+  $courses: boolean;
+  $trip?: boolean;
+  $myTrips?: boolean;
+}>`
   display: flex;
   flex-direction: column;
   flex: 1;
   min-width: 0;
   min-height: 0;
   overflow: ${({ $trip }) => ($trip ? "hidden" : "visible")};
-  gap: ${({ $courses, $trip }) => ($trip ? "0" : $courses ? "36px" : "28px")};
-  padding: ${({ $trip, $courses }) => ($trip ? "24px 20px 0" : ($courses ? "12px 20px 24px" : "16px 20px 24px"))};
+  gap: ${({ $courses, $trip, $myTrips }) =>
+    $trip ? "0" : $myTrips ? "0" : $courses ? "36px" : "28px"};
+  padding: ${({ $trip, $courses, $myTrips }) =>
+    $trip
+      ? "24px 20px 0"
+      : $myTrips
+        ? "0"
+        : $courses
+          ? "12px 20px 24px"
+          : "16px 20px 24px"};
 `;
