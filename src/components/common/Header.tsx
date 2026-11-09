@@ -4,10 +4,12 @@ import logo from "../../assets/images/brand-dotlo-logo.png";
 import back from "../../assets/icons/nav-back.svg";
 import bookmark from "../../assets/icons/nav-bookmark.svg";
 import bell from "../../assets/icons/nav-notification.svg";
+import search from "../../assets/icons/search-default.svg";
 import { routes } from "../../config/routes";
+import AppStatusBar from "./AppStatusBar";
 import * as S from "./Header.styled";
 interface HeaderProps {
-  variant?: "home" | "courses" | "trip";
+  variant?: "home" | "courses" | "trip" | "myTrips";
   step?: number;
   onBack?: () => void;
   hideProgress?: boolean;
@@ -46,15 +48,31 @@ function Header({
             <img src={bookmark} alt="" />
           </button>
         </S.CourseHeader>
+      ) : variant === "myTrips" ? (
+        <>
+          <AppStatusBar />
+          <S.MyTripsHeader>
+            <h1>마이트립</h1>
+            <Link to={`${routes.myTrips}?search=1`} aria-label="여행 검색">
+              <img src={search} alt="" />
+            </Link>
+            <Link to={`${routes.myTrips}?create=1`} aria-label="새 여행 만들기">
+              <S.PlusIcon aria-hidden="true" />
+            </Link>
+          </S.MyTripsHeader>
+        </>
       ) : (
-        <S.Header>
-          <S.Logo to={routes.home} aria-label="닷로 홈">
-            <img src={logo} alt="Dotlo" />
-          </S.Logo>
-          <S.NotificationButton type="button" aria-label="알림">
-            <img src={bell} alt="" />
-          </S.NotificationButton>
-        </S.Header>
+        <>
+          <AppStatusBar />
+          <S.Header>
+            <S.Logo to={routes.home} aria-label="닷로 홈">
+              <img src={logo} alt="Dotlo" />
+            </S.Logo>
+            <S.NotificationButton type="button" aria-label="알림">
+              <img src={bell} alt="" />
+            </S.NotificationButton>
+          </S.Header>
+        </>
       )}
     </>
   );
