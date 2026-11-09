@@ -37,6 +37,16 @@ body {
   font-family: "Noto Sans KR", Arial, sans-serif;
 }
 
+html,
+body {
+  scrollbar-width: none;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  display: none;
+}
+
 button,
 input,
 textarea,

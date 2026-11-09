@@ -9,7 +9,7 @@ import { routes } from "../../config/routes";
 import AppStatusBar from "./AppStatusBar";
 import * as S from "./Header.styled";
 interface HeaderProps {
-  variant?: "home" | "courses" | "trip" | "myTrips";
+  variant?: "home" | "courses" | "trip" | "myTrips" | "my";
   step?: number;
   onBack?: () => void;
   hideProgress?: boolean;
@@ -48,6 +48,13 @@ function Header({
             <img src={bookmark} alt="" />
           </button>
         </S.CourseHeader>
+      ) : variant === "my" ? (
+        <>
+          <AppStatusBar />
+          <S.MyHeader>
+            <h1>마이</h1>
+          </S.MyHeader>
+        </>
       ) : variant === "myTrips" ? (
         <>
           <AppStatusBar />

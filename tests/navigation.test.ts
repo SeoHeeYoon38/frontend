@@ -32,4 +32,6 @@ test("일정 결과와 설정 화면의 뒤로가기는 앱 안에서 이어진�
 test("홈의 주요 탭과 알림 경로가 앱 안에 등록된다", () => {
   assert.equal(routes.notifications, "/notifications");
   assert.equal(routes.myTrips, "/my-trips");
+  assert.equal(routes.my, "/my");
+  assert.equal(routes.savedItems, "/my/saved");
 });

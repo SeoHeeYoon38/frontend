@@ -36,6 +36,21 @@ export const MyTripsHeader = styled.header`
   }
 `;
 
+export const MyHeader = styled.header`
+  height: 54px;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+
+  h1 {
+    margin: 0;
+    color: #1a1a1a;
+    font-size: 22px;
+    line-height: 30px;
+    font-weight: 700;
+  }
+`;
+
 export const PlusIcon = styled.span`
   position: relative;
   display: block;

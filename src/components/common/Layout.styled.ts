@@ -36,6 +36,7 @@ export const Content = styled.main<{
   $courses: boolean;
   $trip?: boolean;
   $myTrips?: boolean;
+  $my?: boolean;
 }>`
   display: flex;
   flex-direction: column;
@@ -43,12 +44,12 @@ export const Content = styled.main<{
   min-width: 0;
   min-height: 0;
   overflow: ${({ $trip }) => ($trip ? "hidden" : "visible")};
-  gap: ${({ $courses, $trip, $myTrips }) =>
-    $trip ? "0" : $myTrips ? "0" : $courses ? "36px" : "28px"};
-  padding: ${({ $trip, $courses, $myTrips }) =>
+  gap: ${({ $courses, $trip, $myTrips, $my }) =>
+    $trip || $myTrips || $my ? "0" : $courses ? "36px" : "28px"};
+  padding: ${({ $trip, $courses, $myTrips, $my }) =>
     $trip
       ? "24px 20px 0"
-      : $myTrips
+      : $myTrips || $my
         ? "0"
         : $courses
           ? "12px 20px 24px"
