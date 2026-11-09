@@ -13,6 +13,7 @@ import "../components/course-completion/CourseEdit.css";
 import useCoursePlan from "../hooks/useCoursePlan";
 import {
   readPlanOrigin,
+  tripCommunityPath,
   tripPlanBackPath,
   tripSettingsPath,
 } from "../utils/navigation";
@@ -138,7 +139,7 @@ function TripPlanPage() {
               </button>
             </div>
           ) : (
-            <button type="button" onClick={() => setScreen("ai-edit")}>AI 수정 요청</button>
+            <button type="button" onClick={() => navigate(tripCommunityPath(planOrigin))}>AI 수정 요청</button>
           )}
         </div>
         {planVariant === "applied" && screen === "plan" && (
