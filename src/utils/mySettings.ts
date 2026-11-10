@@ -14,6 +14,35 @@ export interface NicknameValidation {
 }
 
 export const PROFILE_STORAGE_KEY = "dotlo.profile";
+export const NOTIFICATION_STORAGE_KEY = "dotlo.notifications";
+
+export type NotificationSettingKey =
+  | "scheduleChanges"
+  | "tripReminder"
+  | "chatMessages"
+  | "commentsAndMentions"
+  | "voteResults"
+  | "eventsAndBenefits";
+
+export interface NotificationSettings {
+  allNotifications: boolean;
+  scheduleChanges: boolean;
+  tripReminder: boolean;
+  chatMessages: boolean;
+  commentsAndMentions: boolean;
+  voteResults: boolean;
+  eventsAndBenefits: boolean;
+}
+
+export const defaultNotificationSettings: NotificationSettings = {
+  allNotifications: true,
+  scheduleChanges: true,
+  tripReminder: true,
+  chatMessages: true,
+  commentsAndMentions: true,
+  voteResults: false,
+  eventsAndBenefits: false,
+};
 
 export const defaultProfileSettings: UserProfileSettings = {
   nickname: "예빈",
@@ -99,4 +128,45 @@ export function saveProfileSettings(
   profile: UserProfileSettings,
 ) {
   storage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profile));
+}
+
+export function parseNotificationSettings(
+  raw: string | null,
+): NotificationSettings | null {
+  if (!raw) return null;
+
+  try {
+    const value = JSON.parse(raw) as Partial<NotificationSettings>;
+    const keys: (keyof NotificationSettings)[] = [
+      "allNotifications",
+      "scheduleChanges",
+      "tripReminder",
+      "chatMessages",
+      "commentsAndMentions",
+      "voteResults",
+      "eventsAndBenefits",
+    ];
+    if (keys.some((key) => typeof value[key] !== "boolean")) return null;
+    return value as NotificationSettings;
+  } catch {
+    return null;
+  }
+}
+
+export function readNotificationSettings(storage: Storage): NotificationSettings {
+  return (
+    parseNotificationSettings(storage.getItem(NOTIFICATION_STORAGE_KEY)) ??
+    defaultNotificationSettings
+  );
+}
+
+export function saveNotificationSettings(
+  storage: Storage,
+  settings: NotificationSettings,
+) {
+  storage.setItem(NOTIFICATION_STORAGE_KEY, JSON.stringify(settings));
+}
+
+export function countEnabledNotifications(settings: NotificationSettings) {
+  return Object.values(settings).filter(Boolean).length;
 }

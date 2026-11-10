@@ -1,5 +1,5 @@
 import { Link } from "react-router";
-import styled from "styled-components";
+import styled, { css } from "styled-components";
 
 export const Page = styled.div`
   min-height: 650px;
@@ -200,7 +200,7 @@ export const MenuSection = styled.section`
   }
 `;
 
-export const MenuButton = styled.button`
+const menuRow = css`
   width: 100%;
   min-height: 48px;
   display: flex;
@@ -236,6 +236,15 @@ export const MenuButton = styled.button`
     line-height: 20px;
     font-weight: 400;
   }
+`;
+
+export const MenuButton = styled.button`
+  ${menuRow}
+`;
+
+export const MenuLink = styled(Link)`
+  ${menuRow}
+  text-decoration: none;
 `;
 
 export const TextIcon = styled.span`

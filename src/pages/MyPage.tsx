@@ -10,12 +10,19 @@ import purpleAvatar from "../assets/images/character-purple.webp";
 import googleMapsLogo from "../assets/images/brand-google-maps.webp";
 import { routes } from "../config/routes";
 import { myProfile } from "../data/mocks/myData";
-import { readProfileSettings } from "../utils/mySettings";
+import {
+  countEnabledNotifications,
+  readNotificationSettings,
+  readProfileSettings,
+} from "../utils/mySettings";
 import * as S from "./MyPage.styled";
 
 function MyPage() {
   const location = useLocation();
   const [profile] = useState(() => readProfileSettings(window.localStorage));
+  const [notificationCount] = useState(() =>
+    countEnabledNotifications(readNotificationSettings(window.localStorage)),
+  );
   const [showSavedToast, setShowSavedToast] = useState(
     () => Boolean((location.state as { profileSaved?: boolean } | null)?.profileSaved),
   );
@@ -75,18 +82,18 @@ function MyPage() {
       <S.Band />
       <S.MenuSection>
         <h2>설정</h2>
-        <S.MenuButton type="button">
+        <S.MenuLink to={routes.notificationSettings}>
           <img src={bellIcon} alt="" />
           <span>알림 설정</span>
-          <small>5개 켜짐</small>
+          <small>{notificationCount}개 켜짐</small>
           <b>›</b>
-        </S.MenuButton>
-        <S.MenuButton type="button">
+        </S.MenuLink>
+        <S.MenuLink to={routes.accountSettings}>
           <img src={profileIcon} alt="" />
           <span>계정 관리</span>
           <small>카카오</small>
           <b>›</b>
-        </S.MenuButton>
+        </S.MenuLink>
       </S.MenuSection>
 
       <S.Band />

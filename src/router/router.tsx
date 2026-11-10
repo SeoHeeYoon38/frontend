@@ -61,6 +61,12 @@ const router = createBrowserRouter([
         }),
       },
       {
+        path: routes.notificationSettings,
+        lazy: async () => ({
+          Component: (await import("../pages/NotificationSettingsPage")).default,
+        }),
+      },
+      {
         element: <Layout variant="courses" />,
         children: [
           {
