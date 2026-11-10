@@ -1,57 +1,44 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useLocation } from "react-router";
 import bellIcon from "../assets/course-settings/bell.svg";
 import locationIcon from "../assets/course-settings/pin.svg";
 import courseIcon from "../assets/icons/my-route.svg";
 import profileIcon from "../assets/icons/nav-profile.svg";
 import airplaneIcon from "../assets/icons/transport-airplane.svg";
+import blueAvatar from "../assets/images/character-blue.webp";
+import purpleAvatar from "../assets/images/character-purple.webp";
 import googleMapsLogo from "../assets/images/brand-google-maps.webp";
 import { routes } from "../config/routes";
 import { myProfile } from "../data/mocks/myData";
+import { readProfileSettings } from "../utils/mySettings";
 import * as S from "./MyPage.styled";
 
 function MyPage() {
-  const [isEditing, setIsEditing] = useState(false);
-  const [name, setName] = useState(myProfile.name);
-  const [username, setUsername] = useState(myProfile.username);
+  const location = useLocation();
+  const [profile] = useState(() => readProfileSettings(window.localStorage));
+  const [showSavedToast, setShowSavedToast] = useState(
+    () => Boolean((location.state as { profileSaved?: boolean } | null)?.profileSaved),
+  );
+
+  useEffect(() => {
+    if (!showSavedToast) return;
+    const timeoutId = window.setTimeout(() => setShowSavedToast(false), 2200);
+    return () => window.clearTimeout(timeoutId);
+  }, [showSavedToast]);
+
+  const avatar = profile.avatar === "purple" ? purpleAvatar : blueAvatar;
 
   return (
     <S.Page>
       <S.ProfileSection>
         <S.Avatar>
-          <img src={myProfile.avatar} alt="" />
+          <img src={avatar} alt="" />
         </S.Avatar>
-        {isEditing ? (
-          <S.ProfileInputs>
-            <label>
-              <span>이름</span>
-              <input
-                aria-label="이름"
-                value={name}
-                maxLength={12}
-                onChange={(event) => setName(event.target.value)}
-              />
-            </label>
-            <label>
-              <span>아이디</span>
-              <input
-                aria-label="아이디"
-                value={username}
-                maxLength={24}
-                onChange={(event) => setUsername(event.target.value)}
-              />
-            </label>
-          </S.ProfileInputs>
-        ) : (
-          <S.ProfileText>
-            <strong>
-              {name} <span>님</span>
-            </strong>
-            <small>{username}</small>
-          </S.ProfileText>
-        )}
-        <S.EditButton type="button" onClick={() => setIsEditing((value) => !value)}>
-          {isEditing ? "저장" : "수정"}
-        </S.EditButton>
+        <S.ProfileText>
+          <strong>{profile.nickname}</strong>
+          <small>{profile.introduction}</small>
+        </S.ProfileText>
+        <S.EditButton to={routes.profileEdit}>프로필 수정</S.EditButton>
       </S.ProfileSection>
 
       <S.Stats aria-label="저장 및 여행 요약">
@@ -121,6 +108,8 @@ function MyPage() {
           <b>›</b>
         </S.MenuButton>
       </S.MenuSection>
+
+      {showSavedToast && <S.Toast role="status">✓ 프로필을 저장했어요</S.Toast>}
     </S.Page>
   );
 }

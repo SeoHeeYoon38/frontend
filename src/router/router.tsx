@@ -55,6 +55,12 @@ const router = createBrowserRouter([
         }),
       },
       {
+        path: routes.profileEdit,
+        lazy: async () => ({
+          Component: (await import("../pages/ProfileEditPage")).default,
+        }),
+      },
+      {
         element: <Layout variant="courses" />,
         children: [
           {

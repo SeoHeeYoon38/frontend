@@ -1,0 +1,102 @@
+export type ProfileAvatar = "blue" | "purple";
+
+export interface UserProfileSettings {
+  nickname: string;
+  email: string;
+  introduction: string;
+  avatar: ProfileAvatar;
+}
+
+export interface NicknameValidation {
+  valid: boolean;
+  tone: "default" | "success" | "error";
+  message: string;
+}
+
+export const PROFILE_STORAGE_KEY = "dotlo.profile";
+
+export const defaultProfileSettings: UserProfileSettings = {
+  nickname: "예빈",
+  email: "yebin5929@gmail.com",
+  introduction: "안녕하세용!",
+  avatar: "blue",
+};
+
+const unavailableNicknames = new Set(["도틀로", "dotlo", "관리자"]);
+
+export function validateNickname(
+  nickname: string,
+  originalNickname = defaultProfileSettings.nickname,
+): NicknameValidation {
+  const value = nickname.trim();
+
+  if (value === originalNickname) {
+    return { valid: true, tone: "default", message: "" };
+  }
+
+  if (value.length < 2 || value.length > 12) {
+    return {
+      valid: false,
+      tone: "error",
+      message: "닉네임은 2자 이상 12자 이하로 입력해 주세요",
+    };
+  }
+
+  if (!/^[가-힣a-zA-Z0-9]+$/.test(value)) {
+    return {
+      valid: false,
+      tone: "error",
+      message: "한글, 영문, 숫자만 입력할 수 있어요",
+    };
+  }
+
+  if (unavailableNicknames.has(value.toLowerCase())) {
+    return {
+      valid: false,
+      tone: "error",
+      message: "이미 사용 중인 닉네임이에요",
+    };
+  }
+
+  return {
+    valid: true,
+    tone: "success",
+    message: "사용할 수 있는 닉네임이에요",
+  };
+}
+
+export function parseProfileSettings(raw: string | null): UserProfileSettings | null {
+  if (!raw) return null;
+
+  try {
+    const value = JSON.parse(raw) as Partial<UserProfileSettings>;
+    if (
+      typeof value.nickname !== "string" ||
+      typeof value.email !== "string" ||
+      typeof value.introduction !== "string" ||
+      (value.avatar !== "blue" && value.avatar !== "purple")
+    ) {
+      return null;
+    }
+
+    return {
+      nickname: value.nickname,
+      email: value.email,
+      introduction: value.introduction,
+      avatar: value.avatar,
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function readProfileSettings(storage: Storage): UserProfileSettings {
+  return parseProfileSettings(storage.getItem(PROFILE_STORAGE_KEY)) ?? defaultProfileSettings;
+}
+
+export function saveProfileSettings(
+  storage: Storage,
+  profile: UserProfileSettings,
+) {
+  storage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profile));
+}
