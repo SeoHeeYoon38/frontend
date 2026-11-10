@@ -36,7 +36,7 @@ export const HeroScrim = styled.div`
 export const Navigation = styled.nav`
   position: absolute;
   z-index: 5;
-  top: calc(50px + env(safe-area-inset-top));
+  top: env(safe-area-inset-top);
   right: 0;
   left: 0;
   display: grid;

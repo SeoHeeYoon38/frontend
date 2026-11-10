@@ -1,5 +1,4 @@
 import backIcon from "../../assets/course-settings/back.svg";
-import statusIcons from "../../assets/course-completion/status-icons.svg";
 import {
   aiAvatar,
   communityDays,
@@ -41,11 +40,6 @@ function CourseCommunityChat({ onBack, onViewCourse }: CourseCommunityChatProps)
 
   return (
     <main className="community-chat">
-      <div className="community-chat__statusbar" aria-hidden="true">
-        <span>9:41</span>
-        <img src={statusIcons} alt="" />
-      </div>
-
       <header className="community-chat__header">
         <button type="button" aria-label="코스로 돌아가기" onClick={onBack}>
           <img src={backIcon} alt="" />

@@ -40,25 +40,6 @@ export const Page = styled.main`
   }
 `;
 
-export const StatusBar = styled.div`
-  height: 50px;
-  padding: 15px 24px 9px 26px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 15px;
-  font-weight: 700;
-  line-height: 1;
-  letter-spacing: -0.25px;
-
-  img {
-    display: block;
-    width: 67px;
-    height: 12px;
-    filter: invert(1);
-  }
-`;
-
 export const Navigation = styled.nav`
   height: 42px;
   padding: 0 20px;

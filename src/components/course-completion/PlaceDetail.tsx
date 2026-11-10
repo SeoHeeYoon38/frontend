@@ -3,7 +3,6 @@ import placeDetailActions from "../../assets/course-completion/place-detail-acti
 import placeDetailBack from "../../assets/course-completion/place-detail-back.svg";
 import placeDetailMap from "../../assets/course-completion/place-detail-map.png";
 import placeDetailPhoto from "../../assets/course-completion/place-detail-photo.png";
-import statusIcons from "../../assets/course-completion/status-icons.svg";
 import CompanionOpinions from "../course-community/CompanionOpinions";
 import type { CoursePlace } from "../../types/courseCompletion";
 
@@ -21,10 +20,6 @@ function PlaceDetail({ place, onBack, onRemove }: PlaceDetailProps) {
       <header className="place-detail__hero">
         <img src={placeDetailPhoto} alt="오사카 도톤보리 풍경" />
         <div className="place-detail__scrim" />
-        <div className="place-detail__statusbar" aria-hidden="true">
-          <span>9:41</span>
-          <img src={statusIcons} alt="" />
-        </div>
         <div className="place-detail__nav">
           <button type="button" onClick={onBack} aria-label="코스로 돌아가기">
             <img src={placeDetailBack} alt="" />

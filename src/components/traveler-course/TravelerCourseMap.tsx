@@ -20,7 +20,6 @@ function TravelerCourseMap({ activeDay, onBack, onDayChange, onOpenPlace }: Trav
 
   return (
     <S.MapScreen>
-      <S.WhiteStatus aria-hidden="true"><span>9:41</span><span>▮▮▮ ◉ ▰</span></S.WhiteStatus>
       <S.MapHeader>
         <div><button type="button" aria-label="코스 상세로 돌아가기" onClick={onBack}>‹</button><h1>교토 2박 3일</h1><span /></div>
         <S.MapTabs aria-label="지도 일차 선택">

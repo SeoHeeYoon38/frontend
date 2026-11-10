@@ -7,7 +7,6 @@ import pathDots from "../../assets/course-completion/ai-loading-path.svg";
 import dotWait from "../../assets/course-completion/ai-loading-wait.svg";
 import dotloLogo from "../../assets/course-completion/ai-loading-symbol.png";
 import backIcon from "../../assets/course-completion/place-detail-back.svg";
-import statusIcons from "../../assets/course-completion/status-icons.svg";
 
 interface AiEditLoadingProps { onBack: () => void; }
 
@@ -21,7 +20,6 @@ function AiEditLoading({ onBack }: AiEditLoadingProps) {
 
   return (
     <main className="ai-loading">
-      <div className="ai-loading__statusbar" aria-hidden="true"><span>9:41</span><img src={statusIcons} alt="" /></div>
       <button className="ai-loading__back" type="button" onClick={onBack} aria-label="수정 요청으로 돌아가기"><img src={backIcon} alt="" /></button>
       <div className="ai-loading__visual" aria-hidden="true">
         <img className="ai-loading__glow ai-loading__glow--one" src={glow} alt="" />

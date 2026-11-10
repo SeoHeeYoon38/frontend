@@ -6,7 +6,6 @@ import backIcon from "../assets/icons/nav-back.svg";
 import profileIcon from "../assets/icons/nav-profile.svg";
 import locationIcon from "../assets/course-settings/pin.svg";
 import character from "../assets/images/character-blue.webp";
-import AppStatusBar from "../components/common/AppStatusBar";
 import { routes } from "../config/routes";
 import {
   GOOGLE_MAPS_STORAGE_KEY,
@@ -56,7 +55,6 @@ function WithdrawalPage() {
   if (step === "done") {
     return (
       <S.Page>
-        <AppStatusBar />
         <S.Done>
           <S.DoneAvatar><img src={character} alt="" /></S.DoneAvatar>
           <h1>탈퇴가 완료됐어요</h1>
@@ -69,7 +67,6 @@ function WithdrawalPage() {
 
   return (
     <S.Page>
-      <AppStatusBar />
       <S.Header>
         <button type="button" aria-label="이전 화면" onClick={back}><img src={backIcon} alt="" /></button>
         <h1>회원 탈퇴</h1>

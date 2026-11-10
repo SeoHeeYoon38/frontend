@@ -8,7 +8,6 @@ import bell from "../assets/icons/nav-notification.svg";
 import emptyBell from "../assets/course-settings/bell.svg";
 import calendar from "../assets/icons/calendar-outline.svg";
 import back from "../assets/icons/nav-back.svg";
-import AppStatusBar from "../components/common/AppStatusBar";
 import { mockNotifications } from "../data/mocks/notificationData";
 import type {
   NotificationFilter,
@@ -52,7 +51,6 @@ function NotificationsPage() {
 
   return (
     <S.Shell $empty={!hasNotifications}>
-      <AppStatusBar />
       <S.Navigation>
         <button type="button" aria-label="홈으로 돌아가기" onClick={() => navigate(-1)}>
           <img src={back} alt=""  />

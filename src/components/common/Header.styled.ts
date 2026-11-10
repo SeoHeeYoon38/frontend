@@ -1,15 +1,15 @@
 import styled from "styled-components";
 import { Link } from "react-router";
 export const Header = styled.header`
-  height: 42px;
-  padding: 0 20px 14px;
+  min-height: 54px;
+  padding: calc(12px + env(safe-area-inset-top)) 20px 14px;
   display: flex;
   align-items: center;
   justify-content: space-between;
 `;
 export const MyTripsHeader = styled.header`
-  height: 50px;
-  padding: 2px 20px 0;
+  min-height: 50px;
+  padding: env(safe-area-inset-top) 20px 0;
   display: flex;
   align-items: center;
   gap: 18px;
@@ -37,8 +37,8 @@ export const MyTripsHeader = styled.header`
 `;
 
 export const MyHeader = styled.header`
-  height: 54px;
-  padding: 0 20px;
+  min-height: 54px;
+  padding: env(safe-area-inset-top) 20px 0;
   display: flex;
   align-items: center;
 
@@ -101,8 +101,8 @@ export const CourseHeader = styled.header`
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 50px 20px 10px;
-  min-height: 92px;
+  padding: calc(10px + env(safe-area-inset-top)) 20px 10px;
+  min-height: 52px;
   h1 {
     margin: 0;
     flex: 1;
@@ -129,8 +129,8 @@ export const TripHeader = styled.header`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 58px 20px 9px;
-  min-height: 95px;
+  padding: calc(12px + env(safe-area-inset-top)) 20px 9px;
+  min-height: 49px;
   @media (max-height: 600px) {
     padding-top: 16px;
     min-height: 53px;

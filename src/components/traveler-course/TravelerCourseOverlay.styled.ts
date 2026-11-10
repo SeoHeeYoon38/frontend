@@ -16,22 +16,6 @@ export const MapScreen = styled(FullScreen)`
   height: 100dvh;
 `;
 
-export const WhiteStatus = styled.div`
-  height: 50px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 20px 0 24px;
-  background: #fff;
-  font-size: 14px;
-  font-weight: 700;
-
-  span:last-child {
-    letter-spacing: -2px;
-    font-size: 13px;
-  }
-`;
-
 export const MapHeader = styled.header`
   height: 100px;
   padding: 8px 20px 12px;
@@ -86,7 +70,7 @@ export const MapTabs = styled.div`
 
 export const MapCanvas = styled.div`
   position: absolute;
-  top: 150px;
+  top: 100px;
   right: 0;
   bottom: 0;
   left: 0;
@@ -227,20 +211,10 @@ export const PlaceHero = styled.header`
   }
 `;
 
-export const HeroStatus = styled(WhiteStatus)`
-  position: absolute;
-  z-index: 2;
-  top: 0;
-  left: 0;
-  right: 0;
-  color: #fff;
-  background: transparent;
-`;
-
 export const PlaceNavigation = styled.div`
   position: absolute;
   z-index: 3;
-  top: 50px;
+  top: env(safe-area-inset-top);
   left: 0;
   right: 0;
   display: flex;

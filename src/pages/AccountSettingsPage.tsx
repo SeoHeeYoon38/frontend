@@ -4,7 +4,6 @@ import backIcon from "../assets/icons/nav-back.svg";
 import blueAvatar from "../assets/images/character-blue.webp";
 import purpleAvatar from "../assets/images/character-purple.webp";
 import googleMapsLogo from "../assets/images/brand-google-maps.webp";
-import AppStatusBar from "../components/common/AppStatusBar";
 import { routes } from "../config/routes";
 import {
   readGoogleMapsSettings,
@@ -33,7 +32,6 @@ function AccountSettingsPage() {
 
   return (
     <S.Page>
-      <AppStatusBar />
       <S.Header>
         <Link to={routes.my} aria-label="마이 화면으로 돌아가기">
           <img src={backIcon} alt="" />
