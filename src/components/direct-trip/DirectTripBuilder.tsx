@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import AppStatusBar from "../common/AppStatusBar";
 import heroPhoto from "../../assets/course-completion/hero-photo.png";
 import emptyCharacter from "../../assets/images/character-empty-places.webp";
@@ -18,6 +18,11 @@ import type {
   DirectTripSearchTab,
   DirectTripStage,
 } from "../../types/directTrip";
+import {
+  readGoogleMapsSettings,
+  saveGoogleMapsSettings,
+} from "../../utils/mySettings";
+import { readMockScenario } from "../../utils/mockScenario";
 import * as S from "./DirectTripBuilder.styled";
 
 const emptyDayPlaces: Record<number, string[]> = {
@@ -33,14 +38,42 @@ function BackIcon() {
 
 function DirectTripBuilder() {
   const navigate = useNavigate();
-  const [stage, setStage] = useState<DirectTripStage>("info");
+  const location = useLocation();
+  const mockScenario = readMockScenario(location.search);
+  const [stage, setStage] = useState<DirectTripStage>(() => {
+    if (
+      mockScenario === "direct-search-empty" ||
+      mockScenario === "direct-google-unlinked"
+    ) {
+      return "search";
+    }
+    if (mockScenario === "direct-exit-confirm") return "itinerary";
+    return "info";
+  });
   const [selectedDay, setSelectedDay] = useState(1);
-  const [searchTab, setSearchTab] = useState<DirectTripSearchTab>("recommend");
-  const [query, setQuery] = useState("");
-  const [googleLinked, setGoogleLinked] = useState(false);
+  const [searchTab, setSearchTab] = useState<DirectTripSearchTab>(() =>
+    mockScenario === "direct-google-unlinked" ? "google" : "recommend",
+  );
+  const [query, setQuery] = useState(() =>
+    mockScenario === "direct-search-empty" ? "쿠로몬 야타이" : "",
+  );
+  const [googleLinked, setGoogleLinked] = useState(() => {
+    if (mockScenario === "direct-google-unlinked") return false;
+    try {
+      return readGoogleMapsSettings(window.localStorage).linked;
+    } catch {
+      return true;
+    }
+  });
   const [selectedPlaceIds, setSelectedPlaceIds] = useState<string[]>([]);
-  const [dayPlaces, setDayPlaces] = useState<Record<number, string[]>>(emptyDayPlaces);
-  const [showExitConfirm, setShowExitConfirm] = useState(false);
+  const [dayPlaces, setDayPlaces] = useState<Record<number, string[]>>(() =>
+    mockScenario === "direct-exit-confirm"
+      ? { ...emptyDayPlaces, 1: ["kuromon"] }
+      : emptyDayPlaces,
+  );
+  const [showExitConfirm, setShowExitConfirm] = useState(
+    mockScenario === "direct-exit-confirm",
+  );
 
   const placesForDay = useMemo(
     () =>
@@ -64,7 +97,11 @@ function DirectTripBuilder() {
     });
   }, [query, searchTab]);
 
-  const hasAnyPlace = Object.values(dayPlaces).some((places) => places.length > 0);
+  const placeCount = Object.values(dayPlaces).reduce(
+    (total, places) => total + places.length,
+    0,
+  );
+  const hasAnyPlace = placeCount > 0;
 
   const goBack = () => {
     if (stage === "search") {
@@ -116,6 +153,19 @@ function DirectTripBuilder() {
       ...current,
       [selectedDay]: current[selectedDay].filter((id) => id !== placeId),
     }));
+  };
+
+  const connectGoogleMaps = () => {
+    setGoogleLinked(true);
+    try {
+      const current = readGoogleMapsSettings(window.localStorage);
+      saveGoogleMapsSettings(window.localStorage, {
+        ...current,
+        linked: true,
+      });
+    } catch {
+      // 저장소를 사용할 수 없는 환경에서도 현재 데모 흐름은 계속 진행합니다.
+    }
   };
 
   const renderInfo = () => (
@@ -326,7 +376,7 @@ function DirectTripBuilder() {
           <S.BackButton type="button" onClick={goBack} aria-label="뒤로 가기">
             <BackIcon />
           </S.BackButton>
-          <label>
+          <label data-active={Boolean(query)}>
             <img src={searchIcon} alt="" />
             <input
               autoFocus
@@ -344,10 +394,8 @@ function DirectTripBuilder() {
         </S.SearchHeader>
 
         <S.SearchContext>
-          <span>{selectedDay}일차</span>
-          <strong>
-            5.{17 + selectedDay} {directTripDays[selectedDay - 1].weekday}요일
-          </strong>
+          <span>{selectedDay}일차 {directTripDays[selectedDay - 1].date}</span>
+          <strong>에 담아요</strong>
         </S.SearchContext>
 
         <S.SearchTabs>
@@ -363,32 +411,31 @@ function DirectTripBuilder() {
             aria-pressed={searchTab === "google"}
             onClick={() => setSearchTab("google")}
           >
-            Google Maps 저장 <b>52</b>
+            <img src={googleMapsLogo} alt="" />
+            Google Maps 저장 {googleLinked && <b>52</b>}
           </button>
         </S.SearchTabs>
 
         <S.SearchScroll>
           {showGoogleConnect ? (
             <S.GoogleConnect>
-              <img src={googleMapsLogo} alt="Google Maps" />
-              <h2>Google Maps 저장 장소를 불러올까요?</h2>
-              <p>
-                저장해 둔 장소를 연결하면
-                <br />
-                일정에 바로 담을 수 있어요.
-              </p>
-              <button type="button" onClick={() => setGoogleLinked(true)}>
+              <S.StateIcon>
+                <img src={googleMapsLogo} alt="Google Maps" />
+              </S.StateIcon>
+              <h2>Google Maps 장소를 불러올까요?</h2>
+              <p>저장해 둔 맛집, 카페를 바로 일정에 담을 수 있어요</p>
+              <button type="button" onClick={connectGoogleMaps}>
+                <img src={googleMapsLogo} alt="" />
                 Google Maps 연결하기
               </button>
             </S.GoogleConnect>
           ) : filteredPlaces.length === 0 ? (
             <S.NoResults>
-              <span>⌕</span>
+              <S.StateIcon>
+                <img src={searchIcon} alt="" />
+              </S.StateIcon>
               <h2>검색 결과가 없어요</h2>
-              <p>장소 이름이나 검색어를 다시 확인해 주세요.</p>
-              <button type="button" onClick={() => setQuery("")}>
-                추천 장소 보기
-              </button>
+              <p>철자를 확인하거나 다른 이름으로 검색해 보세요</p>
             </S.NoResults>
           ) : (
             <>
@@ -435,19 +482,21 @@ function DirectTripBuilder() {
           )}
         </S.SearchScroll>
 
-        {!showGoogleConnect && filteredPlaces.length > 0 && (
-          <S.BottomAction $floating>
-            <button
-              type="button"
-              disabled={selectedPlaceIds.length === 0}
-              onClick={addSelectedPlaces}
-            >
-              {selectedPlaceIds.length > 0
-                ? `${selectedPlaceIds.length}곳을 ${selectedDay}일차에 담기`
-                : "장소를 선택해 주세요"}
-            </button>
-          </S.BottomAction>
-        )}
+        <S.BottomAction $floating>
+          <button
+            type="button"
+            disabled={
+              showGoogleConnect ||
+              filteredPlaces.length === 0 ||
+              selectedPlaceIds.length === 0
+            }
+            onClick={addSelectedPlaces}
+          >
+            {selectedPlaceIds.length > 0
+              ? `${selectedPlaceIds.length}곳을 ${selectedDay}일차에 담기`
+              : "담을 장소를 골라주세요"}
+          </button>
+        </S.BottomAction>
       </S.SearchScreen>
     );
   };
@@ -465,14 +514,14 @@ function DirectTripBuilder() {
             aria-labelledby="direct-trip-exit-title"
             onMouseDown={(event) => event.stopPropagation()}
           >
-            <h2 id="direct-trip-exit-title">일정을 저장하지 않고 나갈까요?</h2>
-            <p>지금까지 담은 장소가 사라져요.</p>
+            <h2 id="direct-trip-exit-title">저장하지 않고 나갈까요?</h2>
+            <p>담은 장소 {placeCount}곳이 사라져요</p>
             <div>
-              <button type="button" onClick={() => setShowExitConfirm(false)}>
-                계속 만들기
-              </button>
               <button type="button" onClick={() => navigate(routes.home)}>
                 나가기
+              </button>
+              <button type="button" onClick={() => setShowExitConfirm(false)}>
+                계속 만들기
               </button>
             </div>
           </S.ConfirmDialog>

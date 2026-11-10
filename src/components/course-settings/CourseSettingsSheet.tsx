@@ -1,4 +1,4 @@
-import type { RefObject } from "react";
+import { useState, type RefObject } from "react";
 import closeIcon from "../../assets/course-settings/close.svg";
 import editIcon from "../../assets/course-settings/edit.svg";
 import linkIcon from "../../assets/course-settings/link.svg";
@@ -16,37 +16,61 @@ interface CourseSettingsSheetProps {
   activeSheet: SheetName;
   tripName: string;
   draftName: string;
+  isDirty: boolean;
   isEditingName: boolean;
   copied: boolean;
   nameInputRef: RefObject<HTMLInputElement | null>;
   onDraftNameChange: (value: string) => void;
   onStartEditingName: () => void;
   onSaveTripName: () => void;
+  onSaveAndClose: () => void;
+  onDiscardAndClose: () => void;
   onCancelNameEdit: () => void;
   onCopyInviteLink: () => void;
   onNotice: (message: string) => void;
   onClose: () => void;
+  initialCloseConfirm?: boolean;
 }
 
 function CourseSettingsSheet({
   activeSheet,
   tripName,
   draftName,
+  isDirty,
   isEditingName,
   copied,
   nameInputRef,
   onDraftNameChange,
   onStartEditingName,
   onSaveTripName,
+  onSaveAndClose,
+  onDiscardAndClose,
   onCancelNameEdit,
   onCopyInviteLink,
   onNotice,
   onClose,
+  initialCloseConfirm = false,
 }: CourseSettingsSheetProps) {
+  const [showCloseConfirm, setShowCloseConfirm] = useState(
+    initialCloseConfirm,
+  );
+
+  const requestClose = () => {
+    if (activeSheet === "trip" && isDirty) {
+      setShowCloseConfirm(true);
+      return;
+    }
+    onClose();
+  };
+
   return (
     <S.SheetLayer
       role="presentation"
-      onMouseDown={(event) => event.target === event.currentTarget && onClose()}
+      onMouseDown={(event) => {
+        if (event.target !== event.currentTarget) return;
+        event.preventDefault();
+        requestClose();
+      }}
     >
       <S.BottomSheet
         role="dialog"
@@ -58,7 +82,12 @@ function CourseSettingsSheet({
           <h2 id={`${activeSheet}-sheet-title`}>
             {activeSheet === "trip" ? "내 여행 수정" : "친구 초대"}
           </h2>
-          <button type="button" aria-label="닫기" onClick={onClose}>
+          <button
+            type="button"
+            aria-label="닫기"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={requestClose}
+          >
             <img src={closeIcon} alt="" />
           </button>
         </S.SheetHeader>
@@ -74,7 +103,6 @@ function CourseSettingsSheet({
                     value={draftName}
                     aria-label="여행 이름"
                     onChange={(event) => onDraftNameChange(event.target.value)}
-                    onBlur={onSaveTripName}
                     onKeyDown={(event) => {
                       if (event.key === "Enter") onSaveTripName();
                       if (event.key === "Escape") onCancelNameEdit();
@@ -168,6 +196,35 @@ function CourseSettingsSheet({
           </S.InviteContent>
         )}
       </S.BottomSheet>
+
+      {showCloseConfirm && (
+        <S.CloseConfirmLayer
+          role="presentation"
+          onMouseDown={(event) => {
+            event.stopPropagation();
+            if (event.target === event.currentTarget) {
+              setShowCloseConfirm(false);
+            }
+          }}
+        >
+          <S.CloseConfirmDialog
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="unsaved-trip-title"
+          >
+            <h2 id="unsaved-trip-title">저장하지 않고 닫을까요?</h2>
+            <p>바꾼 여행 정보가 저장되지 않아요</p>
+            <div>
+              <button type="button" onClick={onDiscardAndClose}>
+                닫기
+              </button>
+              <button type="button" onClick={onSaveAndClose}>
+                저장하기
+              </button>
+            </div>
+          </S.CloseConfirmDialog>
+        </S.CloseConfirmLayer>
+      )}
     </S.SheetLayer>
   );
 }

@@ -86,10 +86,12 @@ function MyTripsSection({ trips, onCreateTrip }: MyTripsSectionProps) {
                 : "여행을 다녀오면 여기에 모아둘게요"}
             </p>
           </div>
-          <S.CreateButton type="button" aria-haspopup="dialog" onClick={onCreateTrip}>
-            <img src={pin} alt="" />
-            여행 만들기
-          </S.CreateButton>
+          {isUpcoming && (
+            <S.CreateButton type="button" aria-haspopup="dialog" onClick={onCreateTrip}>
+              <img src={pin} alt="" />
+              여행 만들기
+            </S.CreateButton>
+          )}
         </S.Empty>
       )}
     </C.Section>

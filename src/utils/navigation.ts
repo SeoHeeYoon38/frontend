@@ -48,6 +48,12 @@ export function settingsBackPath(search: string): string {
 }
 
 export function isDirectTripMode(search: string): boolean {
-  const mode = new URLSearchParams(search).get("mode");
-  return mode === "direct" || mode === "manual";
+  const params = new URLSearchParams(search);
+  const mode = params.get("mode");
+  const mock = params.get("mock");
+  return (
+    mode === "direct" ||
+    mode === "manual" ||
+    mock?.startsWith("direct-") === true
+  );
 }
