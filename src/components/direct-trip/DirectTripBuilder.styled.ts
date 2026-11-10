@@ -632,21 +632,26 @@ export const TravelRow = styled.div`
 `;
 
 export const SearchHeader = styled.header`
-  min-height: 58px;
+  min-height: 56px;
   flex: 0 0 auto;
   display: grid;
-  grid-template-columns: 38px 1fr;
+  grid-template-columns: 22px 1fr;
   align-items: center;
-  gap: 7px;
-  padding: 5px 16px 9px;
+  gap: 12px;
+  padding: 5px 20px;
+
+  > button {
+    width: 22px;
+    height: 22px;
+  }
 
   > label {
-    height: 44px;
+    height: 46px;
     display: flex;
     align-items: center;
-    gap: 9px;
-    padding: 0 12px;
-    border: 1px solid #dedee6;
+    gap: 8px;
+    padding: 0 12px 0 14px;
+    border: 1.5px solid ${navy};
     border-radius: 12px;
     background: #f7f7fa;
   }
@@ -663,7 +668,8 @@ export const SearchHeader = styled.header`
     outline: 0;
     color: ${navy};
     background: transparent;
-    font-size: 13px;
+    font-size: 15px;
+    line-height: 22px;
   }
 
   input::placeholder {
@@ -682,42 +688,47 @@ export const SearchHeader = styled.header`
 `;
 
 export const SearchContext = styled.div`
-  height: 45px;
+  height: 43px;
   flex: 0 0 auto;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   padding: 0 20px;
-  border-top: 1px solid #f2f2f4;
 
   span {
-    padding: 4px 8px;
-    border-radius: 7px;
-    color: #ffffff;
-    background: ${navy};
-    font-size: 10px;
+    padding: 5px 8px 5px 10px;
+    border-radius: 14px;
+    color: #0079c2;
+    background: #ddf7ff;
+    font-size: 12px;
+    line-height: 17px;
+    font-weight: 700;
   }
 
   strong {
-    color: #5f606a;
-    font-size: 11px;
+    color: #5c5c63;
+    font-size: 13px;
+    line-height: 18px;
+    font-weight: 500;
   }
 `;
 
 export const SearchTabs = styled.nav`
   height: 47px;
   flex: 0 0 auto;
-  display: grid;
-  grid-template-columns: 1fr 1.7fr;
+  display: flex;
+  gap: 22px;
   padding: 0 20px;
   border-bottom: 1px solid ${border};
 
   button {
     position: relative;
-    display: grid;
-    place-items: center;
+    display: flex;
+    align-items: center;
+    gap: 5px;
     color: ${muted};
-    font-size: 13px;
+    font-size: 15px;
+    line-height: 22px;
   }
 
   button[aria-pressed="true"] {
@@ -728,16 +739,21 @@ export const SearchTabs = styled.nav`
   button[aria-pressed="true"]::after {
     content: "";
     position: absolute;
-    right: 9px;
+    right: 0;
     bottom: -1px;
-    left: 9px;
+    left: 0;
     height: 2px;
     background: ${navy};
   }
 
   b {
-    margin-left: 3px;
     color: #0088c9;
+  }
+
+  img {
+    width: 16px;
+    height: 16px;
+    object-fit: contain;
   }
 `;
 
@@ -876,61 +892,70 @@ export const PlaceList = styled.ul`
 `;
 
 export const GoogleConnect = styled.section`
-  min-height: 430px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  padding-top: 59px;
   text-align: center;
 
-  img {
-    width: 72px;
-    height: 72px;
-    border-radius: 17px;
-    object-fit: cover;
-    box-shadow: 0 8px 26px rgb(14 14 50 / 12%);
-  }
-
   h2 {
-    margin: 21px 0 7px;
-    color: ${navy};
+    margin: 24px 0 0;
+    color: #1a1a1a;
     font-size: 17px;
+    line-height: 24px;
   }
 
   p {
-    margin: 0;
+    margin: 8px 0 0;
     color: ${muted};
-    font-size: 12px;
-    line-height: 19px;
+    font-size: 13px;
+    line-height: 18px;
   }
 
   button {
-    height: 46px;
-    margin-top: 22px;
-    padding: 0 19px;
-    border-radius: 12px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 28px;
+    padding: 0 18px;
+    border-radius: 22px;
     color: #ffffff;
     background: ${navy};
-    font-size: 13px;
+    font-size: 14px;
+    line-height: 20px;
     font-weight: 700;
+  }
+
+  button img {
+    width: 18px;
+    height: 18px;
+    object-fit: contain;
   }
 `;
 
 export const NoResults = styled(GoogleConnect)`
-  span {
-    width: 74px;
-    height: 74px;
-    display: grid;
-    place-items: center;
-    border-radius: 50%;
-    color: #9a9ba5;
-    background: #f1f1f5;
-    font-size: 38px;
+  padding-top: 29px;
+`;
+
+export const StateIcon = styled.span`
+  width: 64px;
+  height: 64px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #f3f5fa;
+
+  img {
+    width: 36px;
+    height: 36px;
+    object-fit: contain;
   }
 
-  button {
-    color: ${navy};
-    background: #efeff6;
+  ${NoResults} & img {
+    width: 28px;
+    height: 28px;
+    filter: brightness(0) saturate(100%) invert(6%) sepia(49%) saturate(2397%) hue-rotate(220deg) brightness(74%);
   }
 `;
 
@@ -941,27 +966,30 @@ export const ConfirmOverlay = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
-  background: rgb(10 9 39 / 58%);
+  padding: 40px;
+  background: rgb(0 0 0 / 50%);
 `;
 
 export const ConfirmDialog = styled.section`
   width: 100%;
-  padding: 25px 20px 18px;
-  border-radius: 20px;
+  max-width: 322px;
+  padding: 28px 24px 20px;
+  border-radius: 24px;
   background: #ffffff;
   text-align: center;
 
   h2 {
     margin: 0;
-    color: ${navy};
-    font-size: 18px;
+    color: #1a1a1a;
+    font-size: 17px;
+    line-height: 24px;
   }
 
   p {
-    margin: 8px 0 22px;
-    color: ${muted};
-    font-size: 12px;
+    margin: 8px 0 24px;
+    color: #5c5c63;
+    font-size: 14px;
+    line-height: 20px;
   }
 
   div {
@@ -971,9 +999,11 @@ export const ConfirmDialog = styled.section`
   }
 
   button {
-    height: 48px;
-    border-radius: 12px;
-    background: #efeff4;
+    height: 52px;
+    border-radius: 14px;
+    background: #f3f5fa;
+    font-size: 15px;
+    line-height: 22px;
     font-weight: 700;
     text-align: center;
   }

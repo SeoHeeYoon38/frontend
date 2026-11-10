@@ -42,6 +42,7 @@ test("홈의 주요 탭과 알림 경로가 앱 안에 등록된다", () => {
 test("직접 일정 만들기 모드는 AI 여행 만들기와 분리된다", () => {
   assert.equal(isDirectTripMode("?mode=direct"), true);
   assert.equal(isDirectTripMode("?mode=manual"), true);
+  assert.equal(isDirectTripMode("?mock=direct-search-empty"), true);
   assert.equal(isDirectTripMode(""), false);
   assert.equal(isDirectTripMode("?mode=ai"), false);
 });
