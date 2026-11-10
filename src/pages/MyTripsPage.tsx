@@ -35,6 +35,7 @@ function MyTripsPage() {
   const query = searchParams.get("q") ?? "";
   const isSearching = searchParams.has("search");
   const isCreateOpen = searchParams.has("create");
+  const showSavedToast = searchParams.get("toast") === "saved";
   const trips = tab === "past" ? pastTrips : upcomingTrips;
   const filteredTrips = useMemo(
     () =>
@@ -58,6 +59,23 @@ function MyTripsPage() {
 
   return (
     <S.Page>
+      {showSavedToast && (
+        <S.Toast role="status" aria-live="polite">
+          <span>✓</span>
+          <strong>오사카 3박 4일 일정을 저장했어요</strong>
+          <button
+            type="button"
+            onClick={() => {
+              const next = new URLSearchParams(searchParams);
+              next.delete("toast");
+              setSearchParams(next, { replace: true });
+            }}
+            aria-label="알림 닫기"
+          >
+            ×
+          </button>
+        </S.Toast>
+      )}
       {isSearching && (
         <S.SearchBar>
           <input

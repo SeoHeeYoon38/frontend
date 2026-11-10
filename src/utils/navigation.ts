@@ -38,3 +38,8 @@ export function tripPlanBackPath(search: string): string {
 export function settingsBackPath(search: string): string {
   return tripPlanPath(readPlanOrigin(search));
 }
+
+export function isDirectTripMode(search: string): boolean {
+  const mode = new URLSearchParams(search).get("mode");
+  return mode === "direct" || mode === "manual";
+}

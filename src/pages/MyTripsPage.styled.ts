@@ -2,8 +2,53 @@ import styled from "styled-components";
 import { Link } from "react-router";
 
 export const Page = styled.div`
+  position: relative;
   min-height: 650px;
   background: #ffffff;
+`;
+
+export const Toast = styled.div`
+  position: fixed;
+  z-index: 30;
+  top: calc(env(safe-area-inset-top) + 68px);
+  left: 50%;
+  width: calc(100% - 40px);
+  max-width: 362px;
+  min-height: 48px;
+  display: grid;
+  grid-template-columns: 24px 1fr 24px;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border-radius: 12px;
+  color: #ffffff;
+  background: #12103f;
+  box-shadow: 0 9px 30px rgb(11 10 55 / 28%);
+  transform: translateX(-50%);
+
+  > span {
+    width: 22px;
+    height: 22px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    color: #12103f;
+    background: #65dcea;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  strong {
+    font-size: 12px;
+    line-height: 18px;
+  }
+
+  button {
+    color: #ffffff !important;
+    font-size: 20px !important;
+    text-align: center !important;
+    opacity: 0.72;
+  }
 `;
 
 export const SearchBar = styled.div`
