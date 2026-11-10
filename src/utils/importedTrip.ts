@@ -26,6 +26,12 @@ export function formatMonthDay(date: string): string {
   return `${value.getMonth() + 1}.${value.getDate()}`;
 }
 
+export function formatTripDateRange(startDate: string, endDate: string): string {
+  if (!startDate || !endDate) return "날짜 미정";
+  const start = new Date(`${startDate}T12:00:00`);
+  return `${start.getFullYear()}.${formatMonthDay(startDate)} – ${formatMonthDay(endDate)}`;
+}
+
 export function courseDateLabels(startDate: string, dayCount: number): string[] {
   if (!startDate) return Array.from({ length: dayCount }, () => "");
   return Array.from({ length: dayCount }, (_, index) =>
