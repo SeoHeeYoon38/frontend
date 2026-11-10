@@ -4,7 +4,7 @@ import pinIcon from "../assets/course-settings/pin.svg";
 import CreateTripSheet from "../components/common/CreateTripSheet";
 import { pastTrips, upcomingTrips } from "../data/mocks/myTripsData";
 import type { MyTripSummary } from "../types/myTrips";
-import { tripPlanPath } from "../utils/navigation";
+import { importedTripPath, tripPlanPath } from "../utils/navigation";
 import * as S from "./MyTripsPage.styled";
 
 type TripTab = "upcoming" | "past";
@@ -12,7 +12,7 @@ type TripTab = "upcoming" | "past";
 function TripCard({ trip }: { trip: MyTripSummary }) {
   return (
     <S.TripCard
-      to={tripPlanPath("my-trips", trip.id)}
+      to={trip.id === "kyoto" ? importedTripPath(trip.id) : tripPlanPath("my-trips", trip.id)}
       aria-label={`${trip.title} 코스 보기`}
     >
       <img src={trip.coverImage} alt="" />

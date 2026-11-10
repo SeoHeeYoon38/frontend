@@ -7,11 +7,14 @@ interface DateRangePickerProps {
   start: string;
   end: string;
   onChange: (start: string, end: string) => void;
+  initialMonth?: string;
 }
-function DateRangePicker({ start, end, onChange }: DateRangePickerProps) {
+function DateRangePicker({ start, end, onChange, initialMonth }: DateRangePickerProps) {
   const [month, setMonth] = useState(() => {
     const initial = validDate(start)
       ? new Date(start + "T12:00:00")
+      : validDate(initialMonth ?? "")
+        ? new Date(`${initialMonth}T12:00:00`)
       : new Date();
     return new Date(initial.getFullYear(), initial.getMonth(), 1);
   });

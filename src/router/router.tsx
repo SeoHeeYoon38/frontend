@@ -32,6 +32,12 @@ const router = createBrowserRouter([
         ],
       },
       {
+        path: routes.importedTrip,
+        lazy: async () => ({
+          Component: (await import("../pages/ImportedTripPage")).default,
+        }),
+      },
+      {
         element: <Layout variant="my" />,
         children: [
           {
