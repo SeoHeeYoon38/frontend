@@ -4,7 +4,6 @@ import cameraIcon from "../assets/course-settings/camera.svg";
 import backIcon from "../assets/icons/nav-back.svg";
 import blueAvatar from "../assets/images/character-blue.webp";
 import purpleAvatar from "../assets/images/character-purple.webp";
-import AppStatusBar from "../components/common/AppStatusBar";
 import { routes } from "../config/routes";
 import {
   readProfileSettings,
@@ -52,7 +51,6 @@ function ProfileEditPage() {
 
   return (
     <S.Page>
-      <AppStatusBar />
       <S.Header>
         <button type="button" aria-label="마이 화면으로 돌아가기" onClick={requestBack}>
           <img src={backIcon} alt="" />

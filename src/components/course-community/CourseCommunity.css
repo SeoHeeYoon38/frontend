@@ -41,22 +41,6 @@
   clip: rect(0 0 0 0);
 }
 
-.community-chat__statusbar {
-  display: flex;
-  height: 50px;
-  flex: 0 0 50px;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 16px 0 24px;
-  font-size: 15px;
-  font-weight: 700;
-}
-
-.community-chat__statusbar img {
-  width: 67px;
-  filter: invert(1);
-}
-
 .community-chat__header {
   display: grid;
   height: 53px;
@@ -64,7 +48,7 @@
   grid-template-columns: 22px 1fr auto;
   gap: 12px;
   align-items: center;
-  padding: 0 20px;
+  padding: env(safe-area-inset-top) 20px 0;
   border-bottom: 1px solid #f0f1f5;
 }
 

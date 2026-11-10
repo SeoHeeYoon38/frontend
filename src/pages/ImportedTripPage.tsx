@@ -7,7 +7,6 @@ import settingsIcon from "../assets/course-completion/settings.svg";
 import trainIcon from "../assets/course-completion/icon-train.svg";
 import minusIcon from "../assets/icons/counter-minus.svg";
 import plusIcon from "../assets/icons/counter-plus.svg";
-import AppStatusBar from "../components/common/AppStatusBar";
 import DateRangePicker from "../components/trip/DateRangePicker";
 import { routes } from "../config/routes";
 import { travelerCourse } from "../data/mocks/travelerCourseData";
@@ -93,7 +92,6 @@ function ImportedTripPage() {
         <S.Hero>
           <img src={travelerCourse.hero} alt="교토의 전통 골목" />
           <S.HeroScrim />
-          <AppStatusBar overlay tone="light" />
           <S.Navigation>
             <button type="button" aria-label="마이트립으로 돌아가기" onClick={() => navigate(routes.myTrips)}>
               <img src={backIcon} alt="" />

@@ -1,7 +1,6 @@
 import backIcon from "../../assets/course-completion/back.svg";
 import heroPhoto from "../../assets/course-completion/hero-photo.png";
 import settingsIcon from "../../assets/course-completion/settings.svg";
-import statusIcons from "../../assets/course-completion/status-icons.svg";
 import aiHeroPhoto from "../../assets/images/cover-osaka-castle.webp";
 
 interface CourseHeroProps {
@@ -19,10 +18,6 @@ function CourseHero({ onOpenSettings, onBack, variant = "default" }: CourseHeroP
         alt={variant === "ai" ? "벚꽃이 핀 오사카성" : "오사카 거리 풍경"}
       />
       <div className="course-hero__scrim" />
-      <div className="course-statusbar" aria-hidden="true">
-        <span>9:41</span>
-        <img src={statusIcons} alt="" />
-      </div>
       <nav className="course-navigation" aria-label="코스 화면 탐색">
         <button type="button" aria-label="뒤로 가기" onClick={onBack}>
           <img src={backIcon} alt="" />

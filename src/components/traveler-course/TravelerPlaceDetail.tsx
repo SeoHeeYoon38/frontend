@@ -14,7 +14,6 @@ function TravelerPlaceDetail({ onBack }: TravelerPlaceDetailProps) {
     <S.PlaceScreen>
       <S.PlaceHero>
         <img src={sannenzakaDetail.hero} alt="산넨자카 골목" />
-        <S.HeroStatus aria-hidden="true"><span>9:41</span><span>▮▮▮ ◉ ▰</span></S.HeroStatus>
         <S.PlaceNavigation>
           <button type="button" aria-label="지도 화면으로 돌아가기" onClick={onBack}>‹</button>
           <button type="button" aria-label={saved ? "장소 저장 해제" : "장소 저장"} onClick={() => setSaved((value) => !value)}>{saved ? "♥" : "♡"}</button>

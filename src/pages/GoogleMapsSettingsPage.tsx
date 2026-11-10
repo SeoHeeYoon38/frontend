@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import backIcon from "../assets/icons/nav-back.svg";
 import googleMapsLogo from "../assets/images/brand-google-maps.webp";
-import AppStatusBar from "../components/common/AppStatusBar";
 import { routes } from "../config/routes";
 import {
   readGoogleMapsSettings,
@@ -46,7 +45,6 @@ function GoogleMapsSettingsPage() {
 
   return (
     <S.Page>
-      <AppStatusBar />
       <S.Header>
         <Link to={routes.accountSettings} aria-label="계정 관리로 돌아가기">
           <img src={backIcon} alt="" />

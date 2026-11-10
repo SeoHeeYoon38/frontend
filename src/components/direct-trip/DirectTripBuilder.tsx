@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
-import AppStatusBar from "../common/AppStatusBar";
 import heroPhoto from "../../assets/course-completion/hero-photo.png";
 import emptyCharacter from "../../assets/images/character-empty-places.webp";
 import googleMapsLogo from "../../assets/images/brand-google-maps.webp";
@@ -170,7 +169,6 @@ function DirectTripBuilder() {
 
   const renderInfo = () => (
     <S.PlainScreen>
-      <AppStatusBar />
       <S.PlainHeader>
         <S.BackButton type="button" onClick={goBack} aria-label="뒤로 가기">
           <BackIcon />
@@ -227,7 +225,6 @@ function DirectTripBuilder() {
       <S.Hero>
         <img src={heroPhoto} alt="오사카 도톤보리" />
         <S.HeroScrim />
-        <AppStatusBar overlay tone="light" />
         <S.HeroHeader>
           <S.BackButton type="button" onClick={goBack} aria-label="뒤로 가기">
             <BackIcon />
@@ -371,7 +368,6 @@ function DirectTripBuilder() {
     const showGoogleConnect = searchTab === "google" && !googleLinked;
     return (
       <S.SearchScreen>
-        <AppStatusBar />
         <S.SearchHeader>
           <S.BackButton type="button" onClick={goBack} aria-label="뒤로 가기">
             <BackIcon />

@@ -33,33 +33,10 @@ export const Hero = styled.header`
   }
 `;
 
-export const StatusBar = styled.div`
-  position: absolute;
-  z-index: 1;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 50px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 20px 0 24px;
-  font-size: 14px;
-  font-weight: 700;
-`;
-
-export const StatusIcons = styled.span`
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  letter-spacing: -2px;
-  font-size: 13px;
-`;
-
 export const Navigation = styled.nav`
   position: absolute;
   z-index: 2;
-  top: 50px;
+  top: env(safe-area-inset-top);
   left: 0;
   right: 0;
   display: grid;

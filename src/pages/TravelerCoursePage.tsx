@@ -67,10 +67,6 @@ function TravelerCoursePage() {
     <S.Shell>
       <S.Hero>
         <img src={travelerCourse.hero} alt="교토의 전통 골목" />
-        <S.StatusBar aria-hidden="true">
-          <span>9:41</span>
-          <S.StatusIcons>▮▮▮ ◉ ▰</S.StatusIcons>
-        </S.StatusBar>
         <S.Navigation aria-label="여행자 코스 탐색">
           <button type="button" aria-label="코스 목록으로 돌아가기" onClick={() => navigate(routes.courses)}>
             ‹
