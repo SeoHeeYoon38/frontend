@@ -8,6 +8,7 @@ import {
   tripPlanBackPath,
   tripPlanPath,
   tripSettingsPath,
+  travelerCoursePath,
 } from "../src/utils/navigation.ts";
 import { routes } from "../src/config/routes.ts";
 
@@ -42,4 +43,9 @@ test("직접 일정 만들기 모드는 AI 여행 만들기와 분리된다", ()
   assert.equal(isDirectTripMode("?mode=manual"), true);
   assert.equal(isDirectTripMode(""), false);
   assert.equal(isDirectTripMode("?mode=ai"), false);
+});
+
+test("코스 둘러보기 카드는 여행자 코스 상세 경로로 이어진다", () => {
+  assert.equal(travelerCoursePath("kyoto-walk"), "/courses/kyoto-walk");
+  assert.equal(travelerCoursePath("교토 산책"), "/courses/%EA%B5%90%ED%86%A0%20%EC%82%B0%EC%B1%85");
 });
