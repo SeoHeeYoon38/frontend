@@ -67,6 +67,24 @@ const router = createBrowserRouter([
         }),
       },
       {
+        path: routes.accountSettings,
+        lazy: async () => ({
+          Component: (await import("../pages/AccountSettingsPage")).default,
+        }),
+      },
+      {
+        path: routes.googleMapsSettings,
+        lazy: async () => ({
+          Component: (await import("../pages/GoogleMapsSettingsPage")).default,
+        }),
+      },
+      {
+        path: routes.withdrawal,
+        lazy: async () => ({
+          Component: (await import("../pages/WithdrawalPage")).default,
+        }),
+      },
+      {
         element: <Layout variant="courses" />,
         children: [
           {

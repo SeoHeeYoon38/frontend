@@ -3,6 +3,8 @@ import test from "node:test";
 import {
   countEnabledNotifications,
   defaultNotificationSettings,
+  defaultGoogleMapsSettings,
+  parseGoogleMapsSettings,
   parseNotificationSettings,
   parseProfileSettings,
   validateNickname,
@@ -13,6 +15,12 @@ test("프로필 닉네임 형식과 중복 상태를 구분한다", () => {
   assert.equal(validateNickname("도틀로").message, "이미 사용 중인 닉네임이에요");
   assert.equal(validateNickname("예빈!").message, "한글, 영문, 숫자만 입력할 수 있어요");
   assert.equal(validateNickname("한").valid, false);
+});
+
+test("Google Maps 연동 설정은 선택한 목록을 안전하게 복원한다", () => {
+  const parsed = parseGoogleMapsSettings(JSON.stringify(defaultGoogleMapsSettings));
+  assert.deepEqual(parsed?.selectedListIds, ["osaka-food", "tokyo-places", "kyoto-trip"]);
+  assert.equal(parseGoogleMapsSettings('{"linked":true}'), null);
 });
 
 test("알림 설정은 피그마 기본 상태와 활성 개수를 유지한다", () => {

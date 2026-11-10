@@ -15,6 +15,7 @@ export interface NicknameValidation {
 
 export const PROFILE_STORAGE_KEY = "dotlo.profile";
 export const NOTIFICATION_STORAGE_KEY = "dotlo.notifications";
+export const GOOGLE_MAPS_STORAGE_KEY = "dotlo.google-maps";
 
 export type NotificationSettingKey =
   | "scheduleChanges"
@@ -169,4 +170,49 @@ export function saveNotificationSettings(
 
 export function countEnabledNotifications(settings: NotificationSettings) {
   return Object.values(settings).filter(Boolean).length;
+}
+
+export interface GoogleMapsSettings {
+  linked: boolean;
+  autoImport: boolean;
+  selectedListIds: string[];
+}
+
+export const defaultGoogleMapsSettings: GoogleMapsSettings = {
+  linked: true,
+  autoImport: true,
+  selectedListIds: ["osaka-food", "tokyo-places", "kyoto-trip"],
+};
+
+export function parseGoogleMapsSettings(raw: string | null): GoogleMapsSettings | null {
+  if (!raw) return null;
+
+  try {
+    const value = JSON.parse(raw) as Partial<GoogleMapsSettings>;
+    if (
+      typeof value.linked !== "boolean" ||
+      typeof value.autoImport !== "boolean" ||
+      !Array.isArray(value.selectedListIds) ||
+      value.selectedListIds.some((id) => typeof id !== "string")
+    ) {
+      return null;
+    }
+    return value as GoogleMapsSettings;
+  } catch {
+    return null;
+  }
+}
+
+export function readGoogleMapsSettings(storage: Storage): GoogleMapsSettings {
+  return (
+    parseGoogleMapsSettings(storage.getItem(GOOGLE_MAPS_STORAGE_KEY)) ??
+    defaultGoogleMapsSettings
+  );
+}
+
+export function saveGoogleMapsSettings(
+  storage: Storage,
+  settings: GoogleMapsSettings,
+) {
+  storage.setItem(GOOGLE_MAPS_STORAGE_KEY, JSON.stringify(settings));
 }
