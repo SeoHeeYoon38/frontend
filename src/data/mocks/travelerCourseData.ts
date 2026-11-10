@@ -4,6 +4,11 @@ import kiyomizu from "../../assets/traveler-course/place-kiyomizu.png";
 import sannenzaka from "../../assets/traveler-course/place-sannenzaka.png";
 import yasaka from "../../assets/traveler-course/place-yasaka.png";
 import routePreview from "../../assets/traveler-course/route-preview.png";
+import mapFull from "../../assets/traveler-course/map-full.png";
+import sannenzakaHero from "../../assets/traveler-course/sannenzaka-hero.png";
+import sannenzakaMap from "../../assets/traveler-course/sannenzaka-map.png";
+import sannenzakaPhoto2 from "../../assets/traveler-course/sannenzaka-photo-2.png";
+import sannenzakaPhoto3 from "../../assets/traveler-course/sannenzaka-photo-3.png";
 
 export interface TravelerCoursePlace {
   id: string;
@@ -35,6 +40,7 @@ export const travelerCourse = {
   hero,
   authorImage: author,
   routePreview,
+  mapFull,
   days: [
     {
       label: "1일차",
@@ -82,5 +88,22 @@ export const travelerCourse = {
       ],
     },
   ] as TravelerCourseDay[],
+};
+
+export const sannenzakaDetail = {
+  id: "sannenzaka",
+  name: "산넨자카 골목",
+  englishName: "Sannenzaka",
+  category: "명소",
+  rating: "4.5",
+  reviewCount: "구글 리뷰 12,400",
+  region: "교토 히가시야마",
+  description:
+    "기요미즈데라로 이어지는 돌계단 골목이에요. 전통 찻집과 기념품 가게가 양옆으로 늘어서 있어 천천히 걸으며 구경하기 좋아요.",
+  hours: "09:00 ~ 18:00",
+  address: "2 Chome Kiyomizu, Higashiyama Ward, Kyoto",
+  hero: sannenzakaHero,
+  gallery: [sannenzakaHero, sannenzakaPhoto2, sannenzakaPhoto3],
+  map: sannenzakaMap,
 };
 

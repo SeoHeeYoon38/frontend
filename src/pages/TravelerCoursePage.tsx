@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { routes } from "../config/routes";
 import { travelerCourse } from "../data/mocks/travelerCourseData";
+import TravelerCourseMap from "../components/traveler-course/TravelerCourseMap";
+import TravelerPlaceDetail from "../components/traveler-course/TravelerPlaceDetail";
 import * as S from "./TravelerCoursePage.styled";
 
 const SAVED_KEY = `dotlo:saved-traveler-course:${travelerCourse.id}`;
@@ -19,6 +21,7 @@ function TravelerCoursePage() {
   const [activeDay, setActiveDay] = useState(0);
   const [isSaved, setIsSaved] = useState(readSavedState);
   const [notice, setNotice] = useState("");
+  const [screen, setScreen] = useState<"course" | "map" | "place">("course");
   const day = travelerCourse.days[activeDay];
 
   const toggleSaved = () => {
@@ -43,6 +46,21 @@ function TravelerCoursePage() {
     }
     navigate(`${routes.myTrips}?toast=course-imported`);
   };
+
+  if (screen === "map") {
+    return (
+      <TravelerCourseMap
+        activeDay={activeDay}
+        onBack={() => setScreen("course")}
+        onDayChange={setActiveDay}
+        onOpenPlace={() => setScreen("place")}
+      />
+    );
+  }
+
+  if (screen === "place") {
+    return <TravelerPlaceDetail onBack={() => setScreen("map")} />;
+  }
 
   return (
     <S.Shell>
@@ -96,7 +114,7 @@ function TravelerCoursePage() {
               </button>
             ))}
           </S.DayTabs>
-          <S.MapPreview type="button" aria-label={`${day.label} 지도 전체 보기`}>
+          <S.MapPreview type="button" aria-label={`${day.label} 지도 전체 보기`} onClick={() => setScreen("map")}>
             <img src={travelerCourse.routePreview} alt="교토 여행 경로 지도" />
             <span>지도 크게 보기</span>
           </S.MapPreview>
@@ -105,7 +123,7 @@ function TravelerCoursePage() {
               <S.PlaceRow key={place.id}>
                 <S.Rail><b>{index + 1}</b>{index < day.places.length - 1 && <i />}</S.Rail>
                 <S.PlaceContent>
-                  <S.PlaceCard type="button">
+                  <S.PlaceCard type="button" onClick={() => setScreen("place")}>
                     <img src={place.image} alt="" />
                     <span><strong>{place.name}</strong><small>{place.category}</small></span>
                   </S.PlaceCard>
