@@ -1,7 +1,7 @@
 import type { CourseTheme, TravelCourse } from "../../types/course";
 import * as S from "./CourseCollections.styled";
 import { Link } from "react-router";
-import { tripPlanPath } from "../../utils/navigation";
+import { travelerCoursePath } from "../../utils/navigation";
 interface CourseCollectionsProps {
   popularCourses: TravelCourse[];
   themes: CourseTheme[];
@@ -23,7 +23,7 @@ function CourseCollections({
           {popularCourses.map((course) => (
             <S.PopularCard
               as={Link}
-              to={tripPlanPath("courses", course.id)}
+              to={travelerCoursePath(course.id)}
               aria-label={`${course.title.replace("\n", " ")} 일정 보기`}
               key={course.id}
             >
@@ -69,7 +69,7 @@ function CourseCollections({
           {travelerCourses.map((course) => (
             <S.TravelerRow
               as={Link}
-              to={tripPlanPath("courses", course.id)}
+              to={travelerCoursePath(course.id)}
               aria-label={`${course.title.replace("\n", " ")} 일정 보기`}
               key={course.id}
             >

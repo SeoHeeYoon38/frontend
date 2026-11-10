@@ -36,6 +36,7 @@ function MyTripsPage() {
   const isSearching = searchParams.has("search");
   const isCreateOpen = searchParams.has("create");
   const showSavedToast = searchParams.get("toast") === "saved";
+  const showImportedToast = searchParams.get("toast") === "course-imported";
   const trips = tab === "past" ? pastTrips : upcomingTrips;
   const filteredTrips = useMemo(
     () =>
@@ -59,10 +60,10 @@ function MyTripsPage() {
 
   return (
     <S.Page>
-      {showSavedToast && (
+      {(showSavedToast || showImportedToast) && (
         <S.Toast role="status" aria-live="polite">
           <span>✓</span>
-          <strong>오사카 3박 4일 일정을 저장했어요</strong>
+          <strong>{showImportedToast ? "교토 2박 3일 일정을 가져왔어요" : "오사카 3박 4일 일정을 저장했어요"}</strong>
           <button
             type="button"
             onClick={() => {

@@ -5,6 +5,7 @@ export const routes = {
   my: "/my",
   savedItems: "/my/saved",
   courses: "/courses",
+  courseDetail: "/courses/:courseId",
   createTrip: "/trips/new",
   tripPlan: "/trips/plan",
   tripSettings: "/trips/settings",
