@@ -9,7 +9,7 @@ import type { MyTripSummary } from "../../types/myTrips";
 
 export const upcomingTrips: MyTripSummary[] = [
   { id: "osaka", title: "오사카 3박 4일", city: "오사카", dateLabel: "2026.5.18 – 5.21", countdownLabel: "D-7", coverImage: osaka },
-  { id: "kyoto", title: "교토 2박 3일", city: "교토", dateLabel: "2026.6.12 – 6.14", countdownLabel: "D-30", coverImage: kyoto },
+  { id: "kyoto", title: "교토 2박 3일", city: "교토", dateLabel: "날짜 미정", coverImage: kyoto },
   { id: "tokyo", title: "도쿄 여행", city: "도쿄", dateLabel: "2026.6.27 – 7.2", countdownLabel: "D-45", coverImage: tokyo },
   { id: "fukuoka", title: "후쿠오카 여행", city: "후쿠오카", dateLabel: "2026.7.29 – 7.31", countdownLabel: "D-77", coverImage: fukuoka },
 ];

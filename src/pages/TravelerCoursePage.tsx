@@ -5,6 +5,7 @@ import { travelerCourse } from "../data/mocks/travelerCourseData";
 import TravelerCourseMap from "../components/traveler-course/TravelerCourseMap";
 import TravelerPlaceDetail from "../components/traveler-course/TravelerPlaceDetail";
 import * as S from "./TravelerCoursePage.styled";
+import { importedTripPath } from "../utils/navigation";
 
 const SAVED_KEY = `dotlo:saved-traveler-course:${travelerCourse.id}`;
 
@@ -44,7 +45,7 @@ function TravelerCoursePage() {
     } catch {
       // 저장소를 사용할 수 없어도 화면 이동은 계속합니다.
     }
-    navigate(`${routes.myTrips}?toast=course-imported`);
+    navigate(`${importedTripPath("kyoto")}?toast=course-imported`);
   };
 
   if (screen === "map") {

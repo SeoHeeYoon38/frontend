@@ -2,6 +2,7 @@ export const routes = {
   home: "/",
   notifications: "/notifications",
   myTrips: "/my-trips",
+  importedTrip: "/my-trips/:tripId",
   my: "/my",
   savedItems: "/my/saved",
   courses: "/courses",

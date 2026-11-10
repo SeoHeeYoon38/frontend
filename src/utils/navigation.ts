@@ -24,6 +24,10 @@ export function travelerCoursePath(courseId: string): string {
   return `/courses/${encodeURIComponent(courseId)}`;
 }
 
+export function importedTripPath(tripId: string): string {
+  return `/my-trips/${encodeURIComponent(tripId)}`;
+}
+
 export function tripSettingsPath(origin: PlanOrigin): string {
   return `${routes.tripSettings}?${new URLSearchParams({ from: origin }).toString()}`;
 }

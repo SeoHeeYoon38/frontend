@@ -4,15 +4,32 @@ import pinIcon from "../assets/course-settings/pin.svg";
 import CreateTripSheet from "../components/common/CreateTripSheet";
 import { pastTrips, upcomingTrips } from "../data/mocks/myTripsData";
 import type { MyTripSummary } from "../types/myTrips";
-import { tripPlanPath } from "../utils/navigation";
+import { importedTripPath, tripPlanPath } from "../utils/navigation";
+import {
+  formatTripDateRange,
+  importedTripRegistrationKey,
+  parseImportedTripRegistration,
+} from "../utils/importedTrip";
 import * as S from "./MyTripsPage.styled";
 
 type TripTab = "upcoming" | "past";
 
 function TripCard({ trip }: { trip: MyTripSummary }) {
+  let dateLabel = trip.dateLabel;
+  if (trip.id === "kyoto") {
+    try {
+      const saved = parseImportedTripRegistration(
+        localStorage.getItem(importedTripRegistrationKey("kyoto-walk")),
+      );
+      if (saved) dateLabel = formatTripDateRange(saved.startDate, saved.endDate);
+    } catch {
+      // 브라우저 저장소를 사용할 수 없으면 목업의 기본 문구를 사용합니다.
+    }
+  }
+
   return (
     <S.TripCard
-      to={tripPlanPath("my-trips", trip.id)}
+      to={trip.id === "kyoto" ? importedTripPath(trip.id) : tripPlanPath("my-trips", trip.id)}
       aria-label={`${trip.title} 코스 보기`}
     >
       <img src={trip.coverImage} alt="" />
@@ -22,7 +39,7 @@ function TripCard({ trip }: { trip: MyTripSummary }) {
         {trip.city}
       </span>
       <small>
-        {trip.dateLabel}
+        {dateLabel}
         {trip.countdownLabel && <b>{trip.countdownLabel}</b>}
       </small>
     </S.TripCard>
