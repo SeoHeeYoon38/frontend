@@ -55,6 +55,36 @@ const router = createBrowserRouter([
         }),
       },
       {
+        path: routes.profileEdit,
+        lazy: async () => ({
+          Component: (await import("../pages/ProfileEditPage")).default,
+        }),
+      },
+      {
+        path: routes.notificationSettings,
+        lazy: async () => ({
+          Component: (await import("../pages/NotificationSettingsPage")).default,
+        }),
+      },
+      {
+        path: routes.accountSettings,
+        lazy: async () => ({
+          Component: (await import("../pages/AccountSettingsPage")).default,
+        }),
+      },
+      {
+        path: routes.googleMapsSettings,
+        lazy: async () => ({
+          Component: (await import("../pages/GoogleMapsSettingsPage")).default,
+        }),
+      },
+      {
+        path: routes.withdrawal,
+        lazy: async () => ({
+          Component: (await import("../pages/WithdrawalPage")).default,
+        }),
+      },
+      {
         element: <Layout variant="courses" />,
         children: [
           {

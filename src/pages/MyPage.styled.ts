@@ -1,5 +1,5 @@
 import { Link } from "react-router";
-import styled from "styled-components";
+import styled, { css } from "styled-components";
 
 export const Page = styled.div`
   min-height: 650px;
@@ -58,52 +58,16 @@ export const ProfileText = styled.div`
   }
 `;
 
-export const ProfileInputs = styled.div`
-  min-width: 0;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-
-  label {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-
-  label span {
-    width: 34px;
-    color: #8a8a8e;
-    font-size: 11px;
-  }
-
-  input {
-    min-width: 0;
-    width: 100%;
-    height: 27px;
-    padding: 3px 7px;
-    border: 1px solid #dfe1e8;
-    border-radius: 7px;
-    color: #1a1a1a;
-    background: #ffffff;
-    outline: none;
-  }
-
-  input:focus {
-    border-color: #090738;
-  }
-`;
-
-export const EditButton = styled.button`
+export const EditButton = styled(Link)`
   flex: 0 0 auto;
-  padding: 7px 12px !important;
-  border: 1px solid #e4e6ec !important;
-  border-radius: 16px !important;
-  color: #090738 !important;
-  font-size: 13px !important;
-  line-height: 18px !important;
-  font-weight: 700 !important;
-  background: #ffffff !important;
+  padding: 7px 10px;
+  border: 1px solid #e4e6ec;
+  border-radius: 16px;
+  color: #090738;
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: 700;
+  text-decoration: none;
 `;
 
 export const Stats = styled.section`
@@ -236,7 +200,7 @@ export const MenuSection = styled.section`
   }
 `;
 
-export const MenuButton = styled.button`
+const menuRow = css`
   width: 100%;
   min-height: 48px;
   display: flex;
@@ -274,10 +238,37 @@ export const MenuButton = styled.button`
   }
 `;
 
+export const MenuButton = styled.button`
+  ${menuRow}
+`;
+
+export const MenuLink = styled(Link)`
+  ${menuRow}
+  text-decoration: none;
+`;
+
 export const TextIcon = styled.span`
   display: grid;
   place-items: center;
   color: #1a1a1a;
   font-size: 20px;
   line-height: 1;
+`;
+
+export const Toast = styled.div`
+  position: fixed;
+  z-index: 8;
+  right: 20px;
+  bottom: 104px;
+  left: 20px;
+  width: min(calc(100% - 40px), 362px);
+  margin: 0 auto;
+  padding: 14px 16px;
+  border-radius: 12px;
+  color: #ffffff;
+  background: #090738;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 700;
+  box-shadow: 0 8px 24px rgba(9, 7, 56, 0.2);
 `;
