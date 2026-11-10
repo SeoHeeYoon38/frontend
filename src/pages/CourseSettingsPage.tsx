@@ -10,14 +10,18 @@ import {
   settingsBackPath,
   tripCommunityPath,
 } from "../utils/navigation";
+import { readMockScenario } from "../utils/mockScenario";
 
 function CourseSettingsPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const showUnsavedMock =
+    readMockScenario(location.search) === "settings-unsaved-close";
   const {
     activeSheet,
     tripName,
     draftName,
+    isDirty,
     isEditingName,
     copied,
     notice,
@@ -28,9 +32,17 @@ function CourseSettingsPage() {
     closeSheet,
     startEditingName,
     saveTripName,
+    saveAndCloseTripSheet,
     cancelNameEdit,
     copyInviteLink,
-  } = useCourseSettings();
+  } = useCourseSettings(
+    showUnsavedMock
+      ? {
+          initialSheet: "trip",
+          initialDraftName: "오사카 우정 여행",
+        }
+      : {},
+  );
 
   return (
     <S.PageShell>
@@ -63,16 +75,20 @@ function CourseSettingsPage() {
             activeSheet={activeSheet}
             tripName={tripName}
             draftName={draftName}
+            isDirty={isDirty}
             isEditingName={isEditingName}
             copied={copied}
             nameInputRef={nameInputRef}
             onDraftNameChange={setDraftName}
             onStartEditingName={startEditingName}
             onSaveTripName={saveTripName}
+            onSaveAndClose={saveAndCloseTripSheet}
+            onDiscardAndClose={closeSheet}
             onCancelNameEdit={cancelNameEdit}
             onCopyInviteLink={copyInviteLink}
             onNotice={setNotice}
             onClose={closeSheet}
+            initialCloseConfirm={showUnsavedMock}
           />
         )}
       </S.Page>

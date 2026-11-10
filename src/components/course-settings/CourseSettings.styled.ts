@@ -534,3 +534,63 @@ export const ShareList = styled.ul`
     white-space: nowrap;
   }
 `;
+
+export const CloseConfirmLayer = styled.div`
+  position: fixed;
+  z-index: 30;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  background: rgba(10, 10, 26, 0.28);
+`;
+
+export const CloseConfirmDialog = styled.section`
+  width: 100%;
+  max-width: 322px;
+  padding: 28px 24px 20px;
+  overflow: hidden;
+  border-radius: 20px;
+  background: #ffffff;
+  text-align: center;
+  box-shadow: 0 12px 36px rgba(10, 10, 26, 0.18);
+
+  h2 {
+    margin: 0;
+    color: #1a1a1a;
+    font-size: 18px;
+    line-height: 25px;
+    font-weight: 700;
+    letter-spacing: -0.09px;
+  }
+
+  p {
+    margin: 8px 0 24px;
+    color: #5c5c63;
+    font-size: 14px;
+    line-height: 20px;
+  }
+
+  div {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  button {
+    height: 50px;
+    border-radius: 12px !important;
+    background: #f3f5fa !important;
+    color: #5c5c63;
+    font-size: 15px;
+    line-height: 22px;
+    font-weight: 700;
+    text-align: center;
+  }
+
+  button:last-child {
+    color: #ffffff;
+    background: #090738 !important;
+  }
+`;

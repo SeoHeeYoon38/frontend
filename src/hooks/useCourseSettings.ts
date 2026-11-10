@@ -1,28 +1,28 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { courseInviteLink } from "../data/mocks/courseSettingsData";
 import type { CourseSettingsSheet } from "../types/courseSettings";
 
-function useCourseSettings() {
+interface UseCourseSettingsOptions {
+  initialSheet?: CourseSettingsSheet | null;
+  initialTripName?: string;
+  initialDraftName?: string;
+}
+
+function useCourseSettings(options: UseCourseSettingsOptions = {}) {
+  const initialTripName = options.initialTripName ?? "오사카 3박 4일";
   const [activeSheet, setActiveSheet] = useState<CourseSettingsSheet | null>(
-    null,
+    options.initialSheet ?? null,
   );
-  const [tripName, setTripName] = useState("도쿄 3박 4일");
-  const [draftName, setDraftName] = useState(tripName);
-  const [isEditingName, setIsEditingName] = useState(false);
+  const [tripName, setTripName] = useState(initialTripName);
+  const [draftName, setDraftName] = useState(
+    options.initialDraftName ?? initialTripName,
+  );
+  const [isEditingName, setIsEditingName] = useState(
+    Boolean(options.initialDraftName),
+  );
   const [copied, setCopied] = useState(false);
   const [notice, setNotice] = useState("");
   const nameInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (!activeSheet) return;
-
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setActiveSheet(null);
-    };
-
-    window.addEventListener("keydown", closeOnEscape);
-    return () => window.removeEventListener("keydown", closeOnEscape);
-  }, [activeSheet]);
 
   const openSheet = (sheet: CourseSettingsSheet) => {
     setActiveSheet(sheet);
@@ -51,6 +51,15 @@ function useCourseSettings() {
     setIsEditingName(false);
   };
 
+  const saveAndCloseTripSheet = () => {
+    const nextName = draftName.trim() || tripName;
+    setTripName(nextName);
+    setDraftName(nextName);
+    setNotice("여행 정보를 저장했어요.");
+    setIsEditingName(false);
+    setActiveSheet(null);
+  };
+
   const cancelNameEdit = () => {
     setDraftName(tripName);
     setIsEditingName(false);
@@ -76,6 +85,7 @@ function useCourseSettings() {
     activeSheet,
     tripName,
     draftName,
+    isDirty: draftName.trim() !== tripName,
     isEditingName,
     copied,
     notice,
@@ -86,6 +96,7 @@ function useCourseSettings() {
     closeSheet,
     startEditingName,
     saveTripName,
+    saveAndCloseTripSheet,
     cancelNameEdit,
     copyInviteLink,
   };
