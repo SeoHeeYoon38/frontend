@@ -1,4 +1,5 @@
 import { useState, type RefObject } from "react";
+import { Link } from "react-router";
 import closeIcon from "../../assets/course-settings/close.svg";
 import editIcon from "../../assets/course-settings/edit.svg";
 import linkIcon from "../../assets/course-settings/link.svg";
@@ -11,11 +12,8 @@ import coverFour from "../../assets/course-settings-details/cover-4.png";
 import durationMinus from "../../assets/course-settings-details/duration-minus.svg";
 import durationPlus from "../../assets/course-settings-details/duration-plus.svg";
 import selectedCheck from "../../assets/course-settings-details/selected-check.svg";
-import {
-  courseInviteLink,
-  courseMembers,
-  courseShareTargets,
-} from "../../data/mocks/courseSettingsData";
+import { courseMembers } from "../../data/mocks/courseSettingsData";
+import { demoInvitePath } from "../../utils/navigation";
 import type { CourseSettingsSheet as SheetName } from "../../types/courseSettings";
 import * as S from "./CourseSettings.styled";
 
@@ -26,6 +24,8 @@ interface CourseSettingsSheetProps {
   isDirty: boolean;
   isEditingName: boolean;
   copied: boolean;
+  copyError: string;
+  inviteLink: string;
   nameInputRef: RefObject<HTMLInputElement | null>;
   onDraftNameChange: (value: string) => void;
   onStartEditingName: () => void;
@@ -47,7 +47,7 @@ interface CourseSettingsSheetProps {
 
 const sheetTitles: Record<SheetName, string> = {
   trip: "여행 정보 수정",
-  invite: "친구 초대",
+  invite: "초대 데모",
   cover: "대표 이미지 변경",
   duration: "여행 기간 변경",
 };
@@ -61,6 +61,8 @@ function CourseSettingsSheet({
   isDirty,
   isEditingName,
   copied,
+  copyError,
+  inviteLink,
   nameInputRef,
   onDraftNameChange,
   onStartEditingName,
@@ -168,11 +170,12 @@ function CourseSettingsSheet({
         )}
         {activeSheet === "invite" && (
           <S.InviteContent>
+            <p>공유 링크는 모든 브라우저에서 같은 샘플 여행을 열어요. 개인 여행이나 공동 편집 내용은 공유되지 않아요.</p>
             <S.LinkBox>
               <img src={linkIcon} alt="" />
-              <span>{courseInviteLink.replace("https://", "")}</span>
+              <span>{inviteLink}</span>
               <button type="button" onClick={onCopyInviteLink}>
-                링크 복사
+                데모 링크 복사
               </button>
             </S.LinkBox>
             <S.CopyMessage
@@ -184,11 +187,13 @@ function CourseSettingsSheet({
                 <img src={successRing} alt="" />
                 <img src={successCheck} alt="" />
               </S.SuccessIcon>
-              링크를 복사했어요
+              데모 링크를 복사했어요
             </S.CopyMessage>
+            {copyError && <p role="alert">{copyError}</p>}
+            <Link to={demoInvitePath}>샘플 초대장 미리보기</Link>
 
             <S.MemberSection>
-              <h3>함께하는 친구</h3>
+              <h3>샘플 멤버</h3>
               <S.MemberList>
                 {courseMembers.map((member) => (
                   <li key={member.name}>
@@ -202,26 +207,6 @@ function CourseSettingsSheet({
               </S.MemberList>
             </S.MemberSection>
 
-            <S.ShareSection>
-              <h3>다른 앱으로 공유</h3>
-              <S.ShareList>
-                {courseShareTargets.map((target) => (
-                  <li key={target.label}>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        onNotice(
-                          `${target.label} 공유 목업을 확인했어요.`,
-                        )
-                      }
-                    >
-                      <img src={target.image} alt="" />
-                      <span>{target.label}</span>
-                    </button>
-                  </li>
-                ))}
-              </S.ShareList>
-            </S.ShareSection>
           </S.InviteContent>
         )}
         {activeSheet === "cover" && (

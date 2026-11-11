@@ -84,7 +84,7 @@ function WithdrawalPage() {
               </li>
             ))}
           </S.LostList>
-          <S.Footnote>같은 카카오 계정으로 다시 가입해도 이전 정보는 복구되지 않아요</S.Footnote>
+          <S.Footnote>삭제한 데모 프로필 정보는 복구할 수 없어요</S.Footnote>
           <S.Agree>
             <button type="button" role="checkbox" aria-checked={agreed} onClick={() => setAgreed((value) => !value)}>{agreed && "✓"}</button>
             <span>안내 내용을 모두 확인했고, 탈퇴에 동의해요</span>

@@ -1,5 +1,8 @@
 import { routes } from "../config/routes.ts";
 
+export const demoInviteId = "osaka-demo";
+export const demoInvitePath = routes.invite.replace(":inviteId", demoInviteId);
+
 export type PlanOrigin = "home" | "my-trips" | "courses" | "generated";
 
 const planOrigins: PlanOrigin[] = ["home", "my-trips", "courses", "generated"];

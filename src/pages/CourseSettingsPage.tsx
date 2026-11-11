@@ -30,6 +30,8 @@ function CourseSettingsPage() {
     isDirty,
     isEditingName,
     copied,
+    copyError,
+    inviteLink,
     notice,
     nameInputRef,
     setDraftName,
@@ -109,6 +111,8 @@ function CourseSettingsPage() {
             isDirty={isDirty}
             isEditingName={isEditingName}
             copied={copied}
+            copyError={copyError}
+            inviteLink={inviteLink}
             nameInputRef={nameInputRef}
             onDraftNameChange={setDraftName}
             onStartEditingName={startEditingName}

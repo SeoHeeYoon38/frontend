@@ -276,13 +276,10 @@ export const RouteImage = styled.img`
 `;
 
 export const ConnectStep = styled(Step)`
-  gap: 0;
+  gap: 20px;
   > header {
     padding-top: 9px;
     flex-shrink: 0;
-  }
-  > div:last-of-type {
-    margin-top: clamp(24px, 8.2dvh, 72px);
   }
 `;
 export const PlacesTitle = styled(Title)`

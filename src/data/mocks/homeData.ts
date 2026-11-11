@@ -2,7 +2,6 @@ import type { HomeData } from "../../types/home";
 import osaka from "../../assets/images/city-osaka.webp";
 import tokyo from "../../assets/images/city-tokyo.webp";
 import fukuoka from "../../assets/images/city-fukuoka.webp";
-import shanghai from "../../assets/images/city-shanghai.webp";
 import europe from "../../assets/images/theme-europe.webp";
 import thailand from "../../assets/images/city-bangkok.webp";
 import pool from "../../assets/images/theme-pool-villa.webp";
@@ -92,17 +91,17 @@ export const mockHomeData: HomeData = {
   sharedTrips: [
     {
       trip: {
-        id: "shanghai",
-        title: "상하이 여행",
-        city: "상하이",
-        dateLabel: "6.17 금 ~ 6.23 목",
-        countdownLabel: "D-50",
-        durationLabel: "6박 7일",
+        id: "osaka-demo",
+        title: "오사카 3박 4일",
+        city: "오사카",
+        dateLabel: "5.18 월 ~ 5.21 목",
+        countdownLabel: "데모",
+        durationLabel: "3박 4일",
         status: "upcoming",
-        coverImage: shanghai,
+        coverImage: osaka,
         memberAvatars: [],
       },
-      invitedBy: "민지",
+      invitedBy: "우예빈",
       inviterAvatar: aiCharacter,
     },
   ],

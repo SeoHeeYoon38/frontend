@@ -5,6 +5,7 @@ import emptyCharacter from "../../assets/images/character-empty-places.webp";
 import googleMapsLogo from "../../assets/images/brand-google-maps.webp";
 import CourseRouteMap from "../course-completion/CourseRouteMap";
 import TripInfoStep from "../trip/TripInfoStep";
+import PlaceImportForm from "../trip/PlaceImportForm";
 import { createGeneratedTrip, mockTripStatus, placeIcon, saveMockTrip, tripStorageNotice } from "../../data/mocks/mockTripService";
 import { dateLabel, durationLabel, emptyDraft, rangeDates } from "../../utils/trip";
 import type { TripDraft } from "../../types/trip";
@@ -23,10 +24,6 @@ import type {
   DirectTripSearchTab,
   DirectTripStage,
 } from "../../types/directTrip";
-import {
-  readGoogleMapsSettings,
-  saveGoogleMapsSettings,
-} from "../../utils/mySettings";
 import { readMockScenario } from "../../utils/mockScenario";
 import * as S from "./DirectTripBuilder.styled";
 
@@ -75,14 +72,7 @@ function DirectTripBuilder() {
   const [query, setQuery] = useState(() =>
     mockScenario === "direct-search-empty" ? "쿠로몬 야타이" : "",
   );
-  const [googleLinked, setGoogleLinked] = useState(() => {
-    if (mockScenario === "direct-google-unlinked") return false;
-    try {
-      return readGoogleMapsSettings(window.localStorage).linked;
-    } catch {
-      return true;
-    }
-  });
+  const [samplePlacesReady, setSamplePlacesReady] = useState(false);
   const [selectedPlaceIds, setSelectedPlaceIds] = useState<string[]>([]);
   const [dayPlaces, setDayPlaces] = useState<Record<number, string[]>>(() =>
     mockScenario === "direct-exit-confirm"
@@ -105,7 +95,7 @@ function DirectTripBuilder() {
     const normalizedQuery = query.trim().toLowerCase();
     return directTripPlaces.filter((place) => {
       const sourceMatches =
-        searchTab === "recommend" || place.source === "google";
+        searchTab === "recommend" || place.source === "google" || draft.city !== "오사카";
       const queryMatches =
         !normalizedQuery ||
         `${place.name} ${place.category} ${place.detail}`
@@ -113,7 +103,7 @@ function DirectTripBuilder() {
           .includes(normalizedQuery);
       return sourceMatches && queryMatches;
     });
-  }, [query, searchTab, directTripPlaces]);
+  }, [query, searchTab, directTripPlaces, draft.city]);
 
   const placeCount = Object.values(dayPlaces).reduce(
     (total, places) => total + places.length,
@@ -182,19 +172,6 @@ function DirectTripBuilder() {
     });
   };
 
-  const connectGoogleMaps = () => {
-    setGoogleLinked(true);
-    try {
-      const current = readGoogleMapsSettings(window.localStorage);
-      saveGoogleMapsSettings(window.localStorage, {
-        ...current,
-        linked: true,
-      });
-    } catch {
-      // 저장소를 사용할 수 없는 환경에서도 현재 데모 흐름은 계속 진행합니다.
-    }
-  };
-
   const renderInfo = () => (
     <S.PlainScreen>
       <S.PlainHeader>
@@ -208,6 +185,7 @@ function DirectTripBuilder() {
             if (next.city !== draft.city || next.startDate !== draft.startDate || next.endDate !== draft.endDate) {
               setDayPlaces(Object.fromEntries(rangeDates(next.startDate, next.endDate).map((_, index) => [index + 1, []])));
               setSelectedDay(1);
+              setSamplePlacesReady(false);
             }
             setDraft(next);
           }}
@@ -390,7 +368,7 @@ function DirectTripBuilder() {
   );
 
   const renderSearch = () => {
-    const showGoogleConnect = searchTab === "google" && !googleLinked;
+    const showImportForm = searchTab === "google" && !samplePlacesReady;
     return (
       <S.SearchScreen>
         <S.SearchHeader>
@@ -423,33 +401,27 @@ function DirectTripBuilder() {
           <button
             type="button"
             aria-pressed={searchTab === "recommend"}
-            onClick={() => setSearchTab("recommend")}
+            onClick={() => { setSearchTab("recommend"); setSelectedPlaceIds([]); }}
           >
             추천
           </button>
           <button
             type="button"
             aria-pressed={searchTab === "google"}
-            onClick={() => setSearchTab("google")}
+            onClick={() => { setSearchTab("google"); setSelectedPlaceIds([]); }}
           >
             <img src={googleMapsLogo} alt="" />
-            Google Maps 저장 {googleLinked && <b>52</b>}
+            Google Maps 가져오기
           </button>
         </S.SearchTabs>
 
         <S.SearchScroll>
-          {showGoogleConnect ? (
-            <S.GoogleConnect>
-              <S.StateIcon>
-                <img src={googleMapsLogo} alt="Google Maps" />
-              </S.StateIcon>
-              <h2>Google Maps 장소를 불러올까요?</h2>
-              <p>저장해 둔 맛집, 카페를 바로 일정에 담을 수 있어요</p>
-              <button type="button" onClick={connectGoogleMaps}>
-                <img src={googleMapsLogo} alt="" />
-                Google Maps 연결하기
-              </button>
-            </S.GoogleConnect>
+          {showImportForm ? (
+            <PlaceImportForm onImport={() => {
+              setSamplePlacesReady(true);
+              setSelectedPlaceIds([]);
+              setQuery("");
+            }} />
           ) : filteredPlaces.length === 0 ? (
             <S.NoResults>
               <S.StateIcon>
@@ -473,7 +445,7 @@ function DirectTripBuilder() {
                 </S.RecentSearches>
               )}
               <S.ResultHeading>
-                {query ? `‘${query}’ 검색 결과` : searchTab === "google" ? "내 저장 장소" : `${draft.city} 추천 장소`}
+                {query ? `‘${query}’ 검색 결과` : searchTab === "google" ? "가져온 샘플 장소" : `${draft.city} 추천 장소`}
               </S.ResultHeading>
               <S.PlaceList>
                 {filteredPlaces.map((place) => {
@@ -507,7 +479,7 @@ function DirectTripBuilder() {
           <button
             type="button"
             disabled={
-              showGoogleConnect ||
+              showImportForm ||
               filteredPlaces.length === 0 ||
               selectedPlaceIds.length === 0
             }

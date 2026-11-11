@@ -1,4 +1,4 @@
-import { useLocation, useNavigate } from "react-router";
+import { useLocation, useNavigate, useParams } from "react-router";
 import calendarIcon from "../assets/invite/calendar.svg";
 import dashImage from "../assets/invite/dash.svg";
 import dotloMark from "../assets/invite/dotlo-mark.png";
@@ -12,6 +12,7 @@ import thumbThree from "../assets/invite/thumb-3.png";
 import thumbFour from "../assets/invite/thumb-4.png";
 import ticketShape from "../assets/invite/ticket-shape.svg";
 import { routes } from "../config/routes";
+import { demoInviteId, tripCommunityPath } from "../utils/navigation";
 import * as S from "./InvitePage.styled";
 
 function InvitePage() {
@@ -19,12 +20,17 @@ function InvitePage() {
   const navigate = useNavigate();
   const inviteState = new URLSearchParams(location.search).get("state");
   const expired = inviteState === "expired";
-  const alreadyJoined = inviteState === "joined";
-
-  const acceptInvite = () => {
-    window.sessionStorage.setItem("dotlo:invite:osaka-demo", "accepted");
-    navigate(`${routes.tripPlan}?from=home&invite=accepted`);
-  };
+  const { inviteId } = useParams();
+  if (inviteId !== demoInviteId) {
+    return (
+      <S.Page>
+        <S.Actions>
+          <S.DisabledNotice>샘플 초대장을 찾을 수 없어요.</S.DisabledNotice>
+          <button type="button" onClick={() => navigate(routes.home)}>홈으로 가기</button>
+        </S.Actions>
+      </S.Page>
+    );
+  }
 
   return (
     <S.Page>
@@ -36,7 +42,7 @@ function InvitePage() {
 
       <S.InviterPill>
         <S.InviterAvatar><img src={inviterAvatar} alt="" /></S.InviterAvatar>
-        <span><strong>우예빈</strong>님이 초대장을 보냈어요</span>
+        <span>샘플 초대장</span>
       </S.InviterPill>
 
       <S.Ticket>
@@ -44,7 +50,7 @@ function InvitePage() {
         <S.TicketTop>
           <img className="dotlo-mark" src={dotloMark} alt="Dotlo" />
           <h1>오사카 3박 4일</h1>
-          <p>함께 여행을 계획하고 취향을 모아봐요</p>
+          <p>공동 계획을 체험하는 샘플 여행이에요.</p>
           <S.TripInfo>
             <div><span data-tone="sky"><img src={pinIcon} alt="" /></span><small>어디로</small><strong>오사카</strong></div>
             <div><span data-tone="purple"><img src={calendarIcon} alt="" /></span><small>언제</small><strong>5.18 - 5.21</strong></div>
@@ -66,13 +72,14 @@ function InvitePage() {
       <S.Actions>
         {expired ? (
           <>
-            <S.DisabledNotice>만료된 초대 링크예요</S.DisabledNotice>
+            <S.DisabledNotice>만료된 초대의 예시예요</S.DisabledNotice>
             <button type="button" onClick={() => navigate(routes.home)}>홈으로 가기</button>
           </>
         ) : (
           <>
-            <button type="button" onClick={alreadyJoined ? () => navigate(`${routes.tripPlan}?from=home`) : acceptInvite}>
-              {alreadyJoined ? "여행으로 이동하기" : "여행 참여하기"}
+            <S.DemoNotice>공유 링크에는 샘플 여행만 표시돼요.</S.DemoNotice>
+            <button type="button" onClick={() => navigate(tripCommunityPath("home"))}>
+              공동 계획 데모 보기
             </button>
             <S.LaterButton type="button" onClick={() => navigate(routes.home)}>나중에 볼게요</S.LaterButton>
           </>

@@ -1,22 +1,30 @@
 import { useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import brandLogo from "../assets/images/brand-dotlo-logo.png";
-import appleIcon from "../assets/onboarding/apple.svg";
-import cameraIcon from "../assets/onboarding/camera.svg";
 import checkAllIcon from "../assets/onboarding/check-all.svg";
 import checkIcon from "../assets/onboarding/check.svg";
 import clearIcon from "../assets/onboarding/clear.svg";
 import googleIcon from "../assets/onboarding/google.svg";
-import kakaoIcon from "../assets/onboarding/kakao.svg";
 import profileAvatar from "../assets/onboarding/profile-avatar.png";
 import profileRing from "../assets/onboarding/profile-ring.svg";
 import validCheckIcon from "../assets/onboarding/valid-check.svg";
 import welcomeCharacter from "../assets/onboarding/welcome-character.png";
 import { routes } from "../config/routes";
 import { policyPath, type PolicyDocumentId } from "../data/policyDocuments";
+import { parseProfileSettings, PROFILE_STORAGE_KEY, saveProfileSettings, validateNickname } from "../utils/mySettings";
 import * as S from "./OnboardingPage.styled";
 
 type AgreementKey = "service" | "privacy" | "age" | "location" | "marketing";
+
+interface OnboardingState {
+  agreements?: Record<AgreementKey, boolean>;
+  nickname?: string;
+  preferences?: string[];
+}
+
+const initialAgreements = {
+  service: false, privacy: false, age: false, location: false, marketing: false,
+};
 
 const agreements: Array<{ key: AgreementKey; required: boolean; label: string; details?: boolean }> = [
   { key: "service", required: true, label: "서비스 이용약관", details: true },
@@ -67,7 +75,7 @@ function LoginBackdrop({ withTagline = false }: { withTagline?: boolean }) {
         {withTagline && (
           <>
             <h1>가고 싶은 곳만 고르면<br />여행 코스가 완성돼요</h1>
-            <p>구글맵에 저장한 장소로 AI가 일정을 짜드려요</p>
+            <p>샘플 장소를 골라 여행 일정을 만들어 보세요</p>
           </>
         )}
       </S.LoginHero>
@@ -78,26 +86,16 @@ function LoginBackdrop({ withTagline = false }: { withTagline?: boolean }) {
 function OnboardingPage() {
   const location = useLocation();
   const navigate = useNavigate();
+  const onboarding = location.state as OnboardingState | null;
   const [termsOpen, setTermsOpen] = useState(
     () => new URLSearchParams(location.search).get("terms") === "1",
   );
-  const [agreementsState, setAgreementsState] = useState<Record<AgreementKey, boolean>>({
-    service: true,
-    privacy: true,
-    age: true,
-    location: true,
-    marketing: true,
-  });
-  const [nickname, setNickname] = useState("하늘");
-  const [preferences, setPreferences] = useState<string[]>([
-    "맛집 탐방",
-    "카페 투어",
-    "역사와 문화",
-    "사진 명소",
-  ]);
+  const [agreementsState, setAgreementsState] = useState(() => onboarding?.agreements ?? initialAgreements);
+  const [nickname, setNickname] = useState(() => onboarding?.nickname ?? "하늘");
+  const [preferences, setPreferences] = useState<string[]>([]);
+  const [error, setError] = useState("");
 
-  const nicknameFromState = (location.state as { nickname?: string } | null)?.nickname;
-  const displayNickname = nicknameFromState || nickname || "하늘";
+  const displayNickname = onboarding?.nickname ?? "하늘";
   const allAgreed = useMemo(
     () => agreements.every(({ key }) => agreementsState[key]),
     [agreementsState],
@@ -112,7 +110,7 @@ function OnboardingPage() {
   };
 
   if (location.pathname === routes.onboardingProfile) {
-    const valid = nickname.trim().length >= 2 && nickname.trim().length <= 12;
+    const validation = validateNickname(nickname);
     return (
       <S.FlowScreen>
         <S.FlowBody>
@@ -121,14 +119,14 @@ function OnboardingPage() {
           <S.Avatar>
             <img className="ring" src={profileRing} alt="" />
             <img className="photo" src={profileAvatar} alt="프로필 캐릭터" />
-            <button type="button" aria-label="프로필 사진 변경"><img src={cameraIcon} alt="" /></button>
           </S.Avatar>
           <S.FieldLabel htmlFor="onboarding-nickname">닉네임</S.FieldLabel>
-          <S.NicknameField $valid={valid}>
+          <S.NicknameField $valid={validation.valid}>
             <input
               id="onboarding-nickname"
               maxLength={12}
               value={nickname}
+              aria-invalid={!validation.valid}
               onChange={(event) => setNickname(event.target.value)}
             />
             <small>{nickname.length}/12</small>
@@ -138,11 +136,14 @@ function OnboardingPage() {
               </button>
             )}
           </S.NicknameField>
-          {valid && <S.ValidText><img src={validCheckIcon} alt="" />사용할 수 있는 닉네임이에요</S.ValidText>}
+          <S.ValidText $error={!validation.valid} role="status">
+            {validation.valid && <img src={validCheckIcon} alt="" />}
+            {validation.valid ? "데모에서 사용할 수 있는 닉네임이에요" : validation.message}
+          </S.ValidText>
         </S.FlowBody>
         <S.BottomButton
           type="button"
-          disabled={!valid}
+          disabled={!validation.valid}
           onClick={() => navigate(routes.onboardingPreferences, { state: { nickname: nickname.trim() } })}
         >
           다음
@@ -160,14 +161,18 @@ function OnboardingPage() {
           : [...current, preference],
       );
     };
-    const complete = () => navigate(routes.onboardingComplete, { state: { nickname: displayNickname } });
+    const complete = (chosenPreferences: string[]) => {
+      navigate(routes.onboardingComplete, {
+        state: { nickname: displayNickname, preferences: chosenPreferences },
+      });
+    };
     return (
       <S.FlowScreen>
-        <S.SkipButton type="button" onClick={complete}>건너뛰기</S.SkipButton>
+        <S.SkipButton type="button" onClick={() => complete([])}>건너뛰기</S.SkipButton>
         <S.FlowBody>
           <S.Progress $complete aria-label="온보딩 2단계"><i /><i /></S.Progress>
           <h1>어떤 여행을 좋아하세요?</h1>
-          <S.Description>골라주시면 취향에 맞는 코스를 먼저 보여드려요</S.Description>
+          <S.Description>고른 취향은 이 브라우저의 데모 프로필에 저장해요.</S.Description>
           <S.Chips>
             {preferenceOptions.map((preference) => (
               <button
@@ -182,21 +187,38 @@ function OnboardingPage() {
           </S.Chips>
           <S.SelectionCount>{preferences.length}개 선택했어요</S.SelectionCount>
         </S.FlowBody>
-        <S.BottomButton type="button" onClick={complete}>선택 완료</S.BottomButton>
+        <S.BottomButton type="button" onClick={() => complete(preferences)}>선택 완료</S.BottomButton>
         <HomeIndicator />
       </S.FlowScreen>
     );
   }
 
   if (location.pathname === routes.onboardingComplete) {
+    const startDemo = () => {
+      try {
+        const profile = parseProfileSettings(localStorage.getItem(PROFILE_STORAGE_KEY));
+        saveProfileSettings(window.localStorage, {
+          nickname: displayNickname,
+          email: profile?.email ?? "",
+          introduction: profile?.introduction ?? "",
+          avatar: profile?.avatar ?? "blue",
+          travelPreferences: onboarding?.preferences ?? [],
+        });
+      } catch {
+        setError("브라우저에 데모 프로필을 저장하지 못했어요. 다시 시도해 주세요.");
+        return;
+      }
+      navigate(routes.home);
+    };
     return (
       <S.CompleteScreen>
         <S.CompleteContent>
           <img src={welcomeCharacter} alt="반갑게 인사하는 도틀로 캐릭터" />
           <h1>{displayNickname}님, 반가워요!</h1>
           <p>이제 가고 싶은 곳을 모아<br />나만의 여행 코스를 만들어 보세요</p>
+          {error && <S.ValidText $error role="alert">{error}</S.ValidText>}
         </S.CompleteContent>
-        <S.BottomButton type="button" onClick={() => navigate(routes.home)}>시작하기</S.BottomButton>
+        <S.BottomButton type="button" onClick={startDemo}>시작하기</S.BottomButton>
         <HomeIndicator />
       </S.CompleteScreen>
     );
@@ -207,17 +229,9 @@ function OnboardingPage() {
       <LoginBackdrop withTagline={termsOpen} />
       {!termsOpen && (
         <S.LoginButtons>
-          <S.ProviderWrap>
-            <S.ProviderButton type="button" $provider="kakao" onClick={() => setTermsOpen(true)}>
-              <img src={kakaoIcon} alt="" />카카오로 시작하기
-            </S.ProviderButton>
-            <span>최근 로그인</span>
-          </S.ProviderWrap>
-          <S.ProviderButton type="button" $provider="apple" onClick={() => setTermsOpen(true)}>
-            <img src={appleIcon} alt="" />Apple로 시작하기
-          </S.ProviderButton>
-          <S.ProviderButton type="button" $provider="google" onClick={() => setTermsOpen(true)}>
-            <img src={googleIcon} alt="" />Google로 시작하기
+          <S.LoginNotice>Google 계정 없이 로그인과 가입 흐름을 체험할 수 있어요.</S.LoginNotice>
+          <S.ProviderButton type="button" onClick={() => setTermsOpen(true)}>
+            <img src={googleIcon} alt="" />Google 로그인 데모 시작
           </S.ProviderButton>
           <S.GuestButton type="button" onClick={() => navigate(routes.home)}>먼저 둘러볼게요</S.GuestButton>
         </S.LoginButtons>
@@ -227,9 +241,9 @@ function OnboardingPage() {
           <S.Dim onClick={() => setTermsOpen(false)} />
           <S.TermsSheet role="dialog" aria-modal="true" aria-labelledby="terms-title">
             <S.Grabber />
-            <h2 id="terms-title">약관에 동의해 주세요</h2>
-            <p>도틀로를 이용하려면 필수 약관 동의가 필요해요</p>
-            <S.AllAgreement type="button" onClick={toggleAll}>
+            <h2 id="terms-title">약관 동의 체험</h2>
+            <p>필수 항목을 선택하면 데모 프로필을 만들 수 있어요.</p>
+            <S.AllAgreement type="button" aria-pressed={allAgreed} onClick={toggleAll}>
               <S.Check $large $checked={allAgreed}>{allAgreed && <img src={checkAllIcon} alt="" />}</S.Check>
               <span><strong>전체 동의</strong><small>선택 항목을 포함한 모든 약관에 동의해요</small></span>
             </S.AllAgreement>
@@ -249,7 +263,14 @@ function OnboardingPage() {
                     <b>{agreement.label}</b>
                   </button>
                   {agreement.details && agreementPolicy[agreement.key] && (
-                    <button type="button" onClick={() => navigate(policyPath(agreementPolicy[agreement.key]!, true))}>보기</button>
+                    <button
+                      type="button"
+                      onClick={() => navigate(policyPath(agreementPolicy[agreement.key]!, true), {
+                        state: { agreements: agreementsState },
+                      })}
+                    >
+                      보기
+                    </button>
                   )}
                 </li>
               ))}

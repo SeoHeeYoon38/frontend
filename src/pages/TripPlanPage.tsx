@@ -12,7 +12,6 @@ import "../components/course-completion/CourseCompletion.css";
 import "../components/course-completion/CourseEdit.css";
 import useCoursePlan from "../hooks/useCoursePlan";
 import { readMockTrips } from "../data/mocks/mockTripService";
-import acceptedCheckIcon from "../assets/invite/accepted-check.svg";
 import {
   readPlanOrigin,
   tripCommunityPath,
@@ -35,7 +34,6 @@ function CoursePlan({ tripId }: { tripId: string }) {
   const navigate = useNavigate();
   const location = useLocation();
   const planOrigin = readPlanOrigin(location.search);
-  const inviteAccepted = new URLSearchParams(location.search).get("invite") === "accepted";
   const {
     trip,
     candidates,
@@ -176,12 +174,6 @@ function CoursePlan({ tripId }: { tripId: string }) {
         </div>
         {planVariant === "applied" && screen === "plan" && (
           <div className="course-toast" role="status"><span>✓</span><p>수정한 일정을 적용했어요</p><button type="button" onClick={undoAiResult}>되돌리기</button></div>
-        )}
-        {inviteAccepted && screen === "plan" && (
-          <div className="course-toast course-toast--invite" role="status">
-            <img src={acceptedCheckIcon} alt="" />
-              <p>{trip.title} 여행에 참여했어요</p>
-          </div>
         )}
 
         {screen === "ai-edit" && (
