@@ -7,12 +7,13 @@ function CourseCommunityPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const origin = readPlanOrigin(location.search);
+  const tripId = new URLSearchParams(location.search).get("course") ?? undefined;
 
   return (
     <div className="course-community-shell">
       <CourseCommunityChat
-        onBack={() => navigate(tripPlanPath(origin))}
-        onViewCourse={() => navigate(tripPlanPath(origin))}
+        onBack={() => navigate(tripPlanPath(origin, tripId))}
+        onViewCourse={() => navigate(tripPlanPath(origin, tripId))}
       />
     </div>
   );

@@ -1,44 +1,44 @@
-import routeLine1 from "../../assets/course-completion/route-line-1.svg";
-import routeLine2 from "../../assets/course-completion/route-line-2.svg";
-import routeLine3 from "../../assets/course-completion/route-line-3.svg";
-import routeLine4 from "../../assets/course-completion/route-line-4.svg";
-import routeLine5 from "../../assets/course-completion/route-line-5.svg";
 import routeMap from "../../assets/course-completion/route-map.png";
-import { courseMapPins } from "../../data/mocks/courseCompletionData";
+import type { CoursePlace } from "../../types/courseCompletion";
+import "./CourseCompletion.css";
 
-const routeLines = [
-  routeLine1,
-  routeLine2,
-  routeLine3,
-  routeLine4,
-  routeLine5,
-];
+interface CourseRouteMapProps {
+  places: CoursePlace[];
+  city: string;
+  day: number;
+}
 
-function CourseRouteMap() {
+function CourseRouteMap({ places, city, day }: CourseRouteMapProps) {
+  const rows = Math.max(1, Math.ceil(places.length / 3));
+  const hasCoordinates = places.every((place) =>
+    Number.isFinite(place.latitude) && Number.isFinite(place.longitude),
+  );
+  const latitudes = places.map((place) => place.latitude ?? 0);
+  const longitudes = places.map((place) => place.longitude ?? 0);
+  const minLatitude = Math.min(...latitudes);
+  const minLongitude = Math.min(...longitudes);
+  const latitudeRange = Math.max(.001, Math.max(...latitudes) - minLatitude);
+  const longitudeRange = Math.max(.001, Math.max(...longitudes) - minLongitude);
+  const pins = places.map((place, index) => ({
+    id: place.id,
+    name: place.name,
+    x: hasCoordinates ? 10 + ((place.longitude! - minLongitude) / longitudeRange) * 70 : 15 + (index % 3) * 35,
+    y: hasCoordinates ? 80 - ((place.latitude! - minLatitude) / latitudeRange) * 60 : 20 + Math.floor(index / 3) * (60 / Math.max(1, rows - 1)),
+  }));
+
   return (
-    <div className="course-map" aria-label="1일차 이동 경로 지도">
-      <img
-        className="course-map__base"
-        src={routeMap}
-        alt="오사카 여행 경로 지도"
-      />
-      {routeLines.map((line, index) => (
-        <img
-          className={`course-map__line course-map__line--${index + 1}`}
-          src={line}
-          alt=""
-          key={line}
-        />
-      ))}
-      {courseMapPins.map((pin) => (
-        <span
-          className="course-map__pin"
-          style={{ left: pin.left, top: pin.top }}
-          key={pin.number}
-        >
-          {pin.number}
+    <div className="course-map" aria-label={`${day}일차 ${city} 샘플 경로`}>
+      {city === "오사카" && <img className="course-map__base" src={routeMap} alt="오사카 샘플 지도" />}
+      <svg className="course-map__route" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+        <polyline points={pins.map((pin) => `${pin.x},${pin.y}`).join(" ")} fill="none" stroke="#00c6df" strokeWidth="1.2" />
+      </svg>
+      {pins.map((pin, index) => (
+        <span className="course-map__pin" style={{ left: `${pin.x}%`, top: `${pin.y}%` }} key={pin.id} title={pin.name}>
+          {index + 1}
         </span>
       ))}
+      <small className="course-map__caption">{day}일차 · {places.length}곳 · 샘플 경로</small>
+      <ol className="course-live-region">{places.map((place) => <li key={place.id}>{place.name}</li>)}</ol>
     </div>
   );
 }

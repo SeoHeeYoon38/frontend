@@ -18,6 +18,10 @@ import * as S from "./TripCreatePage.styled";
 
 function TripCreatePage() {
   const location = useLocation();
+  return isDirectTripMode(location.search) ? <DirectTripBuilder /> : <AiTripCreatePage />;
+}
+
+function AiTripCreatePage() {
   const [importing, setImporting] = useState(false);
   const {
     draft,
@@ -31,10 +35,6 @@ function TripCreatePage() {
     back,
     generate,
   } = useTripCreate();
-
-  if (isDirectTripMode(location.search)) {
-    return <DirectTripBuilder />;
-  }
 
   let content = (
     <TripInfoStep draft={draft} onChange={update} onNext={() => move(2)} />

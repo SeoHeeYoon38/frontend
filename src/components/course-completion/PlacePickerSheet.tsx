@@ -3,9 +3,11 @@ import addSelectedIcon from "../../assets/course-completion/add-selected.svg";
 import radioSelected from "../../assets/course-completion/radio-selected.svg";
 import searchIcon from "../../assets/course-completion/search.svg";
 import placeCoffee from "../../assets/course-completion/place-coffee.png";
-import { replacementPlaces, suggestedPlaces } from "../../data/mocks/courseCompletionData";
+import type { CourseCandidate } from "../../types/courseCompletion";
 
 interface PlacePickerSheetProps {
+  candidates: CourseCandidate[];
+  day: number;
   mode: "add" | "replace";
   replacementId: number;
   selectedIds: number[];
@@ -15,15 +17,14 @@ interface PlacePickerSheetProps {
   onToggle: (id: number) => void;
 }
 
-function PlacePickerSheet({ mode, replacementId, selectedIds, onClose, onConfirm, onSelectReplacement, onToggle }: PlacePickerSheetProps) {
-  const candidates = mode === "add" ? suggestedPlaces : replacementPlaces;
-  const selectedReplacement = replacementPlaces.find((place) => place.id === replacementId) ?? replacementPlaces[0];
+function PlacePickerSheet({ candidates, day, mode, replacementId, selectedIds, onClose, onConfirm, onSelectReplacement, onToggle }: PlacePickerSheetProps) {
+  const selectedReplacement = candidates.find((place) => place.id === replacementId);
 
   return (
     <div className="course-overlay" role="presentation">
       <section className="course-sheet place-picker-sheet" aria-label={mode === "add" ? "장소 추가" : "장소 교체"}>
         <div className="course-sheet__handle" />
-        <header><h2>{mode === "add" ? "1일차에 장소 추가" : "장소 교체"}</h2><button type="button" onClick={onClose} aria-label="닫기">×</button></header>
+        <header><h2>{mode === "add" ? `${day}일차에 장소 추가` : "장소 교체"}</h2><button type="button" onClick={onClose} aria-label="닫기">×</button></header>
         {mode === "add" ? (
           <>
             <label className="place-picker-sheet__search"><img src={searchIcon} alt="" /><input placeholder="장소, 맛집, 숙소 검색" /></label>
@@ -50,7 +51,7 @@ function PlacePickerSheet({ mode, replacementId, selectedIds, onClose, onConfirm
             );
           })}
         </div>
-        <button className="course-sheet__primary" type="button" onClick={onConfirm}>{mode === "add" ? `${selectedIds.length}곳을 1일차에 추가` : `${selectedReplacement.name}로 교체`}</button>
+        <button className="course-sheet__primary" type="button" onClick={onConfirm} disabled={mode === "add" ? !selectedIds.length : !selectedReplacement}>{mode === "add" ? `${selectedIds.length}곳을 ${day}일차에 추가` : `${selectedReplacement?.name ?? "장소 선택"}로 교체`}</button>
       </section>
     </div>
   );

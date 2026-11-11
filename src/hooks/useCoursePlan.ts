@@ -1,70 +1,66 @@
 import { useMemo, useState } from "react";
-import {
-  aiAdjustedCoursePlaces,
-  initialCoursePlaces,
-  replacementPlaces,
-  suggestedPlaces,
-} from "../data/mocks/courseCompletionData";
-import type {
-  CoursePlanVariant,
-  CourseScreen,
-} from "../types/courseCompletion";
-import {
-  isFigmaCoursePlanSaved,
-  saveFigmaCoursePlan,
-} from "../data/mocks/flowData";
+import { replacementPlaces, suggestedPlaces } from "../data/mocks/courseCompletionData";
+import { mockTripPlaces } from "../data/mocks/tripData";
+import { placeIcon, readMockTrip, readTripStorageNotice, saveMockTrip, tripStorageNotice } from "../data/mocks/mockTripService";
+import { moveDayPlace } from "../utils/mockTrips";
+import type { CourseCandidate, CoursePlanVariant, CourseScreen } from "../types/courseCompletion";
+import type { MockTrip } from "../types/mockTrip";
 
-function useCoursePlan() {
+function useCoursePlan(tripId: string) {
+  const [trip, setTrip] = useState(() => readMockTrip(tripId));
   const [activeDay, setActiveDay] = useState(0);
-  const [places, setPlaces] = useState(initialCoursePlaces);
   const [screen, setScreen] = useState<CourseScreen>("plan");
-  const [planVariant, setPlanVariant] =
-    useState<CoursePlanVariant>("default");
-  const [notice, setNotice] = useState("");
-  const [isSaved, setIsSaved] = useState(isFigmaCoursePlanSaved);
-  const [aiRequest, setAiRequest] = useState(
-    "첫날은 좀 여유롭게, 카페는 빼도 괜찮아요",
-  );
+  const [planVariant, setPlanVariant] = useState<CoursePlanVariant>("default");
+  const [notice, setNotice] = useState(readTripStorageNotice);
+  const [isSaved, setIsSaved] = useState(trip?.saved ?? false);
+  const [aiRequest, setAiRequest] = useState("첫날은 좀 여유롭게, 카페는 빼도 괜찮아요");
   const [selectedPlaceId, setSelectedPlaceId] = useState<number | null>(null);
-  const [selectedCandidateIds, setSelectedCandidateIds] = useState<number[]>([
-    101, 103,
-  ]);
+  const [selectedCandidateIds, setSelectedCandidateIds] = useState<number[]>([]);
   const [replacementId, setReplacementId] = useState(201);
+  const [replacementTargetId, setReplacementTargetId] = useState<number | null>(null);
+  const [beforeAi, setBeforeAi] = useState<MockTrip | null>(null);
+  const [removedPlaces, setRemovedPlaces] = useState<Array<{ day: number; place: MockTrip["days"][number]["places"][number] }>>([]);
+  const places = trip?.days[activeDay]?.places ?? [];
+  const selectedPlace = places.find((place) => place.id === selectedPlaceId);
+  const candidates: CourseCandidate[] = useMemo(() => {
+    if (trip?.city === "오사카") return suggestedPlaces;
+    return mockTripPlaces.filter((place) => place.city === trip?.city).map((place, index) => ({
+      id: 1001 + index, name: place.title, category: place.category,
+      distance: place.description, image: place.image,
+    }));
+  }, [trip?.city]);
+  const replacements = trip?.city === "오사카" ? replacementPlaces : candidates;
+  const displayPlaces = screen === "ai-result" ? places.filter((place) => !place.category.includes("카페")) : places;
 
-  const removedPlaces = useMemo(
-    () =>
-      initialCoursePlaces.filter(
-        (place) => !places.some((item) => item.id === place.id),
-      ),
-    [places],
-  );
+  const updateTrip = (next: MockTrip, message: string) => {
+    setTrip(next);
+    setIsSaved(false);
+    setNotice(saveMockTrip(next) ? message : tripStorageNotice);
+  };
 
-  const selectedPlace = useMemo(
-    () =>
-      places.find((place) => place.id === selectedPlaceId) ??
-      initialCoursePlaces[2],
-    [places, selectedPlaceId],
-  );
-
-  const displayPlaces =
-    screen === "ai-result" || planVariant === "applied"
-      ? aiAdjustedCoursePlaces
-      : places;
-
-  const addRemovedPlace = () => {
-    const [removedPlace] = removedPlaces;
-    if (!removedPlace) {
-      setScreen("place-add");
-      return;
-    }
-
-    setPlaces((current) => [...current, removedPlace]);
-    setNotice(`${removedPlace.name}을(를) 일정에 다시 추가했어요.`);
+  const updatePlaces = (nextPlaces: typeof places, message: string) => {
+    if (!trip) return;
+    updateTrip({
+      ...trip,
+      days: trip.days.map((day, index) => index === activeDay ? { ...day, places: nextPlaces } : day),
+    }, message);
   };
 
   const removePlace = (id: number) => {
-    setPlaces((current) => current.filter((place) => place.id !== id));
-    setNotice("일정에 포함되지 않은 장소가 생겼어요.");
+    const place = places.find((item) => item.id === id);
+    if (!place || place.fixed) return;
+    setRemovedPlaces((current) => [...current, { day: activeDay, place }]);
+    updatePlaces(places.filter((item) => item.id !== id), "일정에서 장소를 뺐어요.");
+  };
+
+  const addRemovedPlace = () => {
+    const removed = removedPlaces.find((item) => item.day === activeDay);
+    if (!removed) {
+      setScreen("place-add");
+      return;
+    }
+    updatePlaces([...places, removed.place], "장소를 일정에 다시 추가했어요.");
+    setRemovedPlaces((current) => current.filter((item) => item !== removed));
   };
 
   const openPlaceDetail = (id: number) => {
@@ -73,114 +69,92 @@ function useCoursePlan() {
   };
 
   const removeSelectedPlace = () => {
-    removePlace(selectedPlace.id);
+    if (selectedPlace) removePlace(selectedPlace.id);
     setScreen("plan");
   };
 
   const toggleCandidate = (id: number) => {
-    setSelectedCandidateIds((current) =>
-      current.includes(id)
-        ? current.filter((candidateId) => candidateId !== id)
-        : [...current, id],
-    );
+    setSelectedCandidateIds((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
   };
 
   const addSelectedCandidates = () => {
-    const newPlaces = suggestedPlaces
-      .filter((candidate) => selectedCandidateIds.includes(candidate.id))
-      .map((candidate) => ({
-        id: candidate.id,
-        name: candidate.name,
-        category: candidate.category,
-        detail: candidate.distance,
-        image: candidate.image,
-        icon: initialCoursePlaces[2].icon,
-        description: candidate.distance,
-      }));
-
-    setPlaces((current) => [
-      ...current,
-      ...newPlaces.filter(
-        (candidate) => !current.some((place) => place.id === candidate.id),
-      ),
-    ]);
-    setNotice(`${newPlaces.length}곳을 1일차에 추가했어요.`);
+    if (!trip) return;
+    const selected = candidates.filter((candidate) =>
+      selectedCandidateIds.includes(candidate.id) && !places.some((place) => place.name === candidate.name),
+    );
+    const maxId = Math.max(0, ...trip.days.flatMap((day) => day.places.map((place) => place.id)),
+      ...removedPlaces.map((item) => item.place.id));
+    updatePlaces([...places, ...selected.map((candidate, index) => ({
+      id: maxId + index + 1, name: candidate.name, category: candidate.category,
+      detail: candidate.distance, image: candidate.image, icon: placeIcon(candidate.category),
+    }))], `${selected.length}곳을 ${activeDay + 1}일차에 추가했어요.`);
+    setSelectedCandidateIds([]);
     setScreen("schedule-edit");
+  };
+
+  const openReplacement = (id: number) => {
+    setReplacementTargetId(id);
+    setReplacementId(replacements[0]?.id ?? 201);
+    setScreen("place-replace");
   };
 
   const applyReplacement = () => {
-    const replacement = replacementPlaces.find(
-      (candidate) => candidate.id === replacementId,
-    );
+    const replacement = replacements.find((item) => item.id === replacementId);
     if (!replacement) return;
-
-    setPlaces((current) =>
-      current.map((place) =>
-        place.id === 4
-          ? {
-              ...place,
-              name: replacement.name,
-              image: replacement.image,
-              detail: replacement.distance,
-              description: replacement.distance,
-            }
-          : place,
-      ),
-    );
-    setNotice(`${replacement.name}(으)로 교체했어요.`);
+    updatePlaces(places.map((place) => place.id === replacementTargetId ? {
+      ...place, name: replacement.name, image: replacement.image,
+      category: replacement.category, icon: placeIcon(replacement.category),
+      detail: replacement.distance, description: replacement.distance,
+      latitude: undefined, longitude: undefined,
+    } : place), `${replacement.name}(으)로 교체했어요.`);
     setScreen("schedule-edit");
   };
 
+  const reorderPlace = (fromId: number, toId: number) => {
+    if (!trip) return;
+    updatePlaces(moveDayPlace(trip.days[activeDay], fromId, toId).places, "장소 순서를 변경했어요.");
+  };
+
   const applyAiResult = () => {
+    if (!trip) return;
+    setBeforeAi(trip);
+    updatePlaces(displayPlaces, "수정한 일정을 적용했어요.");
     setPlanVariant("applied");
     setScreen("plan");
-    setNotice("수정한 일정을 적용했어요.");
   };
 
   const undoAiResult = () => {
+    if (!beforeAi) return;
+    updateTrip(beforeAi, "AI 수정 전 일정으로 되돌렸어요.");
+    setBeforeAi(null);
     setPlanVariant("default");
-    setNotice("AI 수정 전 일정으로 되돌렸어요.");
-  };
-
-  const saveManualEdit = () => {
-    setScreen("plan");
-    setNotice("1일차 수정 내용을 저장했어요.");
   };
 
   const savePlan = () => {
-    saveFigmaCoursePlan();
+    if (!trip) return;
+    const next = { ...trip, saved: true };
+    if (!saveMockTrip(next)) {
+      setNotice(tripStorageNotice);
+      return;
+    }
+    setTrip(next);
     setIsSaved(true);
-    setNotice("오사카 3박 4일 일정을 내 여행에 저장했어요.");
+    setNotice(`${trip.title} 일정을 내 여행에 저장했어요.`);
+  };
+
+  const saveManualEdit = () => {
+    savePlan();
+    setScreen("plan");
   };
 
   return {
-    activeDay,
-    aiRequest,
-    displayPlaces,
-    isSaved,
-    notice,
-    places,
-    planVariant,
-    removedPlaces,
-    replacementId,
-    screen,
-    selectedCandidateIds,
-    selectedPlace,
-    setActiveDay,
-    setAiRequest,
-    setReplacementId,
-    setScreen,
-    addRemovedPlace,
-    addSelectedCandidates,
-    applyAiResult,
-    applyReplacement,
-    openPlaceDetail,
-    removePlace,
-    removeSelectedPlace,
-    saveManualEdit,
-    savePlan,
-    toggleCandidate,
-    undoAiResult,
+    trip, activeDay, aiRequest, candidates, replacements, displayPlaces, isSaved,
+    notice, places, planVariant, replacementId, screen, selectedCandidateIds,
+    selectedPlace, removedPlaces: removedPlaces.filter((item) => item.day === activeDay),
+    setActiveDay, setAiRequest, setReplacementId, setScreen, addRemovedPlace,
+    addSelectedCandidates, applyAiResult, applyReplacement, openReplacement,
+    openPlaceDetail, removePlace, removeSelectedPlace, reorderPlace,
+    saveManualEdit, savePlan, toggleCandidate, undoAiResult,
   };
 }
 

@@ -28,12 +28,16 @@ export function importedTripPath(tripId: string): string {
   return `/my-trips/${encodeURIComponent(tripId)}`;
 }
 
-export function tripSettingsPath(origin: PlanOrigin): string {
-  return `${routes.tripSettings}?${new URLSearchParams({ from: origin }).toString()}`;
+export function tripSettingsPath(origin: PlanOrigin, courseId?: string): string {
+  const params = new URLSearchParams({ from: origin });
+  if (courseId) params.set("course", courseId);
+  return `${routes.tripSettings}?${params.toString()}`;
 }
 
-export function tripCommunityPath(origin: PlanOrigin): string {
-  return `${routes.tripCommunity}?${new URLSearchParams({ from: origin }).toString()}`;
+export function tripCommunityPath(origin: PlanOrigin, courseId?: string): string {
+  const params = new URLSearchParams({ from: origin });
+  if (courseId) params.set("course", courseId);
+  return `${routes.tripCommunity}?${params.toString()}`;
 }
 
 export function tripPlanBackPath(search: string): string {
@@ -44,7 +48,8 @@ export function tripPlanBackPath(search: string): string {
 }
 
 export function settingsBackPath(search: string): string {
-  return tripPlanPath(readPlanOrigin(search));
+  const params = new URLSearchParams(search);
+  return tripPlanPath(readPlanOrigin(search), params.get("course") ?? undefined);
 }
 
 export function isDirectTripMode(search: string): boolean {

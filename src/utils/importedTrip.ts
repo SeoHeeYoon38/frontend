@@ -1,3 +1,5 @@
+import { validDate } from "./trip.ts";
+
 export type CompanionType = "혼자" | "친구" | "연인" | "가족";
 
 export interface ImportedTripRegistration {
@@ -49,8 +51,11 @@ export function parseImportedTripRegistration(
     if (
       typeof data.startDate !== "string" ||
       typeof data.endDate !== "string" ||
+      !validDate(data.startDate) || !validDate(data.endDate) ||
+      data.endDate < data.startDate ||
       !companionTypes.includes(data.companionType as CompanionType) ||
       typeof data.peopleCount !== "number" ||
+      !Number.isInteger(data.peopleCount) ||
       data.peopleCount < 1 ||
       data.peopleCount > 10
     ) {

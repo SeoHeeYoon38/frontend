@@ -19,15 +19,19 @@ import {
   type ImportedTripRegistration,
 } from "../utils/importedTrip";
 import * as S from "./ImportedTripPage.styled";
+import { readMockTrip, saveMockTrip, tripStorageNotice } from "../data/mocks/mockTripService";
+import { tripPlanPath } from "../utils/navigation";
 
 type Sheet = "info" | "date" | "people" | null;
 
 const companionTypes: CompanionType[] = ["혼자", "친구", "연인", "가족"];
 
-function readRegistration(): ImportedTripRegistration | null {
+function readRegistration(tripId: string): ImportedTripRegistration | null {
+  const trip = readMockTrip(tripId);
+  if (trip?.startDate) return { startDate: trip.startDate, endDate: trip.endDate, companionType: trip.companion, peopleCount: trip.people };
   try {
     return parseImportedTripRegistration(
-      localStorage.getItem(importedTripRegistrationKey(travelerCourse.id)),
+      localStorage.getItem(importedTripRegistrationKey(tripId === "kyoto" ? travelerCourse.id : tripId)),
     );
   } catch {
     return null;
@@ -35,11 +39,25 @@ function readRegistration(): ImportedTripRegistration | null {
 }
 
 function ImportedTripPage() {
+  const { tripId = "kyoto" } = useParams();
+  return <ImportedTrip key={tripId} tripId={tripId} />;
+}
+
+function ImportedTrip({ tripId }: { tripId: string }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { tripId } = useParams();
+
   const [activeDay, setActiveDay] = useState(0);
-  const [registration, setRegistration] = useState(readRegistration);
+  const [trip, setTrip] = useState(() => readMockTrip(tripId));
+  const course = {
+    ...travelerCourse,
+    hero: trip?.coverImage ?? travelerCourse.hero,
+    days: trip?.days.map((day, index) => ({
+      label: `${index + 1}일차`,
+      places: day.places.map((place) => ({ ...place, travelTime: place.travel })),
+    })) ?? travelerCourse.days,
+  };
+  const [registration, setRegistration] = useState(() => readRegistration(tripId));
   const [draft, setDraft] = useState<Partial<ImportedTripRegistration>>(
     registration ?? { peopleCount: 2 },
   );
@@ -51,10 +69,10 @@ function ImportedTripPage() {
   );
 
   const dates = useMemo(
-    () => courseDateLabels(registration?.startDate ?? "", travelerCourse.days.length),
-    [registration],
+    () => courseDateLabels(registration?.startDate ?? "", course.days.length),
+    [registration, course.days.length],
   );
-  const activeCourse = travelerCourse.days[activeDay];
+  const activeCourse = course.days[activeDay];
 
   const openInfo = () => {
     setDraft(registration ?? { peopleCount: 2 });
@@ -72,25 +90,33 @@ function ImportedTripPage() {
       return;
     }
 
-    const next = draft as ImportedTripRegistration;
+    const next = parseImportedTripRegistration(JSON.stringify(draft));
+    if (!next || !trip) {
+      setNotice("날짜와 동행 정보를 다시 확인해 주세요");
+      return;
+    }
+    const updated = {
+      ...trip, startDate: next.startDate, endDate: next.endDate,
+      companion: next.companionType, people: next.peopleCount, saved: true,
+      days: trip.days.map((day, index) => ({ ...day, date: addDays(next.startDate, index) })),
+    };
+    if (!saveMockTrip(updated)) {
+      setNotice(tripStorageNotice);
+      return;
+    }
+    setTrip(updated);
     setRegistration(next);
     setSheet(null);
     setNotice("여행 정보를 저장했어요");
-    try {
-      localStorage.setItem(
-        importedTripRegistrationKey(travelerCourse.id),
-        JSON.stringify(next),
-      );
-    } catch {
-      // 저장소를 사용할 수 없어도 현재 화면의 목업 상태는 유지합니다.
-    }
   };
+
+  if (!trip) return <main><p>여행을 찾지 못했어요.</p><button type="button" onClick={() => navigate(routes.myTrips)}>내 여행 보기</button></main>;
 
   return (
     <S.PageShell>
       <S.Page>
         <S.Hero>
-          <img src={travelerCourse.hero} alt="교토의 전통 골목" />
+          <img src={course.hero} alt="교토의 전통 골목" />
           <S.HeroScrim />
           <S.Navigation>
             <button type="button" aria-label="마이트립으로 돌아가기" onClick={() => navigate(routes.myTrips)}>
@@ -103,7 +129,7 @@ function ImportedTripPage() {
           </S.Navigation>
           <S.HeroTitle>
             <span>{travelerCourse.city}</span>
-            <h1>교토 2박 3일</h1>
+            <h1>{trip.title}</h1>
             {registration && (
               <p>
                 {dates[0]} - {dates[dates.length - 1]} · {registration.companionType} {registration.peopleCount}명
@@ -125,12 +151,12 @@ function ImportedTripPage() {
             <h2>일정</h2>
             <S.Facts>
               <div><img src={calendarIcon} alt="" /><strong>{travelerCourse.duration}</strong><span>여행 기간</span></div>
-              <div><img src={pinIcon} alt="" /><strong>{travelerCourse.placeCount}곳</strong><span>장소</span></div>
+              <div><img src={pinIcon} alt="" /><strong>{trip.days.reduce((total, day) => total + day.places.length, 0)}곳</strong><span>장소</span></div>
               <div><img src={trainIcon} alt="" /><strong>{travelerCourse.transport}</strong><span>이동 방법</span></div>
             </S.Facts>
 
             <S.DayTabs role="tablist" aria-label="교토 여행 일차">
-              {travelerCourse.days.map((day, index) => (
+              {course.days.map((day, index) => (
                 <button
                   key={day.label}
                   type="button"
@@ -175,6 +201,7 @@ function ImportedTripPage() {
         </S.Content>
 
         <S.BottomAction>
+          <button type="button" onClick={() => navigate(tripPlanPath("my-trips", trip.id))}>일정 편집하기</button>
           <button type="button" onClick={() => navigate(`/trips/community?from=my-trips&course=${tripId ?? "kyoto"}`)}>
             AI 수정 요청
           </button>

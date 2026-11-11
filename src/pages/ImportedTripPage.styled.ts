@@ -189,6 +189,8 @@ export const TravelTime = styled.p`
 `;
 
 export const BottomAction = styled.div`
+  display: flex;
+  gap: 10px;
   position: sticky;
   z-index: 5;
   bottom: 0;
@@ -200,6 +202,7 @@ export const BottomAction = styled.div`
 `;
 
 export const Toast = styled.div`
+  pointer-events: none;
   position: fixed;
   z-index: 20;
   left: 50%;

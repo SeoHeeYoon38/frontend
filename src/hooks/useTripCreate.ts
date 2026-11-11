@@ -11,7 +11,7 @@ import {
 import { generateMockTrip } from "../data/mocks/tripService";
 import { mockTripCities, mockTripPlaces } from "../data/mocks/tripData";
 import { routes } from "../config/routes";
-import { saveGeneratedTrip } from "../data/mocks/flowData";
+import { createGeneratedTrip, saveMockTrip } from "../data/mocks/mockTripService";
 import { tripPlanPath } from "../utils/navigation";
 function initialDraft() {
   let saved: string | null = null;
@@ -108,8 +108,13 @@ function useTripCreate() {
       if (controller.signal.aborted) return;
       completed = true;
       setProgress(4);
-      saveGeneratedTrip(draft);
-      navigate(tripPlanPath("generated"), { replace: true });
+      saveMockTrip(createGeneratedTrip(draft));
+      try {
+        sessionStorage.removeItem(DRAFT_KEY);
+      } catch {
+        // 저장소를 사용할 수 없어도 현재 여행 결과로 이동합니다.
+      }
+      navigate(tripPlanPath("generated", draft.tripId), { replace: true });
     } catch (reason) {
       if (!controller.signal.aborted)
         setError(

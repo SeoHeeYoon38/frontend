@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { useSearchParams } from "react-router";
 import pinIcon from "../assets/course-settings/pin.svg";
 import CreateTripSheet from "../components/common/CreateTripSheet";
-import { pastTrips, upcomingTrips } from "../data/mocks/myTripsData";
+import { mockTripStatus, mockTripSummary, readMockTrips, readTripStorageNotice } from "../data/mocks/mockTripService";
 import type { MyTripSummary } from "../types/myTrips";
 import { importedTripPath, tripPlanPath } from "../utils/navigation";
 import {
@@ -54,7 +54,11 @@ function MyTripsPage() {
   const isCreateOpen = searchParams.has("create");
   const showSavedToast = searchParams.get("toast") === "saved";
   const showImportedToast = searchParams.get("toast") === "course-imported";
+  const allTrips = readMockTrips().filter((trip) => trip.saved);
+  const upcomingTrips = allTrips.filter((trip) => mockTripStatus(trip) === "upcoming").map(mockTripSummary);
+  const pastTrips = allTrips.filter((trip) => mockTripStatus(trip) === "past").map(mockTripSummary);
   const trips = tab === "past" ? pastTrips : upcomingTrips;
+  const storageNotice = readTripStorageNotice();
   const filteredTrips = useMemo(
     () =>
       trips.filter((trip) =>
@@ -80,7 +84,7 @@ function MyTripsPage() {
       {(showSavedToast || showImportedToast) && (
         <S.Toast role="status" aria-live="polite">
           <span>✓</span>
-          <strong>{showImportedToast ? "교토 2박 3일 일정을 가져왔어요" : "오사카 3박 4일 일정을 저장했어요"}</strong>
+          <strong>{showImportedToast ? "교토 2박 3일 일정을 가져왔어요" : "여행 일정을 저장했어요"}</strong>
           <button
             type="button"
             onClick={() => {
@@ -137,6 +141,7 @@ function MyTripsPage() {
         </button>
       </S.Tabs>
 
+      {storageNotice && <p role="alert">{storageNotice}</p>}
       <S.Grid>
         {filteredTrips.map((trip) => (
           <TripCard key={trip.id} trip={trip} />
