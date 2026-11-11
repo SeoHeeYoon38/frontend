@@ -14,9 +14,11 @@ import * as C from "./common.styled";
 interface HomeIntroProps {
   name: string;
   trip: TripSummary | null;
+  tripPath?: (id: string) => string;
+  resumePath?: string;
 }
 
-function HomeIntro({ name, trip }: HomeIntroProps) {
+function HomeIntro({ name, trip, tripPath = (id) => tripPlanPath("home", id), resumePath }: HomeIntroProps) {
   return (
     <>
       <S.Greeting>
@@ -25,6 +27,13 @@ function HomeIntro({ name, trip }: HomeIntroProps) {
         다음 여행은 어디로 갈까요?
       </S.Greeting>
       <S.Create>
+        {resumePath && (
+          <S.ManualAction as={Link} to={resumePath}>
+            <S.ManualIcon><img src={pen} alt="" /></S.ManualIcon>
+            <S.ManualText><strong>이어서 만들기</strong></S.ManualText>
+            <img src={manualChevron} alt="" />
+          </S.ManualAction>
+        )}
         <S.Actions>
           <S.Action as={Link} to={routes.createTrip} $variant="ai">
             <strong>
@@ -68,7 +77,7 @@ function HomeIntro({ name, trip }: HomeIntroProps) {
       {trip && (
         <S.Card
           as={Link}
-          to={tripPlanPath("home", trip.id)}
+          to={tripPath(trip.id)}
           aria-label={`${trip.title} 일정 보기`}
         >
           <C.Cover src={trip.coverImage} alt={`${trip.city} 여행`} />

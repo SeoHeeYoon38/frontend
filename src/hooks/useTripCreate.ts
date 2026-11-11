@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
-import type { TripDraft } from "../types/trip";
+import type { TripDraft, TripPlace } from "../types/trip";
 import {
   DRAFT_KEY,
   basicError,
@@ -19,13 +19,27 @@ import { shouldUseMockFallback } from "../api/client";
 import { isApiEnabled } from "../api/config";
 import { hasAuthSession } from "../api/tokenStorage";
 import { createTrip as createApiTrip, updateTrip as updateApiTrip } from "../api/trips";
-function initialDraft() {
+import type { TripResponse } from "../api/types";
+import { apiTripToDraft } from "../utils/serverTrip";
+
+function initialDraft(trip?: TripResponse, places?: TripPlace[]): TripDraft {
   let saved: string | null = null;
   try {
     saved = sessionStorage.getItem(DRAFT_KEY);
   } catch {
   }
   const draft = readDraft(saved);
+  if (trip) {
+    const resumed = apiTripToDraft(trip, draft.tripId === String(trip.id) ? draft : undefined);
+    if (!places) return resumed;
+    const placeIds = new Set(places.filter((place) => !place.closed && !place.needsMatch).map((place) => place.id));
+    return {
+      ...resumed,
+      places,
+      selectedPlaceIds: resumed.selectedPlaceIds.filter((id) => placeIds.has(id)),
+      source: places.length ? "manual" : "none",
+    };
+  }
   try {
     const migrationKey = "dotlo:fukuoka-empty-saved:v1";
     if (!sessionStorage.getItem(migrationKey)) {
@@ -43,10 +57,10 @@ function initialDraft() {
   );
   return { ...draft, tripId: draft.tripId || crypto.randomUUID() };
 }
-function useTripCreate() {
+function useTripCreate(trip?: TripResponse, places?: TripPlace[]) {
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
-  const [draft, setDraft] = useState(initialDraft);
+  const [draft, setDraft] = useState(() => initialDraft(trip, places));
   const [isGenerating, setGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState("");
@@ -70,14 +84,14 @@ function useTripCreate() {
   useEffect(() => () => request.current?.abort(), [step]);
   useEffect(() => {
     if (step !== requested)
-      setParams({ step: String(step) }, { replace: true });
-  }, [step, requested, setParams]);
+      setParams(trip ? { tripId: String(trip.id), step: String(step) } : { step: String(step) }, { replace: true });
+  }, [step, requested, setParams, trip]);
   function update(next: TripDraft) {
     setDraft(next);
     setError("");
   }
   function move(next: number) {
-    setParams({ step: String(next) });
+    setParams(trip ? { tripId: String(trip.id), step: String(next) } : { step: String(next) });
     window.scrollTo(0, 0);
   }
   function back() {
