@@ -1,0 +1,21 @@
+{
+  "name": "Dotlo - 함께 만드는 여행 일정",
+  "short_name": "Dotlo",
+  "description": "여행 장소를 모으고 함께 일정을 완성하는 여행 계획 서비스",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f7f7fb",
+  "theme_color": "#0f0b3d",
+  "lang": "ko-KR",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/dotlo-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
