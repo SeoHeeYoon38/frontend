@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title id="title">Dotlo</title>
+  <defs>
+    <linearGradient id="cyan" x1="256" y1="72" x2="112" y2="416" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#10d4ef" />
+      <stop offset="1" stop-color="#08bfe3" />
+    </linearGradient>
+    <linearGradient id="purple" x1="256" y1="72" x2="400" y2="416" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#8d8cff" />
+      <stop offset="1" stop-color="#a49af8" />
+    </linearGradient>
+    <linearGradient id="yellow" x1="96" y1="404" x2="416" y2="404" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffe600" />
+      <stop offset="1" stop-color="#f8e400" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="#ffffff" />
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="74">
+    <path d="M256 88C246 205 197 310 102 410" stroke="url(#cyan)" />
+    <path d="M256 88C266 205 315 310 410 410" stroke="url(#purple)" />
+    <path d="M102 410C198 321 314 321 410 410" stroke="url(#yellow)" />
+  </g>
+</svg>
