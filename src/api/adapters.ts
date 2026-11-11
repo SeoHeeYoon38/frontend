@@ -3,6 +3,9 @@ import type {
   CompanionCode,
   PlaceCategoryCode,
   PreferenceAnalysis,
+  PreferenceChip,
+  PreferenceInput,
+  PreferenceProfile,
   SavedPlaceResponse,
   TripInput,
 } from "./types";
@@ -25,6 +28,25 @@ const categoryLabels: Record<PlaceCategoryCode, TripPlace["category"]> = {
   ACTIVITY: "명소",
   OTHER: "명소",
 };
+
+const onboardingInterestCodes: Record<string, PlaceCategoryCode> = {
+  "맛집 탐방": "FOOD",
+  "카페 투어": "CAFE",
+  "자연 풍경": "NATURE",
+  "역사와 문화": "CULTURE",
+  "쇼핑": "SHOPPING",
+  "야경": "NIGHTLIFE",
+  "사진 명소": "SIGHTSEEING",
+  "액티비티": "ACTIVITY",
+  "온천과 휴식": "OTHER",
+  "골목 산책": "SIGHTSEEING",
+};
+
+interface PreferenceResult {
+  preferences: PreferenceProfile;
+  chips: PreferenceChip[];
+  rawText?: string | null;
+}
 
 export function isServerTripId(value: string) {
   return /^\d+$/.test(value) && Number(value) > 0;
@@ -65,20 +87,45 @@ export function preferenceAnalysisToDraft(
   analysis: PreferenceAnalysis,
   draft: TripDraft,
 ): TripDraft["preferences"] {
-  const tastes = analysis.chips
+  return preferenceResultToDraft(analysis, draft);
+}
+
+export function preferenceResultToDraft(
+  result: PreferenceResult,
+  draft: TripDraft,
+): TripDraft["preferences"] {
+  const tastes = result.chips
     .filter((chip) => chip.type === "INTEREST")
     .map((chip) => chip.label);
-  const pace = analysis.chips
+  const pace = result.chips
     .filter((chip) => ["PACE", "WALKING", "DAY_START"].includes(chip.type))
     .map((chip) => chip.label);
 
   return {
-    text: draft.preferences.text,
+    text: result.rawText ?? draft.preferences.text,
     tastes,
     pace: pace.length ? pace : ["보통 강도"],
     companion: draft.companion ? [draft.companion] : [],
     analyzed: true,
-    apiProfile: analysis.preferences,
+    apiProfile: result.preferences,
+  };
+}
+
+export function onboardingPreferencesToInput(
+  selected: string[],
+): PreferenceInput {
+  const interests = selected
+    .map((label) => onboardingInterestCodes[label])
+    .filter((code): code is PlaceCategoryCode => Boolean(code));
+
+  return {
+    pace: "NORMAL",
+    walking: "NORMAL",
+    dayStart: "NORMAL",
+    interests: [...new Set(interests)],
+    avoid: [],
+    notes: [],
+    rawText: null,
   };
 }
 

@@ -3,6 +3,7 @@ import type {
   PreferenceAnalysis,
   PreferenceInput,
   PreferenceView,
+  UserPreferenceView,
 } from "./types";
 
 export function analyzePreferences(
@@ -30,6 +31,23 @@ export function savePreferences(
 
 export function getPreferences(tripId: number, signal?: AbortSignal) {
   return apiRequest<PreferenceView>(`/api/trips/${tripId}/preferences`, {
+    signal,
+  });
+}
+
+export function saveUserPreferences(
+  input: PreferenceInput,
+  signal?: AbortSignal,
+) {
+  return apiRequest<UserPreferenceView>("/api/users/me/preferences", {
+    method: "PUT",
+    json: input,
+    signal,
+  });
+}
+
+export function getUserPreferences(signal?: AbortSignal) {
+  return apiRequest<UserPreferenceView>("/api/users/me/preferences", {
     signal,
   });
 }
