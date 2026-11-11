@@ -2,12 +2,18 @@ import { useEffect, useRef, useState } from "react";
 import type { TripDraft } from "../../types/trip";
 import { preferenceExamples } from "../../data/tripData";
 import { analyzeMockPreferences } from "../../data/mocks/tripService";
-import { isServerTripId, preferenceAnalysisToDraft } from "../../api/adapters";
+import {
+  isServerTripId,
+  preferenceAnalysisToDraft,
+  preferenceResultToDraft,
+} from "../../api/adapters";
 import { shouldUseMockFallback } from "../../api/client";
 import { isApiEnabled } from "../../api/config";
 import { hasAuthSession } from "../../api/tokenStorage";
 import {
   analyzePreferences,
+  getPreferences,
+  getUserPreferences,
   savePreferences,
 } from "../../api/preferences";
 import sparkle from "../../assets/icons/status-ai-sparkle.svg";
@@ -27,15 +33,86 @@ function PreferencesStep({
   error,
 }: PreferencesStepProps) {
   const [busy, setBusy] = useState(false);
+  const [loadingPreferences, setLoadingPreferences] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [analysisError, setAnalysisError] = useState("");
   const request = useRef<AbortController | null>(null);
-  useEffect(() => () => request.current?.abort(), []);
+  const hydration = useRef<AbortController | null>(null);
+  const hydratedTripId = useRef<string | null>(null);
+  useEffect(
+    () => () => {
+      request.current?.abort();
+      hydration.current?.abort();
+    },
+    [],
+  );
   const preferences = draft.preferences;
+
+  useEffect(() => {
+    const hasLocalPreferences = Boolean(
+      preferences.text.trim() ||
+        preferences.tastes.length ||
+        preferences.pace.length ||
+        preferences.apiProfile,
+    );
+    if (
+      hasLocalPreferences ||
+      !isApiEnabled() ||
+      !hasAuthSession() ||
+      !isServerTripId(draft.tripId) ||
+      hydratedTripId.current === draft.tripId
+    ) {
+      return;
+    }
+
+    const controller = new AbortController();
+    hydratedTripId.current = draft.tripId;
+    hydration.current = controller;
+    setLoadingPreferences(true);
+    setAnalysisError("");
+
+    void getPreferences(Number(draft.tripId), controller.signal)
+      .then(async (tripPreferences) => {
+        if (tripPreferences.saved) return tripPreferences;
+        return getUserPreferences(controller.signal);
+      })
+      .then((initialPreferences) => {
+        if (controller.signal.aborted) return;
+        onChange({
+          ...draft,
+          preferences: preferenceResultToDraft(initialPreferences, draft),
+        });
+      })
+      .catch((reason: unknown) => {
+        if (controller.signal.aborted || shouldUseMockFallback(reason)) return;
+        setAnalysisError(
+          reason instanceof Error
+            ? reason.message
+            : "저장된 여행 취향을 불러오지 못했어요.",
+        );
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoadingPreferences(false);
+        if (hydration.current === controller) hydration.current = null;
+      });
+
+    return () => controller.abort();
+  }, [
+    draft,
+    onChange,
+    preferences.apiProfile,
+    preferences.pace.length,
+    preferences.tastes.length,
+    preferences.text,
+  ]);
+
   function changeText(text: string) {
+    hydration.current?.abort();
+    hydration.current = null;
     request.current?.abort();
     request.current = null;
     setBusy(false);
+    setLoadingPreferences(false);
     setAnalysisError("");
     onChange({
       ...draft,
@@ -214,11 +291,13 @@ function PreferencesStep({
         )}
         <S.Primary
           type="button"
-          disabled={busy || submitting || !hasConditions}
+          disabled={busy || loadingPreferences || submitting || !hasConditions}
           onClick={submit}
         >
-          {busy
-            ? "여행 취향을 정리하고 있어요"
+          {loadingPreferences
+            ? "저장된 취향을 불러오고 있어요"
+            : busy
+              ? "여행 취향을 정리하고 있어요"
             : submitting
               ? "코스를 만들고 있어요"
             : preferences.analyzed
