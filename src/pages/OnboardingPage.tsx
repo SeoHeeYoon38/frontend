@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from "react-router";
 import { onboardingPreferencesToInput } from "../api/adapters";
 import { canStartGoogleLogin, googleAuthorizationUrl } from "../api/auth";
 import { shouldUseMockFallback } from "../api/client";
-import { isApiEnabled } from "../api/config";
+import { apiMode, isApiEnabled } from "../api/config";
 import { saveUserPreferences } from "../api/preferences";
 import { hasAuthSession } from "../api/tokenStorage";
 import brandLogo from "../assets/images/brand-dotlo-logo.png";
@@ -18,6 +18,7 @@ import welcomeCharacter from "../assets/onboarding/welcome-character.png";
 import { routes } from "../config/routes";
 import { policyPath, type PolicyDocumentId } from "../data/policyDocuments";
 import { parseProfileSettings, PROFILE_STORAGE_KEY, saveProfileSettings, validateNickname } from "../utils/mySettings";
+import { allowDemoAuthentication } from "../utils/authNavigation";
 import * as S from "./OnboardingPage.styled";
 
 type AgreementKey = "service" | "privacy" | "age" | "location" | "marketing";
@@ -102,6 +103,7 @@ function OnboardingPage() {
   const [savingPreferences, setSavingPreferences] = useState(false);
   const [error, setError] = useState("");
   const liveGoogleLogin = isApiEnabled() && canStartGoogleLogin();
+  const demoAuthentication = allowDemoAuthentication(import.meta.env.DEV, apiMode);
 
   const displayNickname = onboarding?.nickname ?? "하늘";
   const allAgreed = useMemo(
@@ -118,8 +120,12 @@ function OnboardingPage() {
   };
 
   const continueAfterTerms = () => {
-    if (!liveGoogleLogin) {
+    if (!liveGoogleLogin && demoAuthentication) {
       navigate(routes.onboardingProfile);
+      return;
+    }
+    if (!liveGoogleLogin) {
+      setError("Google 로그인 설정을 확인하고 있어요. 잠시 후 다시 시도해 주세요.");
       return;
     }
     try {
@@ -260,7 +266,7 @@ function OnboardingPage() {
   }
 
   if (location.pathname === routes.onboardingComplete) {
-    const startDemo = () => {
+    const finishOnboarding = () => {
       try {
         const profile = parseProfileSettings(localStorage.getItem(PROFILE_STORAGE_KEY));
         saveProfileSettings(window.localStorage, {
@@ -284,7 +290,7 @@ function OnboardingPage() {
           <p>이제 가고 싶은 곳을 모아<br />나만의 여행 코스를 만들어 보세요</p>
           {error && <S.ValidText $error role="alert">{error}</S.ValidText>}
         </S.CompleteContent>
-        <S.BottomButton type="button" onClick={startDemo}>시작하기</S.BottomButton>
+        <S.BottomButton type="button" onClick={finishOnboarding}>시작하기</S.BottomButton>
         <HomeIndicator />
       </S.CompleteScreen>
     );
@@ -298,13 +304,27 @@ function OnboardingPage() {
           <S.LoginNotice>
             {liveGoogleLogin
               ? "Google 계정으로 로그인하고 내 여행을 안전하게 불러와요."
-              : "Google 계정 없이 로그인과 가입 흐름을 체험할 수 있어요."}
+              : demoAuthentication
+                ? "Google 계정 없이 로그인과 가입 흐름을 체험할 수 있어요."
+                : "Google 로그인 설정을 확인하고 있어요."}
           </S.LoginNotice>
-          <S.ProviderButton type="button" onClick={() => setTermsOpen(true)}>
+          <S.ProviderButton
+            type="button"
+            disabled={!liveGoogleLogin && !demoAuthentication}
+            onClick={() => setTermsOpen(true)}
+          >
             <img src={googleIcon} alt="" />
-            {liveGoogleLogin ? "Google로 시작하기" : "Google 로그인 데모 시작"}
+            {liveGoogleLogin
+              ? "Google로 시작하기"
+              : demoAuthentication
+                ? "Google 로그인 데모 시작"
+                : "Google 로그인 준비 중"}
           </S.ProviderButton>
-          <S.GuestButton type="button" onClick={() => navigate(routes.home)}>먼저 둘러볼게요</S.GuestButton>
+          {demoAuthentication && (
+            <S.GuestButton type="button" onClick={() => navigate(routes.home)}>
+              먼저 둘러볼게요
+            </S.GuestButton>
+          )}
         </S.LoginButtons>
       )}
       {termsOpen && (
@@ -312,8 +332,12 @@ function OnboardingPage() {
           <S.Dim onClick={() => setTermsOpen(false)} />
           <S.TermsSheet role="dialog" aria-modal="true" aria-labelledby="terms-title">
             <S.Grabber />
-            <h2 id="terms-title">약관 동의 체험</h2>
-            <p>필수 항목을 선택하면 데모 프로필을 만들 수 있어요.</p>
+            <h2 id="terms-title">{liveGoogleLogin ? "약관에 동의해 주세요" : "약관 동의 체험"}</h2>
+            <p>
+              {liveGoogleLogin
+                ? "도틀로를 이용하려면 필수 약관 동의가 필요해요."
+                : "필수 항목을 선택하면 데모 프로필을 만들 수 있어요."}
+            </p>
             <S.AllAgreement type="button" aria-pressed={allAgreed} onClick={toggleAll}>
               <S.Check $large $checked={allAgreed}>{allAgreed && <img src={checkAllIcon} alt="" />}</S.Check>
               <span><strong>전체 동의</strong><small>선택 항목을 포함한 모든 약관에 동의해요</small></span>
