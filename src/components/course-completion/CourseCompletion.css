@@ -5,6 +5,23 @@
   min-height: 100vh;
 }
 
+.course-map__route {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.course-map__caption {
+  position: absolute;
+  right: 8px;
+  bottom: 6px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  background: #fff;
+  font-size: 10px;
+}
+
 .course-page button {
   border: 0;
   color: inherit;
@@ -239,7 +256,7 @@
   height: 264px;
   overflow: hidden;
   border-radius: 16px;
-  background: #5dd6c3;
+  background: #f3f5fa;
 }
 
 .course-map__base {

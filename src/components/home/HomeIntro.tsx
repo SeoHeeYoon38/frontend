@@ -68,7 +68,7 @@ function HomeIntro({ name, trip }: HomeIntroProps) {
       {trip && (
         <S.Card
           as={Link}
-          to={tripPlanPath("home")}
+          to={tripPlanPath("home", trip.id)}
           aria-label={`${trip.title} 일정 보기`}
         >
           <C.Cover src={trip.coverImage} alt={`${trip.city} 여행`} />

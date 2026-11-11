@@ -10,10 +10,13 @@ import { settingsBackPath } from "../utils/navigation";
 import { readMockScenario } from "../utils/mockScenario";
 import { routes } from "../config/routes";
 import type { CourseSettingsDialog, CourseSettingsView } from "../types/courseSettings";
+import { readMockTrip, saveMockTrip } from "../data/mocks/mockTripService";
 
 function CourseSettingsPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const tripId = new URLSearchParams(location.search).get("course") ?? "osaka";
+  const trip = readMockTrip(tripId);
   const showUnsavedMock =
     readMockScenario(location.search) === "settings-unsaved-close";
   const [view, setView] = useState<CourseSettingsView>("menu");
@@ -39,12 +42,15 @@ function CourseSettingsPage() {
     cancelNameEdit,
     copyInviteLink,
   } = useCourseSettings(
-    showUnsavedMock
+    { initialTripName: trip?.title, onSaveTripName: (title) => {
+      const current = readMockTrip(tripId);
+      return current ? saveMockTrip({ ...current, title }) : false;
+    }, ...(showUnsavedMock
       ? {
           initialSheet: "trip",
           initialDraftName: "오사카 우정 여행",
         }
-      : {},
+      : {}) },
   );
 
   useEffect(() => {

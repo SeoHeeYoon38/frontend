@@ -30,7 +30,11 @@ function PlaceTimeline({ places, onOpen, onRemove }: PlaceTimelineProps) {
               tabIndex={0}
               onClick={() => onOpen(place.id)}
               onKeyDown={(event) => {
-                if (event.key === "Enter" || event.key === " ") onOpen(place.id);
+                if (event.target !== event.currentTarget) return;
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  onOpen(place.id);
+                }
               }}
             >
               <img

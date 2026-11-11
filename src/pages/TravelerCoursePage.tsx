@@ -13,6 +13,7 @@ import TravelerCourseMap from "../components/traveler-course/TravelerCourseMap";
 import TravelerPlaceDetail from "../components/traveler-course/TravelerPlaceDetail";
 import * as S from "./TravelerCoursePage.styled";
 import { importedTripPath } from "../utils/navigation";
+import { createImportedTrip, saveMockTrip, tripStorageNotice } from "../data/mocks/mockTripService";
 
 const SAVED_KEY = `dotlo:saved-traveler-course:${travelerCourse.id}`;
 
@@ -44,15 +45,12 @@ function TravelerCoursePage() {
   };
 
   const importCourse = () => {
-    try {
-      localStorage.setItem(
-        `dotlo:imported-course:${travelerCourse.id}`,
-        JSON.stringify({ id: travelerCourse.id, importedAt: new Date().toISOString() }),
-      );
-    } catch {
-      // 저장소를 사용할 수 없어도 화면 이동은 계속합니다.
+    const trip = createImportedTrip(crypto.randomUUID());
+    if (!saveMockTrip(trip)) {
+      setNotice(tripStorageNotice);
+      return;
     }
-    navigate(`${importedTripPath("kyoto")}?toast=course-imported`);
+    navigate(`${importedTripPath(trip.id)}?toast=course-imported`);
   };
 
   if (screen === "map") {

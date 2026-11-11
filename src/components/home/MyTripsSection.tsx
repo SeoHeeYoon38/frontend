@@ -52,7 +52,7 @@ function MyTripsSection({ trips, onCreateTrip }: MyTripsSectionProps) {
           {visibleTrips.map((trip) => (
             <S.TripRow
               as={Link}
-              to={tripPlanPath("home")}
+              to={tripPlanPath("home", trip.id)}
               aria-label={`${trip.title} 일정 보기`}
               key={trip.id}
             >

@@ -6,6 +6,7 @@ interface UseCourseSettingsOptions {
   initialSheet?: CourseSettingsSheet | null;
   initialTripName?: string;
   initialDraftName?: string;
+  onSaveTripName?: (name: string) => boolean;
 }
 
 function useCourseSettings(options: UseCourseSettingsOptions = {}) {
@@ -45,6 +46,10 @@ function useCourseSettings(options: UseCourseSettingsOptions = {}) {
   const saveTripName = () => {
     const nextName = draftName.trim();
     if (nextName) {
+      if (options.onSaveTripName && !options.onSaveTripName(nextName)) {
+        setNotice("여행 이름을 저장하지 못했어요. 브라우저 저장소를 확인해 주세요.");
+        return;
+      }
       setTripName(nextName);
       setNotice("여행 이름을 수정했어요.");
     }
@@ -53,6 +58,10 @@ function useCourseSettings(options: UseCourseSettingsOptions = {}) {
 
   const saveAndCloseTripSheet = () => {
     const nextName = draftName.trim() || tripName;
+    if (options.onSaveTripName && !options.onSaveTripName(nextName)) {
+      setNotice("여행 정보를 저장하지 못했어요. 브라우저 저장소를 확인해 주세요.");
+      return;
+    }
     setTripName(nextName);
     setDraftName(nextName);
     setNotice("여행 정보를 저장했어요.");

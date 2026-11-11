@@ -1055,3 +1055,16 @@
     padding-left: 16px;
   }
 }
+.schedule-edit-sheet__drag {
+  touch-action: none;
+  cursor: grab;
+}
+
+.schedule-edit-sheet__move {
+  display: flex;
+  flex-direction: column;
+}
+
+.schedule-edit-sheet__move button:disabled {
+  opacity: .3;
+}

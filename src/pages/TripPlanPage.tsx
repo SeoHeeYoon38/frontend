@@ -11,20 +11,35 @@ import PlacePickerSheet from "../components/course-completion/PlacePickerSheet";
 import "../components/course-completion/CourseCompletion.css";
 import "../components/course-completion/CourseEdit.css";
 import useCoursePlan from "../hooks/useCoursePlan";
+import { readMockTrips } from "../data/mocks/mockTripService";
 import acceptedCheckIcon from "../assets/invite/accepted-check.svg";
 import {
   readPlanOrigin,
   tripCommunityPath,
   tripPlanBackPath,
   tripSettingsPath,
+  importedTripPath,
 } from "../utils/navigation";
 
 function TripPlanPage() {
+  const location = useLocation();
+  const params = new URLSearchParams(location.search);
+  const legacyTrip = readPlanOrigin(location.search) === "generated"
+    ? readMockTrips().find((trip) => trip.source === "generated" && !trip.saved)
+    : undefined;
+  const tripId = params.get("course") ?? legacyTrip?.id ?? "osaka";
+  return <CoursePlan key={tripId} tripId={tripId} />;
+}
+
+function CoursePlan({ tripId }: { tripId: string }) {
   const navigate = useNavigate();
   const location = useLocation();
   const planOrigin = readPlanOrigin(location.search);
   const inviteAccepted = new URLSearchParams(location.search).get("invite") === "accepted";
   const {
+    trip,
+    candidates,
+    replacements,
     activeDay,
     aiRequest,
     displayPlaces,
@@ -45,6 +60,8 @@ function TripPlanPage() {
     addSelectedCandidates,
     applyAiResult,
     applyReplacement,
+    openReplacement,
+    reorderPlace,
     openPlaceDetail,
     removePlace,
     removeSelectedPlace,
@@ -52,7 +69,7 @@ function TripPlanPage() {
     savePlan,
     toggleCandidate,
     undoAiResult,
-  } = useCoursePlan();
+  } = useCoursePlan(tripId);
 
   useEffect(() => {
     if (screen !== "ai-loading") return;
@@ -66,7 +83,11 @@ function TripPlanPage() {
     }
   }, [screen]);
 
-  if (screen === "place-detail") {
+  if (!trip) {
+    return <main className="course-page"><p role="status">여행을 찾지 못했어요. 저장된 여행 목록을 확인해 주세요.</p><button type="button" onClick={() => navigate("/my-trips")}>내 여행 보기</button></main>;
+  }
+
+  if (screen === "place-detail" && selectedPlace) {
     return (
       <div className="course-page-shell">
         <div className="course-page">
@@ -101,18 +122,26 @@ function TripPlanPage() {
     <div className="course-page-shell">
       <main className="course-page">
         <CourseHero
+          trip={trip}
           variant={overviewVariant === "default" ? "default" : "ai"}
           onBack={() => navigate(tripPlanBackPath(location.search))}
-          onOpenSettings={() => navigate(tripSettingsPath(planOrigin))}
+          onOpenSettings={() => navigate(tripSettingsPath(planOrigin, trip.id))}
         />
 
         <div className="course-content">
+          {notice && <p role="status">{notice}</p>}
+          {trip.source === "imported" && !trip.startDate && (
+            <button type="button" onClick={() => navigate(importedTripPath(trip.id))}>여행 날짜와 동행 등록하기</button>
+          )}
           <CourseOverview
+            trip={trip}
+            places={displayPlaces}
             activeDay={activeDay}
             onDayChange={setActiveDay}
             variant={overviewVariant}
           />
           <DayCourse
+            dayLabel={`${activeDay + 1}일차 ${trip.city} 일정`}
             places={displayPlaces}
             variant={overviewVariant}
             unplacedCount={overviewVariant === "default" ? removedPlaces.length : 0}
@@ -141,7 +170,10 @@ function TripPlanPage() {
               </button>
             </div>
           ) : (
-            <button type="button" onClick={() => navigate(tripCommunityPath(planOrigin))}>AI 수정 요청</button>
+            <div className="course-cta__row">
+              <button className="is-secondary" type="button" onClick={() => navigate(tripCommunityPath(planOrigin, trip.id))}>AI 수정 요청</button>
+              <button type="button" onClick={savePlan} disabled={isSaved}>{isSaved ? "저장 완료" : "내 여행에 저장하기"}</button>
+            </div>
           )}
         </div>
         {planVariant === "applied" && screen === "plan" && (
@@ -150,12 +182,9 @@ function TripPlanPage() {
         {inviteAccepted && screen === "plan" && (
           <div className="course-toast course-toast--invite" role="status">
             <img src={acceptedCheckIcon} alt="" />
-            <p>오사카 3박 4일 여행에 참여했어요</p>
+              <p>{trip.title} 여행에 참여했어요</p>
           </div>
         )}
-        <p className="course-live-region" aria-live="polite">
-          {notice}
-        </p>
 
         {screen === "ai-edit" && (
           <AiEditSheet
@@ -167,16 +196,22 @@ function TripPlanPage() {
         )}
         {screen === "schedule-edit" && (
           <CourseEditSheet
+            days={trip.days}
+            activeDay={activeDay}
+            onDayChange={setActiveDay}
+            onReorder={reorderPlace}
             places={places}
             onAdd={() => setScreen("place-add")}
             onClose={() => setScreen("plan")}
             onRemove={removePlace}
-            onReplace={() => setScreen("place-replace")}
+            onReplace={openReplacement}
             onSave={saveManualEdit}
           />
         )}
         {screen === "place-add" && (
           <PlacePickerSheet
+            candidates={candidates}
+            day={activeDay + 1}
             mode="add"
             replacementId={replacementId}
             selectedIds={selectedCandidateIds}
@@ -188,6 +223,8 @@ function TripPlanPage() {
         )}
         {screen === "place-replace" && (
           <PlacePickerSheet
+            candidates={replacements}
+            day={activeDay + 1}
             mode="replace"
             replacementId={replacementId}
             selectedIds={selectedCandidateIds}

@@ -4,6 +4,7 @@ import type { CoursePlace } from "../../types/courseCompletion";
 import PlaceTimeline from "./PlaceTimeline";
 
 interface DayCourseProps {
+  dayLabel: string;
   places: CoursePlace[];
   onAddPlace: () => void;
   onEditPlace?: () => void;
@@ -15,6 +16,7 @@ interface DayCourseProps {
 }
 
 function DayCourse({
+  dayLabel,
   places,
   onAddPlace,
   onEditPlace,
@@ -27,11 +29,11 @@ function DayCourse({
   return (
     <section className="day-course">
       <div className="day-course__header">
-        <h2>천천히 즐기는 미식과 야경</h2>
+        <h2>{dayLabel}</h2>
         <p>
           <span>{places.length}곳</span>
           <i />
-          <span>{variant === "default" ? "도보 1.1km" : "도보 0.7km"}</span>
+          <span>샘플 일정</span>
         </p>
       </div>
       {unplacedCount > 0 && (
@@ -41,7 +43,8 @@ function DayCourse({
           <img src={unplacedArrow} alt="" />
         </button>
       )}
-      <PlaceTimeline places={places} onOpen={onOpenPlace} onRemove={variant === "default" ? onRemovePlace : undefined} />
+      {!places.length && <p>아직 담긴 장소가 없어요. 장소를 추가해 일정을 채워 보세요.</p>}
+      <PlaceTimeline places={places} onOpen={onOpenPlace} onRemove={variant === "result" ? undefined : onRemovePlace} />
       <button className="add-place-button" type="button" onClick={onAddPlace}>
         <span aria-hidden="true">＋</span> 장소 추가
       </button>

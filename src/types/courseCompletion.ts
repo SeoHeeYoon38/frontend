@@ -18,6 +18,8 @@ export interface CoursePlace {
   description?: string;
   changeLabel?: string;
   fixed?: boolean;
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface CourseMapPin {
