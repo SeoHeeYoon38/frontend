@@ -17,6 +17,11 @@ import airplane from "../../assets/icons/transport-airplane.svg";
 import TripSheet from "../common/TripSheet";
 import DateRangePicker from "./DateRangePicker";
 import * as S from "./Trip.styled";
+import { isServerTripId } from "../../api/adapters";
+import { shouldUseMockFallback } from "../../api/client";
+import { isApiEnabled } from "../../api/config";
+import { saveFlights, searchFlights } from "../../api/reservations";
+import { hasAuthSession } from "../../api/tokenStorage";
 
 interface OptionalInfoSheetProps {
   mode: "flight" | "stay" | "car";
@@ -31,6 +36,7 @@ function OptionalInfoSheet({
   onSave,
 }: OptionalInfoSheetProps) {
   const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
   const [start, setStart] = useState(draft.startDate);
   const [end, setEnd] = useState(draft.endDate);
   const [showCalendar, setShowCalendar] = useState(false);
@@ -80,7 +86,7 @@ function OptionalInfoSheet({
       hotel.address.includes(hotelQuery.trim()),
   );
 
-  function findFlight() {
+  async function findFlight() {
     if (!validDate(start) || !validDate(end) || end < start) {
       setError("여행 날짜를 다시 선택해 주세요.");
       return;
@@ -90,6 +96,40 @@ function OptionalInfoSheet({
     if (!/^[A-Z0-9]{2,3}\d{1,4}$/.test(code)) {
       setError("편명을 확인해 주세요.");
       return;
+    }
+    const date = flightTab === "outbound" ? start : end;
+    if (isApiEnabled() && hasAuthSession() && isServerTripId(draft.tripId)) {
+      setSaving(true);
+      try {
+        const results = await searchFlights(code, date);
+        const result = results[0];
+        if (!result) {
+          setError("항공편을 찾지 못했어요. 편명과 날짜를 확인해 주세요.");
+          return;
+        }
+        setFlight({
+          code: result.number,
+          airline: result.airline ?? result.number,
+          date,
+          departure: result.departure.time.slice(11, 16),
+          arrival: result.arrival.time.slice(11, 16),
+          from: result.departure.airport,
+          to: result.arrival.airport,
+          apiFlight: result,
+        });
+        return;
+      } catch (reason) {
+        if (!shouldUseMockFallback(reason)) {
+          setError(
+            reason instanceof Error
+              ? reason.message
+              : "항공편을 찾지 못했어요. 다시 시도해 주세요.",
+          );
+          return;
+        }
+      } finally {
+        setSaving(false);
+      }
     }
     const match = mockFlights.find(
       (item) =>
@@ -227,7 +267,7 @@ function OptionalInfoSheet({
       />
     );
   }
-  function save() {
+  async function save() {
     setError("");
     if (mode === "flight") {
       if (!flight) return;
@@ -249,6 +289,32 @@ function OptionalInfoSheet({
           "오는 편 출발 시간이 도착 시간보다 빨라요. 항공편과 날짜를 확인해 주세요.",
         );
         return;
+      }
+      if (
+        isApiEnabled() &&
+        hasAuthSession() &&
+        isServerTripId(draft.tripId) &&
+        flight.apiFlight
+      ) {
+        setSaving(true);
+        try {
+          await saveFlights(
+            Number(draft.tripId),
+            next.outbound?.apiFlight ?? null,
+            next.inbound?.apiFlight ?? null,
+          );
+        } catch (reason) {
+          if (!shouldUseMockFallback(reason)) {
+            setError(
+              reason instanceof Error
+                ? reason.message
+                : "항공편을 저장하지 못했어요. 다시 시도해 주세요.",
+            );
+            return;
+          }
+        } finally {
+          setSaving(false);
+        }
       }
       onSave(next);
     } else if (mode === "stay") {
@@ -312,16 +378,19 @@ function OptionalInfoSheet({
         <>
           <S.Primary
             type="button"
+            onClick={() => void (mode === "flight" && !flight ? findFlight() : save())}
             disabled={
-              mode === "flight"
+              saving ||
+              (mode === "flight"
                 ? !flight && !flightCode.trim()
                 : mode === "stay"
                   ? !stays.length
-                  : !carDays.length || !location.trim()
+                  : !carDays.length || !location.trim())
             }
-            onClick={mode === "flight" && !flight ? findFlight : save}
           >
-            {mode === "flight"
+            {saving
+              ? "처리하고 있어요"
+              : mode === "flight"
               ? flight
                 ? `${flightTab === "outbound" ? "가는" : "오는"} 편 등록하기`
                 : "항공편 찾기"

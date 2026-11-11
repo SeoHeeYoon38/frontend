@@ -1,5 +1,7 @@
 import { useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
+import { canStartGoogleLogin, googleAuthorizationUrl } from "../api/auth";
+import { isApiEnabled } from "../api/config";
 import brandLogo from "../assets/images/brand-dotlo-logo.png";
 import checkAllIcon from "../assets/onboarding/check-all.svg";
 import checkIcon from "../assets/onboarding/check.svg";
@@ -94,6 +96,7 @@ function OnboardingPage() {
   const [nickname, setNickname] = useState(() => onboarding?.nickname ?? "하늘");
   const [preferences, setPreferences] = useState<string[]>([]);
   const [error, setError] = useState("");
+  const liveGoogleLogin = isApiEnabled() && canStartGoogleLogin();
 
   const displayNickname = onboarding?.nickname ?? "하늘";
   const allAgreed = useMemo(
@@ -107,6 +110,22 @@ function OnboardingPage() {
   const toggleAll = () => {
     const next = !allAgreed;
     setAgreementsState({ service: next, privacy: next, age: next, location: next, marketing: next });
+  };
+
+  const continueAfterTerms = () => {
+    if (!liveGoogleLogin) {
+      navigate(routes.onboardingProfile);
+      return;
+    }
+    try {
+      window.location.assign(googleAuthorizationUrl());
+    } catch (reason) {
+      setError(
+        reason instanceof Error
+          ? reason.message
+          : "Google 로그인을 시작하지 못했어요.",
+      );
+    }
   };
 
   if (location.pathname === routes.onboardingProfile) {
@@ -229,9 +248,14 @@ function OnboardingPage() {
       <LoginBackdrop withTagline={termsOpen} />
       {!termsOpen && (
         <S.LoginButtons>
-          <S.LoginNotice>Google 계정 없이 로그인과 가입 흐름을 체험할 수 있어요.</S.LoginNotice>
+          <S.LoginNotice>
+            {liveGoogleLogin
+              ? "Google 계정으로 로그인하고 내 여행을 안전하게 불러와요."
+              : "Google 계정 없이 로그인과 가입 흐름을 체험할 수 있어요."}
+          </S.LoginNotice>
           <S.ProviderButton type="button" onClick={() => setTermsOpen(true)}>
-            <img src={googleIcon} alt="" />Google 로그인 데모 시작
+            <img src={googleIcon} alt="" />
+            {liveGoogleLogin ? "Google로 시작하기" : "Google 로그인 데모 시작"}
           </S.ProviderButton>
           <S.GuestButton type="button" onClick={() => navigate(routes.home)}>먼저 둘러볼게요</S.GuestButton>
         </S.LoginButtons>
@@ -278,10 +302,11 @@ function OnboardingPage() {
             <S.TermsSubmit
               type="button"
               disabled={!requiredAgreed}
-              onClick={() => navigate(routes.onboardingProfile)}
+              onClick={continueAfterTerms}
             >
               동의하고 시작하기
             </S.TermsSubmit>
+            {error && <S.ValidText $error role="alert">{error}</S.ValidText>}
           </S.TermsSheet>
         </>
       )}

@@ -31,7 +31,17 @@ const Form = styled.form`
   }
 `;
 
-function PlaceImportForm({ onImport }: { onImport: () => void }) {
+export type PlaceImportInput =
+  | { method: "file"; file: File }
+  | { method: "link"; link: string };
+
+function PlaceImportForm({
+  onImport,
+  busy = false,
+}: {
+  onImport: (input: PlaceImportInput) => void | Promise<void>;
+  busy?: boolean;
+}) {
   const fieldId = useId();
   const [method, setMethod] = useState<"file" | "link">("file");
   const [file, setFile] = useState<File | null>(null);
@@ -47,10 +57,16 @@ function PlaceImportForm({ onImport }: { onImport: () => void }) {
           ? file ? validateTakeoutFile(file) : "Takeout 파일을 선택해 주세요."
           : validateMapsListLink(link);
         setError(message);
-        if (!message) onImport();
+        if (!message) {
+          void onImport(
+            method === "file"
+              ? { method, file: file! }
+              : { method, link: link.trim() },
+          );
+        }
       }}
     >
-      <p>데모에서는 파일과 링크 형식만 확인하고, 이 도시의 샘플 장소를 보여드려요.</p>
+      <p>로그인 상태에서는 저장 장소를 서버로 가져오고, 미리보기 상태에서는 샘플 장소를 보여드려요.</p>
       <PlaceTabs aria-label="장소 가져오기 방법">
         <button type="button" aria-pressed={method === "file"} onClick={() => { setMethod("file"); setError(""); }}>
           Takeout 파일
@@ -94,7 +110,9 @@ function PlaceImportForm({ onImport }: { onImport: () => void }) {
         </>
       )}
       {error && <ErrorText role="alert">{error}</ErrorText>}
-      <Primary type="submit">샘플 장소 불러오기</Primary>
+      <Primary type="submit" disabled={busy}>
+        {busy ? "장소를 가져오고 있어요" : "장소 불러오기"}
+      </Primary>
     </Form>
   );
 }

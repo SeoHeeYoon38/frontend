@@ -14,6 +14,11 @@ import { routes } from "../config/routes";
 import { createGeneratedTrip, saveMockTrip } from "../data/mocks/mockTripService";
 import { tripPlanPath } from "../utils/navigation";
 import { createRequestLock } from "../utils/requestLock";
+import { isServerTripId, tripDraftToApiInput } from "../api/adapters";
+import { shouldUseMockFallback } from "../api/client";
+import { isApiEnabled } from "../api/config";
+import { hasAuthSession } from "../api/tokenStorage";
+import { createTrip as createApiTrip, updateTrip as updateApiTrip } from "../api/trips";
 function initialDraft() {
   let saved: string | null = null;
   try {
@@ -45,6 +50,7 @@ function useTripCreate() {
   const [isGenerating, setGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState("");
+  const [preparingTrip, setPreparingTrip] = useState(false);
   const request = useRef<AbortController | null>(null);
   const requestLock = useRef(createRequestLock());
   const requested = Number(params.get("step") || 1);
@@ -78,6 +84,38 @@ function useTripCreate() {
     if (generating) return;
     if (step === 1) navigate(routes.home);
     else move(step - 1);
+  }
+  async function startPlacesStep() {
+    if (preparingTrip) return;
+    const input = tripDraftToApiInput(draft);
+    if (!input) {
+      setError(basicError(draft));
+      return;
+    }
+    if (!isApiEnabled() || !hasAuthSession()) {
+      move(2);
+      return;
+    }
+
+    setPreparingTrip(true);
+    setError("");
+    try {
+      const response = isServerTripId(draft.tripId)
+        ? await updateApiTrip(Number(draft.tripId), input)
+        : await createApiTrip(input);
+      update({ ...draft, tripId: String(response.id) });
+      move(2);
+    } catch (reason) {
+      if (shouldUseMockFallback(reason)) move(2);
+      else
+        setError(
+          reason instanceof Error
+            ? reason.message
+            : "여행 정보를 저장하지 못했어요. 다시 시도해 주세요.",
+        );
+    } finally {
+      setPreparingTrip(false);
+    }
   }
   async function generate() {
     if (!requestLock.current.acquire()) return;
@@ -140,10 +178,12 @@ function useTripCreate() {
     generating,
     progress,
     error,
+    preparingTrip,
     phases,
     update,
     move,
     back,
+    startPlacesStep,
     generate,
   };
 }

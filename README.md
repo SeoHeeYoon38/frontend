@@ -80,14 +80,22 @@ Copy-Item .env.example .env
 
 | 변수 | 설명 | 예시 |
 | --- | --- | --- |
-| VITE_API_BASE_URL | 백엔드 API 주소 | http://localhost:8080 |
+| VITE_API_MODE | `auto`는 가능한 기능만 API로 연결하고 나머지는 목업 사용 | auto |
+| VITE_API_BASE_URL | 백엔드 API 주소 | https://api.dotlo.cloud |
+| VITE_GOOGLE_CLIENT_ID | Google OAuth 웹 클라이언트 ID | Google Cloud에서 발급한 값 |
+| VITE_GOOGLE_REDIRECT_URI | Google 로그인 후 돌아올 프론트 주소 | http://localhost:5173/auth/callback/google |
 
 `.env.example`에는 다음 내용을 작성합니다.
 
 ```dotenv
-VITE_API_BASE_URL=http://localhost:8080
+VITE_API_MODE=auto
+VITE_API_BASE_URL=https://api.dotlo.cloud
+VITE_GOOGLE_CLIENT_ID=
+VITE_GOOGLE_REDIRECT_URI=http://localhost:5173/auth/callback/google
 ```
 
+- `auto` 모드는 로그인 세션과 백엔드 구현이 확인된 기능만 실제 API를 사용합니다.
+- 로그인하지 않은 미리보기와 아직 백엔드에 없는 기능은 기존 목업을 사용합니다.
 - 코드에서는 `import.meta.env.VITE_API_BASE_URL`로 사용합니다.
 - 환경변수를 변경한 뒤에는 개발 서버를 다시 실행합니다.
 - `VITE_`로 시작하는 값은 브라우저에 공개되므로 비밀번호나 서버용 비밀키를 넣지 않습니다.
