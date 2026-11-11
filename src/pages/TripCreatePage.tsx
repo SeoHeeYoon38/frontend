@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useLocation } from "react-router";
+import { useEffect, useState } from "react";
+import { Link, useLocation } from "react-router";
 import useTripCreate from "../hooks/useTripCreate";
 import Layout from "../components/common/Layout";
 import DirectTripBuilder from "../components/direct-trip/DirectTripBuilder";
@@ -15,13 +15,56 @@ import current from "../assets/icons/status-generation-current.svg";
 import pending from "../assets/icons/status-generation-pending.svg";
 import { isDirectTripMode } from "../utils/navigation";
 import * as S from "./TripCreatePage.styled";
+import { isServerTripId, savedPlaceToTripPlace } from "../api/adapters";
+import { getSavedPlaces } from "../api/places";
+import { getTrip } from "../api/trips";
+import type { TripResponse } from "../api/types";
+import { routes } from "../config/routes";
+import type { TripPlace } from "../types/trip";
 
 function TripCreatePage() {
   const location = useLocation();
+  const tripId = new URLSearchParams(location.search).get("tripId");
+  if (tripId !== null) {
+    return isServerTripId(tripId)
+      ? <ResumeTrip key={tripId} tripId={Number(tripId)} />
+      : <p role="alert">여행 주소를 확인해 주세요.</p>;
+  }
   return isDirectTripMode(location.search) ? <DirectTripBuilder /> : <AiTripCreatePage />;
 }
 
-function AiTripCreatePage() {
+function ResumeTrip({ tripId }: { tripId: number }) {
+  const [resumed, setResumed] = useState<{ trip: TripResponse; places?: TripPlace[] }>();
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const { signal } = controller;
+    void getTrip(tripId, signal).then(async (trip) => {
+      if (signal.aborted) return;
+      const saved = await getSavedPlaces(tripId, signal).catch(() => undefined);
+      if (!signal.aborted) {
+        setResumed({ trip, places: saved?.places.map((place) => savedPlaceToTripPlace(place, trip.city)) });
+      }
+    }).catch(() => { if (!signal.aborted) setError(true); });
+    return () => controller.abort();
+  }, [tripId]);
+
+  if (resumed) return <AiTripCreatePage trip={resumed.trip} places={resumed.places} />;
+
+  return (
+    <Layout variant="trip" step={1}>
+      {error ? (
+        <>
+          <p role="alert">이어서 만들 여행을 불러오지 못했어요.</p>
+          <Link to={routes.home}>홈으로 돌아가기</Link>
+        </>
+      ) : <p role="status">여행 정보를 불러오고 있어요.</p>}
+    </Layout>
+  );
+}
+
+function AiTripCreatePage({ trip, places }: { trip?: TripResponse; places?: TripPlace[] }) {
   const [importing, setImporting] = useState(false);
   const {
     draft,
@@ -36,7 +79,7 @@ function AiTripCreatePage() {
     back,
     startPlacesStep,
     generate,
-  } = useTripCreate();
+  } = useTripCreate(trip, places);
 
   let content = (
     <TripInfoStep

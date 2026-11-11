@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import backIcon from "../assets/icons/nav-back.svg";
 import chevronIcon from "../assets/icons/nav-chevron-right-muted.svg";
 import blueAvatar from "../assets/images/character-blue.webp";
@@ -9,6 +9,8 @@ import { routes } from "../config/routes";
 import { policyPath, type PolicyDocumentId } from "../data/policyDocuments";
 import { readProfileSettings } from "../utils/mySettings";
 import * as S from "./AccountSettingsPage.styled";
+import { logout } from "../api/auth";
+import { hasAuthSession } from "../api/tokenStorage";
 
 const policies: Array<{ id: PolicyDocumentId; label: string }> = [
   { id: "service", label: "서비스 이용약관" },
@@ -17,8 +19,24 @@ const policies: Array<{ id: PolicyDocumentId; label: string }> = [
 ];
 
 function AccountSettingsPage() {
+  const navigate = useNavigate();
   const [profile] = useState(() => readProfileSettings(window.localStorage));
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [logoutError, setLogoutError] = useState(false);
+  const signedIn = hasAuthSession();
   const avatar = profile.avatar === "purple" ? purpleAvatar : blueAvatar;
+
+  async function signOut() {
+    setIsLoggingOut(true);
+    try {
+      await logout();
+      navigate(routes.login, { replace: true });
+    } catch {
+      setLogoutError(true);
+    } finally {
+      setIsLoggingOut(false);
+    }
+  }
 
   return (
     <S.Page>
@@ -33,7 +51,7 @@ function AccountSettingsPage() {
         <S.Avatar><img src={avatar} alt="" /></S.Avatar>
         <span>
           <strong>{profile.nickname}</strong>
-          <small>브라우저에 저장되는 데모 프로필</small>
+          {!signedIn && <small>브라우저에 저장되는 데모 프로필</small>}
         </span>
       </S.AccountCard>
 
@@ -63,10 +81,15 @@ function AccountSettingsPage() {
           </S.PolicyButton>
         ))}
         <S.AccountActions>
-          <Link to={routes.login}>로그인 데모</Link>
+          {signedIn ? (
+            <button type="button" disabled={isLoggingOut} onClick={() => void signOut()}>
+              {isLoggingOut ? "로그아웃 중…" : "로그아웃"}
+            </button>
+          ) : <Link to={routes.login}>로그인</Link>}
           <i />
           <Link to={routes.withdrawal}>회원 탈퇴</Link>
         </S.AccountActions>
+        {logoutError && <p role="alert">이 기기에서 로그아웃했어요. 서버 세션 종료는 확인하지 못했어요.</p>}
       </S.Section>
       <S.HomeIndicator />
 

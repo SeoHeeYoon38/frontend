@@ -63,8 +63,8 @@ export async function logout() {
     if (tokens) {
       await apiRequest<void>("/api/auth/logout", {
         method: "POST",
+        auth: false,
         json: { refreshToken: tokens.refreshToken },
-        retryAuth: false,
       });
     }
   } finally {

@@ -115,6 +115,14 @@ export const AccountActions = styled.div`
 
   i { width: 1px; height: 12px; background: #e4e6ec; }
   a { color: #8a8a8e; }
+  button {
+    border: 0;
+    padding: 0;
+    background: none;
+    color: #8a8a8e;
+    font: inherit;
+    cursor: pointer;
+  }
 `;
 
 export const HomeIndicator = styled.div`

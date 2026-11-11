@@ -10,10 +10,11 @@ import { tripPlanPath } from "../../utils/navigation";
 
 interface MyTripsSectionProps {
   trips: TripSummary[];
+  tripPath?: (id: string) => string;
   onCreateTrip: () => void;
 }
 
-function MyTripsSection({ trips, onCreateTrip }: MyTripsSectionProps) {
+function MyTripsSection({ trips, tripPath = (id) => tripPlanPath("home", id), onCreateTrip }: MyTripsSectionProps) {
   const [selectedTab, setSelectedTab] = useState<"upcoming" | "past">(
     "upcoming",
   );
@@ -52,7 +53,7 @@ function MyTripsSection({ trips, onCreateTrip }: MyTripsSectionProps) {
           {visibleTrips.map((trip) => (
             <S.TripRow
               as={Link}
-              to={tripPlanPath("home", trip.id)}
+              to={tripPath(trip.id)}
               aria-label={`${trip.title} 일정 보기`}
               key={trip.id}
             >

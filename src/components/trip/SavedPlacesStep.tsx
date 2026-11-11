@@ -85,7 +85,7 @@ function SavedPlacesStep({
   const [largeMap, setLargeMap] = useState(false);
   const request = useRef<AbortController | null>(null);
   useEffect(() => () => request.current?.abort(), []);
-  const { places: catalog, courses } = mockTripCatalog[draft.city];
+  const { places: catalog, courses } = mockTripCatalog[draft.city] ?? { places: [], courses: [] };
   const matchKeyword = matchQuery.trim().toLowerCase();
   const matchResults = matchKeyword
     ? catalog.filter((candidate) =>

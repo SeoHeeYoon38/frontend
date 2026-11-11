@@ -49,7 +49,7 @@ interface PreferenceResult {
 }
 
 export function isServerTripId(value: string) {
-  return /^\d+$/.test(value) && Number(value) > 0;
+  return /^\d+$/.test(value) && Number.isSafeInteger(Number(value)) && Number(value) > 0;
 }
 
 export function tripDraftToApiInput(draft: TripDraft): TripInput | null {

@@ -1,10 +1,11 @@
-import { useMemo } from "react";
 import { useSearchParams } from "react-router";
 import pinIcon from "../assets/course-settings/pin.svg";
 import CreateTripSheet from "../components/common/CreateTripSheet";
 import { mockTripStatus, mockTripSummary, readMockTrips, readTripStorageNotice } from "../data/mocks/mockTripService";
 import type { MyTripSummary } from "../types/myTrips";
-import { importedTripPath, tripPlanPath } from "../utils/navigation";
+import { importedTripPath, serverTripPlanPath, tripPlanPath } from "../utils/navigation";
+import { apiTripToSummary } from "../utils/serverTrip";
+import { useMyTrips } from "../hooks/useMyTrips";
 import {
   formatTripDateRange,
   importedTripRegistrationKey,
@@ -14,7 +15,7 @@ import * as S from "./MyTripsPage.styled";
 
 type TripTab = "upcoming" | "past";
 
-function TripCard({ trip }: { trip: MyTripSummary }) {
+function TripCard({ trip, server }: { trip: MyTripSummary; server: boolean }) {
   let dateLabel = trip.dateLabel;
   if (trip.id === "kyoto") {
     try {
@@ -29,7 +30,7 @@ function TripCard({ trip }: { trip: MyTripSummary }) {
 
   return (
     <S.TripCard
-      to={trip.id === "kyoto" ? importedTripPath(trip.id) : tripPlanPath("my-trips", trip.id)}
+      to={server ? serverTripPlanPath("my-trips", trip.id) : trip.id === "kyoto" ? importedTripPath(trip.id) : tripPlanPath("my-trips", trip.id)}
       aria-label={`${trip.title} 코스 보기`}
     >
       <img src={trip.coverImage} alt="" />
@@ -54,17 +55,19 @@ function MyTripsPage() {
   const isCreateOpen = searchParams.has("create");
   const showSavedToast = searchParams.get("toast") === "saved";
   const showImportedToast = searchParams.get("toast") === "course-imported";
-  const allTrips = readMockTrips().filter((trip) => trip.saved);
-  const upcomingTrips = allTrips.filter((trip) => mockTripStatus(trip) === "upcoming").map(mockTripSummary);
-  const pastTrips = allTrips.filter((trip) => mockTripStatus(trip) === "past").map(mockTripSummary);
+  const myTrips = useMyTrips();
+  const allTrips = myTrips.enabled
+    ? myTrips.trips.map(apiTripToSummary)
+    : readMockTrips().filter((trip) => trip.saved).map((trip) => ({
+        ...mockTripSummary(trip),
+        status: mockTripStatus(trip),
+      }));
+  const upcomingTrips = allTrips.filter((trip) => trip.status === "upcoming");
+  const pastTrips = allTrips.filter((trip) => trip.status === "past");
   const trips = tab === "past" ? pastTrips : upcomingTrips;
   const storageNotice = readTripStorageNotice();
-  const filteredTrips = useMemo(
-    () =>
-      trips.filter((trip) =>
-        `${trip.title} ${trip.city}`.toLowerCase().includes(query.toLowerCase()),
-      ),
-    [query, trips],
+  const filteredTrips = trips.filter((trip) =>
+    `${trip.title} ${trip.city}`.toLowerCase().includes(query.toLowerCase()),
   );
 
   const selectTab = (nextTab: TripTab) => {
@@ -141,18 +144,19 @@ function MyTripsPage() {
         </button>
       </S.Tabs>
 
-      {storageNotice && <p role="alert">{storageNotice}</p>}
+      {!myTrips.enabled && storageNotice && <p role="alert">{storageNotice}</p>}
+      {myTrips.pending && <p role="status">내 여행을 불러오고 있어요.</p>}
+      {myTrips.error && <p role="alert">{myTrips.error}</p>}
       <S.Grid>
         {filteredTrips.map((trip) => (
-          <TripCard key={trip.id} trip={trip} />
+          <TripCard key={trip.id} trip={trip} server={myTrips.enabled} />
         ))}
       </S.Grid>
 
-      {filteredTrips.length === 0 && (
+      {!myTrips.pending && !myTrips.error && filteredTrips.length === 0 && (
         <S.Empty>
-          검색 결과가 없어요.
-          <br />
-          다른 여행 이름을 입력해 보세요.
+          {query ? "검색 결과가 없어요. 다른 여행 이름을 입력해 보세요."
+            : tab === "past" ? "아직 다녀온 여행이 없어요." : "아직 다가오는 여행이 없어요."}
         </S.Empty>
       )}
 

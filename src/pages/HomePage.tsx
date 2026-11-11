@@ -11,11 +11,15 @@ import { parseProfileSettings, PROFILE_STORAGE_KEY } from "../utils/mySettings";
 import { getMe } from "../api/auth";
 import { isApiEnabled } from "../api/config";
 import { hasAuthSession } from "../api/tokenStorage";
+import { apiTripToSummary } from "../utils/serverTrip";
+import { useMyTrips } from "../hooks/useMyTrips";
+import { resumeTripPath, serverTripPlanPath } from "../utils/navigation";
 
 function HomePage() {
   const location = useLocation();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const data = readHomeTrips();
+  const myTrips = useMyTrips(true);
   const [nickname] = useState(() => {
     try {
       return parseProfileSettings(localStorage.getItem(PROFILE_STORAGE_KEY))?.nickname;
@@ -38,13 +42,27 @@ function HomePage() {
   }, []);
   const storageNotice = readTripStorageNotice();
   const showEmptyTrips = readMockScenario(location.search) === "home-empty";
-  const trips = showEmptyTrips ? [] : data.trips;
+  const trips = myTrips.enabled ? myTrips.trips.map(apiTripToSummary) : showEmptyTrips ? [] : data.trips;
+  const nextTrip = myTrips.enabled
+    ? trips.find((trip, index) => trip.status === "upcoming" && myTrips.trips[index].status === "CONFIRMED") ?? null
+    : showEmptyTrips ? null : data.nextTrip;
+  const tripPath = myTrips.enabled ? (id: string) => serverTripPlanPath("home", id) : undefined;
 
   return (
     <>
-      {storageNotice && <p role="alert">{storageNotice}</p>}
-      <HomeIntro name={accountName ?? nickname ?? data.userName} trip={showEmptyTrips ? null : data.nextTrip} />
-      <MyTripsSection trips={trips} onCreateTrip={() => setIsCreateOpen(true)} />
+      {!myTrips.enabled && storageNotice && <p role="alert">{storageNotice}</p>}
+      <HomeIntro
+        name={accountName ?? nickname ?? (myTrips.enabled ? "" : data.userName)}
+        trip={nextTrip}
+        tripPath={tripPath}
+        resumePath={myTrips.inProgress && resumeTripPath(myTrips.inProgress.id)}
+      />
+      {myTrips.inProgressError && <p role="alert">진행 중인 여행을 확인하지 못했어요.</p>}
+      {myTrips.pending && <p role="status">내 여행을 불러오고 있어요.</p>}
+      {myTrips.error && <p role="alert">{myTrips.error}</p>}
+      {!myTrips.pending && !myTrips.error && (
+        <MyTripsSection trips={trips} tripPath={tripPath} onCreateTrip={() => setIsCreateOpen(true)} />
+      )}
       <RecommendedCourses courses={data.courses} />
       <SharedTripsSection trips={data.sharedTrips} />
       {isCreateOpen && <CreateTripSheet onClose={() => setIsCreateOpen(false)} />}

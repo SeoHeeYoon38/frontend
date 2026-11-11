@@ -12,6 +12,8 @@ import "../components/course-completion/CourseCompletion.css";
 import "../components/course-completion/CourseEdit.css";
 import useCoursePlan from "../hooks/useCoursePlan";
 import { readMockTrips } from "../data/mocks/mockTripService";
+import { isServerTripId } from "../api/adapters";
+import ServerTripPlan from "./ServerTripPlan";
 import {
   readPlanOrigin,
   tripCommunityPath,
@@ -23,6 +25,12 @@ import {
 function TripPlanPage() {
   const location = useLocation();
   const params = new URLSearchParams(location.search);
+  const serverTripId = params.get("tripId");
+  if (serverTripId !== null) {
+    return isServerTripId(serverTripId)
+      ? <ServerTripPlan key={serverTripId} tripId={Number(serverTripId)} />
+      : <main className="course-page"><p role="alert">여행 주소를 확인해 주세요.</p></main>;
+  }
   const legacyTrip = readPlanOrigin(location.search) === "generated"
     ? readMockTrips().find((trip) => trip.source === "generated" && !trip.saved)
     : undefined;
