@@ -12,10 +12,10 @@ import { generateMockTrip } from "../data/mocks/tripService";
 import { mockTripCities, mockTripPlaces } from "../data/mocks/tripData";
 import { routes } from "../config/routes";
 import { createGeneratedTrip, saveMockTrip } from "../data/mocks/mockTripService";
-import { tripPlanPath } from "../utils/navigation";
+import { serverTripPlanPath, tripPlanPath } from "../utils/navigation";
 import { createRequestLock } from "../utils/requestLock";
 import { isServerTripId, tripDraftToApiInput } from "../api/adapters";
-import { shouldUseMockFallback } from "../api/client";
+import { generateItinerary } from "../api/itineraries";
 import { isApiEnabled } from "../api/config";
 import { hasAuthSession } from "../api/tokenStorage";
 import { createTrip as createApiTrip, updateTrip as updateApiTrip } from "../api/trips";
@@ -120,13 +120,11 @@ function useTripCreate(trip?: TripResponse, places?: TripPlace[]) {
       update({ ...draft, tripId: String(response.id) });
       move(2);
     } catch (reason) {
-      if (shouldUseMockFallback(reason)) move(2);
-      else
-        setError(
-          reason instanceof Error
-            ? reason.message
-            : "여행 정보를 저장하지 못했어요. 다시 시도해 주세요.",
-        );
+      setError(
+        reason instanceof Error
+          ? reason.message
+          : "여행 정보를 저장하지 못했어요. 다시 시도해 주세요.",
+      );
     } finally {
       setPreparingTrip(false);
     }
@@ -147,6 +145,22 @@ function useTripCreate(trip?: TripResponse, places?: TripPlace[]) {
     window.scrollTo(0, 0);
     let completed = false;
     try {
+      if (isApiEnabled() && hasAuthSession()) {
+        if (!isServerTripId(draft.tripId)) throw new Error("여행 정보를 먼저 저장해 주세요.");
+        const result = await generateItinerary(Number(draft.tripId), controller.signal);
+        if (controller.signal.aborted) return;
+        completed = true;
+        try {
+          sessionStorage.removeItem(DRAFT_KEY);
+        } catch {
+          // 저장소를 사용할 수 없어도 생성한 일정으로 이동합니다.
+        }
+        navigate(serverTripPlanPath("generated", draft.tripId), {
+          replace: true,
+          state: { excludedPlaceIds: result.excludedPlaceIds },
+        });
+        return;
+      }
       for (let attempt = 0; attempt < 3; attempt++) {
         try {
           await generateMockTrip(controller.signal, setProgress);

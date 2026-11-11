@@ -214,6 +214,11 @@ export interface ItineraryVersionView {
   validation: ValidationResult;
 }
 
+export interface GeneratedItineraryResponse {
+  itinerary: ItineraryVersionView;
+  excludedPlaceIds: string[];
+}
+
 export interface FlightPoint {
   airport: string;
   time: string;

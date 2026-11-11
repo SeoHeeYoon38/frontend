@@ -5,6 +5,7 @@ import Layout from "../components/common/Layout";
 import DirectTripBuilder from "../components/direct-trip/DirectTripBuilder";
 import TripInfoStep from "../components/trip/TripInfoStep";
 import SavedPlacesStep from "../components/trip/SavedPlacesStep";
+import ServerSavedPlaces from "../components/trip/ServerSavedPlaces";
 import PreferencesStep from "../components/trip/PreferencesStep";
 import { durationLabel } from "../utils/trip";
 import logo from "../assets/images/brand-dotlo-logo.png";
@@ -21,6 +22,8 @@ import { getTrip } from "../api/trips";
 import type { TripResponse } from "../api/types";
 import { routes } from "../config/routes";
 import type { TripPlace } from "../types/trip";
+import { isApiEnabled } from "../api/config";
+import { hasAuthSession } from "../api/tokenStorage";
 
 function TripCreatePage() {
   const location = useLocation();
@@ -91,7 +94,22 @@ function AiTripCreatePage({ trip, places }: { trip?: TripResponse; places?: Trip
     />
   );
   if (step === 2)
-    content = (
+    content = isApiEnabled() && hasAuthSession() && isServerTripId(draft.tripId) ? (
+      <ServerSavedPlaces
+        key={draft.tripId}
+        tripId={Number(draft.tripId)}
+        onContinue={(saved) => {
+          const places = saved.map((place) => savedPlaceToTripPlace(place, draft.city));
+          update({
+            ...draft,
+            places,
+            source: "manual",
+            selectedPlaceIds: places.filter((place) => place.placeId && !place.closed && !place.needsMatch).map((place) => place.id),
+          });
+          move(3);
+        }}
+      />
+    ) : (
       <SavedPlacesStep
         draft={draft}
         onChange={update}
