@@ -23,7 +23,9 @@ function PolicyDetailPage() {
   }
 
   const document = policyDocuments[policyId];
-  const goBack = () => navigate(fromLogin ? `${routes.login}?terms=1` : routes.accountSettings);
+  const goBack = () => navigate(fromLogin ? `${routes.login}?terms=1` : routes.accountSettings, {
+    state: fromLogin ? location.state : null,
+  });
 
   return (
     <S.Page>

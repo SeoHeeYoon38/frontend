@@ -55,7 +55,7 @@ function CompanionOpinions() {
     <section className="companion-opinions" aria-labelledby="companion-opinions-title">
       <header className="companion-opinions__header">
         <h2 id="companion-opinions-title">
-          일행 의견 <span>{comments.length}</span>
+          샘플 의견 <span>{comments.length}</span>
         </h2>
         <button
           className={placeLiked ? "is-liked" : ""}
@@ -115,10 +115,10 @@ function CompanionOpinions() {
           <span className="course-community__sr-only">일행에게 의견 남기기</span>
           <input
             value={message}
-            placeholder={replyTo ? `@${replyTo}님에게 답글 남기기` : "일행에게 의견을 남겨보세요"}
+            placeholder={replyTo ? `@${replyTo}님에게 데모 답글 남기기` : "이 화면에만 보이는 의견을 남겨보세요"}
             onChange={(event) => setMessage(event.target.value)}
           />
-          <button type="submit" disabled={!message.trim()} aria-label="의견 보내기">
+          <button type="submit" disabled={!message.trim()} aria-label="데모 의견 추가">
             <span aria-hidden="true" />
           </button>
         </label>

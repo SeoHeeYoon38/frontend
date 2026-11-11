@@ -5,6 +5,7 @@ export interface UserProfileSettings {
   email: string;
   introduction: string;
   avatar: ProfileAvatar;
+  travelPreferences?: string[];
 }
 
 export interface NicknameValidation {
@@ -114,6 +115,10 @@ export function parseProfileSettings(raw: string | null): UserProfileSettings | 
       email: value.email,
       introduction: value.introduction,
       avatar: value.avatar,
+      ...(Array.isArray(value.travelPreferences) &&
+      value.travelPreferences.every((preference) => typeof preference === "string")
+        ? { travelPreferences: value.travelPreferences }
+        : {}),
     };
   } catch {
     return null;

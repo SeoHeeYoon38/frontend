@@ -797,6 +797,19 @@ export const NameEditor = styled.input`
 
 export const InviteContent = styled.div`
   padding-top: 3px;
+
+  > p:first-child {
+    margin: 0 0 12px;
+    color: #5c5c63;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  > a {
+    color: #5b4fe8;
+    font-size: 14px;
+    font-weight: 700;
+  }
 `;
 
 export const LinkBox = styled.div`

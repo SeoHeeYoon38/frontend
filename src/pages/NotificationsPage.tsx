@@ -96,12 +96,12 @@ function NotificationsPage() {
                           <S.InvitationActions>
                             {invitationState === "pending" ? (
                               <>
-                                <button type="button" onClick={() => setInvitationState("accepted")}>참여하기</button>
-                                <button type="button" onClick={() => setInvitationState("declined")}>거절</button>
+                                <button type="button" onClick={() => setInvitationState("accepted")}>수락 체험</button>
+                                <button type="button" onClick={() => setInvitationState("declined")}>거절 체험</button>
                               </>
                             ) : (
                               <span role="status">
-                                {invitationState === "accepted" ? "참여했어요" : "초대를 거절했어요"}
+                                {invitationState === "accepted" ? "샘플 초대 수락을 체험했어요" : "샘플 초대 거절을 체험했어요"}
                               </span>
                             )}
                           </S.InvitationActions>

@@ -37,6 +37,7 @@ function CourseCommunityChat({ onBack, onViewCourse }: CourseCommunityChatProps)
   const showConversation = stage !== "welcome";
   const showSummaryCard = stage === "summary";
   const showPollCard = ["poll", "day-picker"].includes(stage);
+  const selectedPlace = pollOptions.find((option) => option.id === selectedPollId);
 
   return (
     <main className="community-chat">
@@ -45,8 +46,8 @@ function CourseCommunityChat({ onBack, onViewCourse }: CourseCommunityChatProps)
           <img src={backIcon} alt="" />
         </button>
         <div>
-          <h1>오사카 3박 4일</h1>
-          <p>함께하는 3명</p>
+          <h1>오사카 공동 계획 데모</h1>
+          <p>샘플 멤버 3명</p>
         </div>
         <ul aria-label="함께하는 멤버">
           {communityMembers.map((member) => (
@@ -58,9 +59,9 @@ function CourseCommunityChat({ onBack, onViewCourse }: CourseCommunityChatProps)
       </header>
 
       <section className="community-chat__messages" aria-live="polite">
+        <p className="community-chat__system">채팅과 투표는 이 화면에서 체험할 수 있어요. 다른 브라우저나 내 여행 일정에는 반영되지 않아요.</p>
         {stage === "welcome" && (
           <>
-            <p className="community-chat__system">정다은님, 이지우님이 여행에 참여했어요</p>
             <article className="community-chat__ai-message">
               <AiAvatar />
               <div>
@@ -152,7 +153,7 @@ function CourseCommunityChat({ onBack, onViewCourse }: CourseCommunityChatProps)
                         ))}
                       </div>
                       <button className="community-poll__apply" type="button" onClick={openDayPicker}>
-                        1위 장소 일정에 넣기
+                        선택한 장소 반영 체험
                       </button>
                     </section>
                   </div>
@@ -162,20 +163,18 @@ function CourseCommunityChat({ onBack, onViewCourse }: CourseCommunityChatProps)
 
             {stage === "applied" && (
               <>
-                <p className="community-chat__system">이지우님이 투표했어요</p>
                 <article className="community-chat__ai-message">
                   <AiAvatar />
                   <div>
                     <strong>도틀로 AI</strong>
                     <div className="community-chat__ai-bubble">
-                      <p>투표 결과를 반영했어요.</p>
-                      <p>오사카성 공원을 2일차 일정에 추가했어요!</p>
+                      <p>선택한 장소를 일정에 넣는 예시예요.</p>
                     </div>
                     <div className="community-chat__result-card">
-                      <span>2일차에 추가</span>
-                      <strong>오사카성 공원</strong>
-                      <small>공원 · 입장 무료</small>
-                      <button type="button" onClick={onViewCourse}>코스에서 보기</button>
+                      <span>{selectedDay}일차 반영 예시</span>
+                      <strong>{selectedPlace?.title}</strong>
+                      <small>{selectedPlace?.detail}</small>
+                      <button type="button" onClick={onViewCourse}>일정 화면으로 돌아가기</button>
                     </div>
                   </div>
                 </article>
@@ -211,7 +210,7 @@ function CourseCommunityChat({ onBack, onViewCourse }: CourseCommunityChatProps)
               onChange={(event) => setMessage(event.target.value)}
             />
           </label>
-          <button type="submit" disabled={!message.trim()} aria-label="메시지 보내기">↑</button>
+          <button type="submit" disabled={!message.trim()} aria-label="데모 메시지 추가">↑</button>
         </form>
         <span className="community-chat__home-indicator" aria-hidden="true" />
       </footer>
@@ -238,7 +237,7 @@ function CourseCommunityChat({ onBack, onViewCourse }: CourseCommunityChatProps)
               ))}
             </div>
             <button className="community-day-picker__apply" type="button" onClick={applyToCourse}>
-              {selectedDay}일차에 넣기
+              {selectedDay}일차 반영 미리보기
             </button>
           </section>
         </div>

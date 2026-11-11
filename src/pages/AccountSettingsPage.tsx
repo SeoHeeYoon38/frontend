@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link } from "react-router";
 import backIcon from "../assets/icons/nav-back.svg";
 import chevronIcon from "../assets/icons/nav-chevron-right-muted.svg";
 import blueAvatar from "../assets/images/character-blue.webp";
@@ -7,11 +7,7 @@ import purpleAvatar from "../assets/images/character-purple.webp";
 import googleMapsLogo from "../assets/images/brand-google-maps.webp";
 import { routes } from "../config/routes";
 import { policyPath, type PolicyDocumentId } from "../data/policyDocuments";
-import {
-  readGoogleMapsSettings,
-  readProfileSettings,
-  saveGoogleMapsSettings,
-} from "../utils/mySettings";
+import { readProfileSettings } from "../utils/mySettings";
 import * as S from "./AccountSettingsPage.styled";
 
 const policies: Array<{ id: PolicyDocumentId; label: string }> = [
@@ -21,20 +17,8 @@ const policies: Array<{ id: PolicyDocumentId; label: string }> = [
 ];
 
 function AccountSettingsPage() {
-  const navigate = useNavigate();
   const [profile] = useState(() => readProfileSettings(window.localStorage));
-  const [mapsSettings, setMapsSettings] = useState(() =>
-    readGoogleMapsSettings(window.localStorage),
-  );
-  const [dialog, setDialog] = useState<"logout" | null>(null);
-  const [notice, setNotice] = useState("");
   const avatar = profile.avatar === "purple" ? purpleAvatar : blueAvatar;
-
-  const connectGoogleMaps = () => {
-    const next = { ...mapsSettings, linked: true };
-    setMapsSettings(next);
-    saveGoogleMapsSettings(window.localStorage, next);
-  };
 
   return (
     <S.Page>
@@ -48,28 +32,21 @@ function AccountSettingsPage() {
       <S.AccountCard>
         <S.Avatar><img src={avatar} alt="" /></S.Avatar>
         <span>
-          <strong>{profile.email}</strong>
-          <small><i /> 카카오 로그인 <b>2026년 4월 2일 가입</b></small>
+          <strong>{profile.nickname}</strong>
+          <small>브라우저에 저장되는 데모 프로필</small>
         </span>
       </S.AccountCard>
 
       <S.Band />
       <S.Section>
-        <h2>연결된 서비스</h2>
+        <h2>장소 가져오기</h2>
         <S.ServiceRow>
           <S.ServiceLogo><img src={googleMapsLogo} alt="Google Maps" /></S.ServiceLogo>
           <span>
             <strong>Google Maps</strong>
-            <small>
-              <i data-linked={mapsSettings.linked} />
-              {mapsSettings.linked ? "연동됨, 저장 장소 52곳" : "연동이 필요해요"}
-            </small>
+            <small>Takeout 파일 또는 공개 목록 링크</small>
           </span>
-          {mapsSettings.linked ? (
-            <Link to={routes.googleMapsSettings}>관리</Link>
-          ) : (
-            <button type="button" onClick={connectGoogleMaps}>연결</button>
-          )}
+          <Link to={routes.googleMapsSettings}>안내</Link>
         </S.ServiceRow>
       </S.Section>
 
@@ -86,29 +63,13 @@ function AccountSettingsPage() {
           </S.PolicyButton>
         ))}
         <S.AccountActions>
-          <button type="button" onClick={() => setDialog("logout")}>로그아웃</button>
+          <Link to={routes.login}>로그인 데모</Link>
           <i />
           <Link to={routes.withdrawal}>회원 탈퇴</Link>
         </S.AccountActions>
       </S.Section>
       <S.HomeIndicator />
 
-      {notice && (
-        <S.Toast role="status" onAnimationEnd={() => setNotice("")}>{notice}</S.Toast>
-      )}
-
-      {dialog === "logout" && (
-        <S.Overlay>
-          <S.Dialog role="alertdialog" aria-modal="true">
-            <strong>로그아웃할까요?</strong>
-            <p>언제든 같은 카카오 계정으로 다시 로그인할 수 있어요</p>
-            <div>
-              <button type="button" onClick={() => setDialog(null)}>취소</button>
-              <button type="button" data-primary onClick={() => navigate(routes.home)}>로그아웃</button>
-            </div>
-          </S.Dialog>
-        </S.Overlay>
-      )}
     </S.Page>
   );
 }

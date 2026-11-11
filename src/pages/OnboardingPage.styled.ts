@@ -114,34 +114,24 @@ export const LoginButtons = styled.div`
   gap: 10px;
 `;
 
-export const ProviderWrap = styled.div`
-  position: relative;
-
-  > span {
-    position: absolute;
-    top: -10px;
-    right: 14px;
-    padding: 3px 8px;
-    border-radius: 99px;
-    color: #ffffff;
-    background: ${navy};
-    font-size: 11px;
-    line-height: 15px;
-    font-weight: 500;
-  }
+export const LoginNotice = styled.p`
+  margin: 0;
+  color: #5c5c63;
+  font-size: 13px;
+  text-align: center;
 `;
 
-export const ProviderButton = styled.button<{ $provider: "kakao" | "apple" | "google" }>`
+export const ProviderButton = styled.button`
   width: 100%;
   height: 54px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  border: ${({ $provider }) => ($provider === "google" ? "1px solid #e4e6ec !important" : "0")};
+  border: 1px solid #e4e6ec !important;
   border-radius: 14px;
-  color: ${({ $provider }) => ($provider === "apple" ? "#ffffff !important" : "#1a1a1a !important")};
-  background: ${({ $provider }) => ($provider === "kakao" ? "#fee500" : $provider === "apple" ? "#000000" : "#ffffff")} !important;
+  color: #1a1a1a !important;
+  background: #ffffff !important;
   font-size: 16px !important;
   line-height: 22px !important;
   font-weight: 700 !important;
@@ -387,12 +377,12 @@ export const NicknameField = styled.div<{ $valid: boolean }>`
   button, button img { width: 20px; height: 20px; }
 `;
 
-export const ValidText = styled.p`
+export const ValidText = styled.p<{ $error?: boolean }>`
   display: flex;
   align-items: center;
   gap: 4px;
   margin: 8px 0 0;
-  color: #0079c2;
+  color: ${({ $error }) => ($error ? "#c0363b" : "#0079c2")};
   font-size: 12px;
   line-height: 17px;
 

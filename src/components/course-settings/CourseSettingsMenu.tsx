@@ -58,7 +58,7 @@ function CourseSettingsMenu({
               <img src={inviteIcon} alt="" />
               <img src={inviteBadgeIcon} alt="" />
             </S.IconStack>
-            <span>친구 초대</span>
+            <span>초대 데모</span>
             <S.Chevron src={chevronIcon} alt="" />
           </S.MenuButton>
           <S.MenuButton type="button" onClick={onOpenMembers}>

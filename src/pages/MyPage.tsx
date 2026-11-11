@@ -70,16 +70,16 @@ function MyPage() {
         </S.StatLink>
       </S.Stats>
 
-      <S.GoogleLink to={`${routes.savedItems}?tab=places`}>
+      <S.GoogleLink to={routes.googleMapsSettings}>
         <S.GoogleLogo>
           <img src={googleMapsLogo} alt="Google Maps" />
         </S.GoogleLogo>
         <span>
-          <strong>Google Maps 연동 중</strong>
-          <small>저장 장소 {myProfile.googlePlaceCount}곳을 불러왔어요</small>
+          <strong>Google Maps 장소 가져오기</strong>
+          <small>Takeout 파일 또는 공개 목록 링크</small>
         </span>
         <b>
-          <i /> 연동됨
+          가져오기 안내
         </b>
       </S.GoogleLink>
 
@@ -95,7 +95,7 @@ function MyPage() {
         <S.MenuLink to={routes.accountSettings}>
           <img src={profileIcon} alt="" />
           <span>계정 관리</span>
-          <small>카카오</small>
+          <small>데모</small>
           <S.MenuChevron src={chevronIcon} alt="" />
         </S.MenuLink>
       </S.MenuSection>

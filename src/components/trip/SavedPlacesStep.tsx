@@ -8,21 +8,15 @@ import type {
 import {
   mockTripCatalog,
   mockCourseStopDetails,
-  mockSavedPlaceCounts,
 } from "../../data/mocks/tripData";
 import { importMockPlaces } from "../../data/mocks/tripService";
 import { mergePlaces, placesError, toggleId } from "../../utils/trip";
 import TripSheet from "../common/TripSheet";
-import maps from "../../assets/images/brand-google-maps.webp";
+import PlaceImportForm from "./PlaceImportForm";
 import character from "../../assets/images/character-purple.webp";
 import emptyImage from "../../assets/images/character-empty-places.webp";
 import routeImage from "../../assets/images/map-course-preview.png";
 import emptyGlow from "../../assets/icons/effect-empty-places-glow.svg";
-import purple from "../../assets/icons/effect-connect-purple.svg";
-import cyan from "../../assets/icons/effect-connect-cyan.svg";
-import foodSmall from "../../assets/icons/category-food-small.svg";
-import cafeSmall from "../../assets/icons/category-cafe-small.svg";
-import cameraSmall from "../../assets/icons/category-sightseeing-small.svg";
 import food from "../../assets/icons/category-food.svg";
 import cafe from "../../assets/icons/category-cafe.svg";
 import camera from "../../assets/icons/category-sightseeing.svg";
@@ -98,7 +92,7 @@ function SavedPlacesStep({
   const allSelected =
     selectable.length > 0 &&
     selectable.every((place) => selectedIds.has(place.id));
-  async function connect() {
+  async function importSamplePlaces() {
     if (request.current && !request.current.signal.aborted) return;
     const controller = new AbortController();
     request.current = controller;
@@ -195,39 +189,16 @@ function SavedPlacesStep({
       {busy ? (
         <P.LoadingState role="status" aria-live="polite">
           <P.LoadingCharacter src={character} alt="" />
-          <h2>저장한 장소를 불러오고 있어요</h2>
+          <h2>샘플 장소를 불러오고 있어요</h2>
           <p>{draft.city}에서 장소를 찾고 있어요</p>
           <img src={loadingDots} alt="" />
         </P.LoadingState>
       ) : !ready ? (
         <P.ConnectStep>
           <header>
-            <S.Title>
-              구글맵에 저장한 장소로
-              <br />
-              코스를 짜드릴게요
-            </S.Title>
-            <S.Subtitle>
-              저장해 둔 맛집, 카페, 명소를 그대로 가져와요
-            </S.Subtitle>
+            <S.Title>Google Maps 장소 가져오기</S.Title>
           </header>
-          <P.ConnectVisual>
-            <img src={purple} alt="" />
-            <img src={cyan} alt="" />
-            <P.MapsBox>
-              <img src={maps} alt="Google Maps" />
-            </P.MapsBox>
-            {[
-              { label: "맛집 18", icon: foodSmall },
-              { label: "카페 9", icon: cafeSmall },
-              { label: "명소 12", icon: cameraSmall },
-            ].map((item, index) => (
-              <P.FloatingChip key={item.label} $position={index}>
-                <img src={item.icon} alt="" />
-                {item.label}
-              </P.FloatingChip>
-            ))}
-          </P.ConnectVisual>
+          <PlaceImportForm onImport={importSamplePlaces} />
           {error && <S.ErrorText role="alert">{error}</S.ErrorText>}
         </P.ConnectStep>
       ) : (
@@ -239,7 +210,7 @@ function SavedPlacesStep({
                 ? "코스에 포함된 장소를 확인하고 선택해 보세요"
                 : draft.source === "manual"
                   ? `${draft.city} 인기 장소나 추천 코스에서 바로 담을 수 있어요`
-                  : "Google Maps에 저장한 장소를 불러왔어요"}
+                  : "데모에서 가져온 샘플 장소예요"}
             </S.Subtitle>
           </header>
           <P.PlaceTabs>
@@ -248,7 +219,7 @@ function SavedPlacesStep({
               aria-pressed={tab === "saved"}
               onClick={() => setTab("saved")}
             >
-              {draft.source === "manual" ? "인기 장소" : "저장 장소"}
+              {draft.source === "manual" ? "인기 장소" : "샘플 장소"}
             </button>
             <button
               type="button"
@@ -267,12 +238,9 @@ function SavedPlacesStep({
                     {draft.city}
                     {draft.source === "manual"
                       ? " 추천 장소"
-                      : "에 저장한 장소"}{" "}
+                      : " 샘플 장소"}{" "}
                     <b>
-                      {draft.source === "mock"
-                        ? (mockSavedPlaceCounts[draft.city] ??
-                          draft.places.length)
-                        : draft.places.length}
+                      {draft.places.length}
                       곳
                     </b>
                   </span>
@@ -333,7 +301,7 @@ function SavedPlacesStep({
                   <img src={emptyGlow} alt="" />
                   <P.LoadingCharacter src={emptyImage} alt="" />
                 </P.EmptyArt>
-                <h2>{draft.city}에 저장한 장소가 없어요</h2>
+                <h2>{draft.city} 샘플 장소가 없어요</h2>
                 <p>
                   {draft.city} 인기 장소나 추천 코스에서 바로 담을 수 있어요
                 </p>
@@ -408,24 +376,19 @@ function SavedPlacesStep({
       {!busy && (
         <S.Footer>
           {!ready ? (
-            <>
-              <S.Primary type="button" onClick={connect}>
-                구글 계정으로 연결하기
-              </S.Primary>
-              <S.TextButton
-                type="button"
-                onClick={() => {
-                  onChange({
-                    ...draft,
-                    source: "manual",
-                    places: mergePlaces(draft.places, catalog),
-                  });
-                  setTab("saved");
-                }}
-              >
-                나중에 할게요
-              </S.TextButton>
-            </>
+            <S.TextButton
+              type="button"
+              onClick={() => {
+                onChange({
+                  ...draft,
+                  source: "manual",
+                  places: mergePlaces(draft.places, catalog),
+                });
+                setTab("saved");
+              }}
+            >
+              추천 장소에서 골라볼게요
+            </S.TextButton>
           ) : emptySaved ? (
             <S.Primary type="button" onClick={() => setTab("courses")}>
               추천 코스에서 장소 고르기

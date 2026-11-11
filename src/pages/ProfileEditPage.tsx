@@ -41,8 +41,8 @@ function ProfileEditPage() {
   const save = () => {
     if (!canSave) return;
     saveProfileSettings(window.localStorage, {
+      ...initialProfile,
       nickname: nickname.trim(),
-      email: initialProfile.email,
       introduction: introduction.trim(),
       avatar,
     });
@@ -88,7 +88,7 @@ function ProfileEditPage() {
           <label htmlFor="profile-email">이메일</label>
           <S.DisabledInput>
             <input id="profile-email" value={initialProfile.email} readOnly />
-            <span><i /> 카카오 연동</span>
+            <span>데모 프로필</span>
           </S.DisabledInput>
           <small>로그인 계정의 이메일이라 여기서는 바꿀 수 없어요</small>
         </S.Field>

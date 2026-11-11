@@ -3,7 +3,7 @@ import * as S from "./SharedTripsSection.styled";
 import type { SharedTrip } from "../../types/home";
 import calendar from "../../assets/icons/calendar-outline-large.svg";
 import { Link } from "react-router";
-import { tripPlanPath } from "../../utils/navigation";
+import { demoInvitePath } from "../../utils/navigation";
 
 interface SharedTripsSectionProps {
   trips: SharedTrip[];
@@ -11,15 +11,15 @@ interface SharedTripsSectionProps {
 function SharedTripsSection({ trips }: SharedTripsSectionProps) {
   if (!trips.length) return null;
   return (
-    <C.Section aria-label="친구가 공유한 여행">
+    <C.Section aria-label="공유된 여행 예시">
       <C.Heading>
-        <h2>친구가 공유한 여행</h2>
+        <h2>공유된 여행 예시</h2>
       </C.Heading>
       {trips.map(({ trip, invitedBy, inviterAvatar }) => (
         <S.Card
           as={Link}
-          to={tripPlanPath("home")}
-          aria-label={`${trip.title} 공유 일정 보기`}
+          to={demoInvitePath}
+          aria-label={`${trip.title} 샘플 초대장 보기`}
           key={trip.id}
         >
           <S.Info>
@@ -31,7 +31,7 @@ function SharedTripsSection({ trips }: SharedTripsSectionProps) {
             </p>
             <p>
               <S.Avatar src={inviterAvatar} alt="" />
-              {invitedBy}님이 초대했어요
+              {invitedBy}님의 샘플 초대장
             </p>
           </S.Info>
           <S.Photo

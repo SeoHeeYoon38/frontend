@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { courseInviteLink } from "../data/mocks/courseSettingsData";
+import { demoInvitePath } from "../utils/navigation";
 import type { CourseSettingsSheet } from "../types/courseSettings";
 
 interface UseCourseSettingsOptions {
@@ -22,12 +22,15 @@ function useCourseSettings(options: UseCourseSettingsOptions = {}) {
     Boolean(options.initialDraftName),
   );
   const [copied, setCopied] = useState(false);
+  const [copyError, setCopyError] = useState("");
+  const inviteLink = new URL(demoInvitePath, window.location.origin).href;
   const [notice, setNotice] = useState("");
   const nameInputRef = useRef<HTMLInputElement>(null);
 
   const openSheet = (sheet: CourseSettingsSheet) => {
     setActiveSheet(sheet);
     setCopied(false);
+    setCopyError("");
     setNotice("");
   };
 
@@ -75,19 +78,14 @@ function useCourseSettings(options: UseCourseSettingsOptions = {}) {
   };
 
   const copyInviteLink = async () => {
+    setCopied(false);
+    setCopyError("");
     try {
-      await navigator.clipboard.writeText(courseInviteLink);
+      await navigator.clipboard.writeText(inviteLink);
+      setCopied(true);
     } catch {
-      const textArea = document.createElement("textarea");
-      textArea.value = courseInviteLink;
-      textArea.style.position = "fixed";
-      textArea.style.opacity = "0";
-      document.body.appendChild(textArea);
-      textArea.select();
-      document.execCommand("copy");
-      textArea.remove();
+      setCopyError("링크를 복사하지 못했어요. 미리보기를 열어 주소를 복사해 주세요.");
     }
-    setCopied(true);
   };
 
   return {
@@ -97,6 +95,8 @@ function useCourseSettings(options: UseCourseSettingsOptions = {}) {
     isDirty: draftName.trim() !== tripName,
     isEditingName,
     copied,
+    copyError,
+    inviteLink,
     notice,
     nameInputRef,
     setDraftName,

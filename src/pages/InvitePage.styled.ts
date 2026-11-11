@@ -206,6 +206,12 @@ export const DisabledNotice = styled.p`
   font-weight: 700;
 `;
 
+export const DemoNotice = styled(DisabledNotice)`
+  color: #5c5c63;
+  font-size: 13px;
+  font-weight: 500;
+`;
+
 export const HomeIndicator = styled.div`
   position: absolute;
   right: 0;
