@@ -1,7 +1,11 @@
 import { useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
+import { onboardingPreferencesToInput } from "../api/adapters";
 import { canStartGoogleLogin, googleAuthorizationUrl } from "../api/auth";
+import { shouldUseMockFallback } from "../api/client";
 import { isApiEnabled } from "../api/config";
+import { saveUserPreferences } from "../api/preferences";
+import { hasAuthSession } from "../api/tokenStorage";
 import brandLogo from "../assets/images/brand-dotlo-logo.png";
 import checkAllIcon from "../assets/onboarding/check-all.svg";
 import checkIcon from "../assets/onboarding/check.svg";
@@ -95,6 +99,7 @@ function OnboardingPage() {
   const [agreementsState, setAgreementsState] = useState(() => onboarding?.agreements ?? initialAgreements);
   const [nickname, setNickname] = useState(() => onboarding?.nickname ?? "하늘");
   const [preferences, setPreferences] = useState<string[]>([]);
+  const [savingPreferences, setSavingPreferences] = useState(false);
   const [error, setError] = useState("");
   const liveGoogleLogin = isApiEnabled() && canStartGoogleLogin();
 
@@ -180,18 +185,53 @@ function OnboardingPage() {
           : [...current, preference],
       );
     };
-    const complete = (chosenPreferences: string[]) => {
+    const complete = async (chosenPreferences: string[]) => {
+      if (savingPreferences) return;
+      if (
+        chosenPreferences.length &&
+        isApiEnabled() &&
+        hasAuthSession()
+      ) {
+        setSavingPreferences(true);
+        setError("");
+        try {
+          await saveUserPreferences(
+            onboardingPreferencesToInput(chosenPreferences),
+          );
+        } catch (reason) {
+          if (!shouldUseMockFallback(reason)) {
+            setError(
+              reason instanceof Error
+                ? reason.message
+                : "여행 취향을 저장하지 못했어요. 다시 시도해 주세요.",
+            );
+            setSavingPreferences(false);
+            return;
+          }
+        }
+        setSavingPreferences(false);
+      }
       navigate(routes.onboardingComplete, {
         state: { nickname: displayNickname, preferences: chosenPreferences },
       });
     };
     return (
       <S.FlowScreen>
-        <S.SkipButton type="button" onClick={() => complete([])}>건너뛰기</S.SkipButton>
+        <S.SkipButton
+          type="button"
+          disabled={savingPreferences}
+          onClick={() => void complete([])}
+        >
+          건너뛰기
+        </S.SkipButton>
         <S.FlowBody>
           <S.Progress $complete aria-label="온보딩 2단계"><i /><i /></S.Progress>
           <h1>어떤 여행을 좋아하세요?</h1>
-          <S.Description>고른 취향은 이 브라우저의 데모 프로필에 저장해요.</S.Description>
+          <S.Description>
+            {isApiEnabled() && hasAuthSession()
+              ? "고른 취향은 앞으로 만들 여행의 기본값으로 사용해요."
+              : "고른 취향은 이 브라우저의 데모 프로필에 저장해요."}
+          </S.Description>
           <S.Chips>
             {preferenceOptions.map((preference) => (
               <button
@@ -205,8 +245,15 @@ function OnboardingPage() {
             ))}
           </S.Chips>
           <S.SelectionCount>{preferences.length}개 선택했어요</S.SelectionCount>
+          {error && <S.ValidText $error role="alert">{error}</S.ValidText>}
         </S.FlowBody>
-        <S.BottomButton type="button" onClick={() => complete(preferences)}>선택 완료</S.BottomButton>
+        <S.BottomButton
+          type="button"
+          disabled={savingPreferences}
+          onClick={() => void complete(preferences)}
+        >
+          {savingPreferences ? "취향을 저장하고 있어요" : "선택 완료"}
+        </S.BottomButton>
         <HomeIndicator />
       </S.FlowScreen>
     );

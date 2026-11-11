@@ -130,6 +130,8 @@ export interface PreferenceView {
   updatedAt: string | null;
 }
 
+export type UserPreferenceView = Omit<PreferenceView, "tripId">;
+
 export interface PreferenceAnalysis {
   status: "INTERPRETED" | "EMPTY_INPUT" | "FALLBACK_DEFAULT";
   preferences: PreferenceProfile;
