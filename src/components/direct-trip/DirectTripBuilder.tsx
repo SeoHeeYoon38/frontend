@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import heroPhoto from "../../assets/course-completion/hero-photo.png";
 import emptyCharacter from "../../assets/images/character-empty-places.webp";
@@ -6,6 +6,14 @@ import googleMapsLogo from "../../assets/images/brand-google-maps.webp";
 import CourseRouteMap from "../course-completion/CourseRouteMap";
 import TripInfoStep from "../trip/TripInfoStep";
 import PlaceImportForm from "../trip/PlaceImportForm";
+import ServerSavedPlaces from "../trip/ServerSavedPlaces";
+import ItineraryIssues from "../course-completion/ItineraryIssues";
+import { isServerTripId, savedPlaceToTripPlace, tripDraftToApiInput } from "../../api/adapters";
+import { isApiEnabled } from "../../api/config";
+import { hasAuthSession } from "../../api/tokenStorage";
+import { createTrip, updateTrip } from "../../api/trips";
+import type { ItineraryDayInput, ItineraryVisitInput, SavedPlaceResponse } from "../../api/types";
+import { useItineraryCheck } from "../../hooks/useItineraryCheck";
 import { createGeneratedTrip, mockTripStatus, placeIcon, saveMockTrip, tripStorageNotice } from "../../data/mocks/mockTripService";
 import { dateLabel, durationLabel, emptyDraft, rangeDates } from "../../utils/trip";
 import type { TripDraft } from "../../types/trip";
@@ -38,11 +46,20 @@ function BackIcon() {
   return <img src={backIcon} alt="" />;
 }
 
-function DirectTripBuilder() {
+interface ExistingTrip {
+  draft: TripDraft;
+  days: ItineraryDayInput[];
+  places: SavedPlaceResponse[];
+  onClose: () => void;
+}
+
+function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
   const navigate = useNavigate();
   const location = useLocation();
-  const mockScenario = readMockScenario(location.search);
+  const [live] = useState(() => Boolean(existing) || (isApiEnabled() && hasAuthSession()));
+  const mockScenario = live ? undefined : readMockScenario(location.search);
   const [stage, setStage] = useState<DirectTripStage>(() => {
+    if (existing) return "itinerary";
     if (
       mockScenario === "direct-search-empty" ||
       mockScenario === "direct-google-unlinked"
@@ -52,11 +69,34 @@ function DirectTripBuilder() {
     if (mockScenario === "direct-exit-confirm") return "itinerary";
     return "info";
   });
-  const [draft, setDraft] = useState<TripDraft>(() => ({
+  const [draft, setDraft] = useState<TripDraft>(() => existing?.draft ?? (live ? {
+    ...emptyDraft(), tripId: crypto.randomUUID(),
+  } : {
     ...emptyDraft(), tripId: crypto.randomUUID(), city: "오사카", country: "일본",
     startDate: "2026-05-18", endDate: "2026-05-21", companion: "친구", people: 3,
   }));
   const [notice, setNotice] = useState("");
+  const [changed, setChanged] = useState(false);
+  const [preparingTrip, setPreparingTrip] = useState(false);
+  const preparingRequest = useRef<AbortController | null>(null);
+  useEffect(() => () => preparingRequest.current?.abort(), []);
+  const { validation, checking, checkError, resetCheck, validate } = useItineraryCheck(Number(draft.tripId));
+  const [livePlaces, setLivePlaces] = useState<Record<string, DirectTripPlace & { visit: ItineraryVisitInput }>>(() =>
+    Object.fromEntries((existing?.days ?? []).flatMap((day) => day.visits.map((visit, index) => {
+      const id = visit.itemId ?? `${day.date}-${index}`;
+      const saved = existing?.places.find((place) => place.placeId === visit.placeId);
+      const place = saved && savedPlaceToTripPlace(saved, draft.city);
+      return [id, {
+        id,
+        name: place?.title ?? "장소 정보 없음",
+        category: place?.category ?? "",
+        detail: place?.description ?? "",
+        image: place?.image ?? "",
+        source: "google",
+        visit: { ...visit, itemId: id },
+      }];
+    }))),
+  );
   const directTripDays = rangeDates(draft.startDate, draft.endDate).map((date, index) => ({
     day: index + 1, date: dateLabel(date).split(" ")[0], weekday: dateLabel(date).split(" ")[1],
   }));
@@ -74,8 +114,12 @@ function DirectTripBuilder() {
   );
   const [samplePlacesReady, setSamplePlacesReady] = useState(false);
   const [selectedPlaceIds, setSelectedPlaceIds] = useState<string[]>([]);
-  const [dayPlaces, setDayPlaces] = useState<Record<number, string[]>>(() =>
-    mockScenario === "direct-exit-confirm"
+  const [dayPlaces, setDayPlaces] = useState<Record<number, string[]>>(() => existing
+    ? Object.fromEntries(rangeDates(draft.startDate, draft.endDate).map((date, index) => [
+      index + 1,
+      existing.days.find((day) => day.date === date)?.visits.map((visit, position) => visit.itemId ?? `${date}-${position}`) ?? [],
+    ]))
+    : mockScenario === "direct-exit-confirm"
       ? { ...emptyDayPlaces, 1: ["kuromon"] }
       : emptyDayPlaces,
   );
@@ -86,9 +130,9 @@ function DirectTripBuilder() {
   const placesForDay = useMemo(
     () =>
       (dayPlaces[selectedDay] ?? [])
-        .map((id) => directTripPlaces.find((place) => place.id === id))
+        .map((id) => live ? livePlaces[id] : directTripPlaces.find((place) => place.id === id))
         .filter((place): place is DirectTripPlace => Boolean(place)),
-    [dayPlaces, selectedDay, directTripPlaces],
+    [dayPlaces, selectedDay, directTripPlaces, live, livePlaces],
   );
 
   const filteredPlaces = useMemo(() => {
@@ -110,6 +154,12 @@ function DirectTripBuilder() {
     0,
   );
   const hasAnyPlace = placeCount > 0;
+  const scheduled = validation?.days.find((day) => day.date === rangeDates(draft.startDate, draft.endDate)[selectedDay - 1]);
+
+  const leave = () => {
+    if (existing) existing.onClose();
+    else navigate(routes.home);
+  };
 
   const goBack = () => {
     if (stage === "search") {
@@ -118,11 +168,12 @@ function DirectTripBuilder() {
       return;
     }
     if (stage === "itinerary") {
-      if (hasAnyPlace) setShowExitConfirm(true);
+      if (existing ? changed : hasAnyPlace) setShowExitConfirm(true);
+      else if (existing) leave();
       else setStage("info");
       return;
     }
-    navigate(routes.home);
+    leave();
   };
 
   const togglePlace = (id: string) => {
@@ -146,17 +197,21 @@ function DirectTripBuilder() {
   };
 
   const movePlace = (placeId: string, nextDay: number) => {
+    resetCheck();
+    setChanged(true);
     setDayPlaces((current) => {
       const next: Record<number, string[]> = {};
       Object.entries(current).forEach(([day, ids]) => {
         next[Number(day)] = ids.filter((id) => id !== placeId);
       });
-      next[nextDay] = [...next[nextDay], placeId];
+      next[nextDay] = [...(next[nextDay] ?? []), placeId];
       return next;
     });
   };
 
   const removePlace = (placeId: string) => {
+    resetCheck();
+    setChanged(true);
     setDayPlaces((current) => ({
       ...current,
       [selectedDay]: current[selectedDay].filter((id) => id !== placeId),
@@ -164,6 +219,8 @@ function DirectTripBuilder() {
   };
 
   const reorderPlace = (index: number, direction: number) => {
+    resetCheck();
+    setChanged(true);
     setDayPlaces((current) => {
       const places = [...(current[selectedDay] ?? [])];
       const [place] = places.splice(index, 1);
@@ -171,6 +228,57 @@ function DirectTripBuilder() {
       return { ...current, [selectedDay]: places };
     });
   };
+
+  async function startItinerary() {
+    if (!live) {
+      setStage("itinerary");
+      return;
+    }
+    const input = tripDraftToApiInput(draft);
+    if (!input || preparingRequest.current) return;
+    const controller = new AbortController();
+    preparingRequest.current = controller;
+    setNotice("");
+    setPreparingTrip(true);
+    try {
+      const trip = isServerTripId(draft.tripId)
+        ? await updateTrip(Number(draft.tripId), input, controller.signal)
+        : await createTrip(input, controller.signal);
+      if (controller.signal.aborted) return;
+      setDraft({ ...draft, tripId: String(trip.id) });
+      setStage("itinerary");
+    } catch (reason) {
+      if (!controller.signal.aborted) {
+        setNotice(reason instanceof Error ? reason.message : "여행 정보를 저장하지 못했어요.");
+      }
+    } finally {
+      if (preparingRequest.current === controller) preparingRequest.current = null;
+      if (!controller.signal.aborted) setPreparingTrip(false);
+    }
+  }
+
+  function addLivePlace(saved: SavedPlaceResponse) {
+    const { placeId } = saved;
+    if (!placeId || (dayPlaces[selectedDay] ?? []).some((id) => livePlaces[id]?.visit.placeId === placeId)) return;
+    const place = savedPlaceToTripPlace(saved, draft.city);
+    const id = `v-${crypto.randomUUID()}`;
+    resetCheck();
+    setChanged(true);
+    setLivePlaces((current) => ({
+      ...current,
+      [id]: {
+        id,
+        name: place.title,
+        category: place.category,
+        detail: place.description,
+        image: place.image,
+        source: "google",
+        visit: { itemId: id, placeId },
+      },
+    }));
+    setDayPlaces((current) => ({ ...current, [selectedDay]: [...(current[selectedDay] ?? []), id] }));
+    setStage("itinerary");
+  }
 
   const renderInfo = () => (
     <S.PlainScreen>
@@ -189,13 +297,22 @@ function DirectTripBuilder() {
             }
             setDraft(next);
           }}
-          onNext={() => setStage("itinerary")}
+          onNext={startItinerary}
+          submitting={preparingTrip}
+          submitError={notice}
         />
       </S.InfoScroll>
     </S.PlainScreen>
   );
 
   const saveTrip = () => {
+    if (live) {
+      void validate(rangeDates(draft.startDate, draft.endDate).map((date, index) => ({
+        date,
+        visits: (dayPlaces[index + 1] ?? []).map((id) => livePlaces[id].visit),
+      })));
+      return;
+    }
     const trip = createGeneratedTrip(draft);
     trip.source = "direct";
     trip.saved = true;
@@ -289,14 +406,14 @@ function DirectTripBuilder() {
           </S.EmptyPlan>
         ) : (
           <S.FilledPlan>
-            <CourseRouteMap
+            {!live && <CourseRouteMap
               city={draft.city}
               day={selectedDay}
               places={placesForDay.map((place, index) => ({
                 id: index + 1, name: place.name, category: place.category,
                 detail: place.detail, image: place.image, icon: placeIcon(place.category),
               }))}
-            />
+            />}
             <S.ScheduleHeader>
               <div>
                 <strong>{selectedDay}일차 일정</strong>
@@ -307,15 +424,18 @@ function DirectTripBuilder() {
               </button>
             </S.ScheduleHeader>
             <S.Timeline>
-              {placesForDay.map((place, index) => (
+              {placesForDay.map((place, index) => {
+                const visit = scheduled?.visits.find((item) => item.itemId === place.id);
+                return (
                 <li key={place.id}>
                   <S.TimelineNumber>{index + 1}</S.TimelineNumber>
-                  <S.TimelineCard>
-                    <img src={place.image} alt="" />
+                  <S.TimelineCard $hasImage={Boolean(place.image)}>
+                    {place.image && <img src={place.image} alt="" />}
                     <div>
                       <small>{place.category}</small>
                       <strong>{place.name}</strong>
                       <span>{place.detail}</span>
+                      {visit && <span>{visit.start.slice(11, 16)} – {visit.end.slice(11, 16)} · 이동 {visit.travel.minutes}분{visit.travel.estimated || ["ESTIMATED", "ROUTE_NOT_FOUND"].includes(visit.travel.source) ? " (추정)" : ""}</span>}
                       <label>
                         <span className="sr-only">{place.name} 이동 일자</span>
                         <select
@@ -344,13 +464,21 @@ function DirectTripBuilder() {
                       <img src={closeIcon} alt="" />
                     </button>
                   </S.TimelineCard>
-                  {index < placesForDay.length - 1 && (
+                  {!live && index < placesForDay.length - 1 && (
                     <S.TravelRow>↳ {place.travelTime ?? "도보 8분"}</S.TravelRow>
                   )}
                 </li>
-              ))}
+                );
+              })}
             </S.Timeline>
           </S.FilledPlan>
+        )}
+        {checkError && <p role="alert">{checkError}</p>}
+        {validation && (
+          <>
+            <p role="status">일정을 검증했어요. 변경한 일정은 이 화면에서 확인할 수 있어요.</p>
+            <ItineraryIssues validation={validation} />
+          </>
         )}
       </S.PlanScroll>
 
@@ -358,10 +486,10 @@ function DirectTripBuilder() {
       <S.BottomAction $floating>
         <button
           type="button"
-          disabled={!hasAnyPlace}
+          disabled={!hasAnyPlace || checking}
           onClick={saveTrip}
         >
-          저장하기
+          {checking ? "일정 검증 중…" : live ? "일정 검증하기" : "저장하기"}
         </button>
       </S.BottomAction>
     </S.PlanScreen>
@@ -498,7 +626,21 @@ function DirectTripBuilder() {
     <S.Shell>
       {stage === "info" && renderInfo()}
       {stage === "itinerary" && renderItinerary()}
-      {stage === "search" && renderSearch()}
+      {stage === "search" && (live ? (
+        <S.SearchScreen>
+          <S.PlainHeader>
+            <S.BackButton type="button" onClick={goBack} aria-label="뒤로 가기"><BackIcon /></S.BackButton>
+            <h1>{selectedDay}일차 장소 담기</h1>
+          </S.PlainHeader>
+          <S.SearchScroll>
+            <ServerSavedPlaces
+              tripId={Number(draft.tripId)}
+              onPick={addLivePlace}
+              pickedPlaceIds={new Set((dayPlaces[selectedDay] ?? []).map((id) => livePlaces[id].visit.placeId))}
+            />
+          </S.SearchScroll>
+        </S.SearchScreen>
+      ) : renderSearch())}
       {showExitConfirm && (
         <S.ConfirmOverlay role="presentation" onMouseDown={() => setShowExitConfirm(false)}>
           <S.ConfirmDialog
@@ -508,9 +650,9 @@ function DirectTripBuilder() {
             onMouseDown={(event) => event.stopPropagation()}
           >
             <h2 id="direct-trip-exit-title">저장하지 않고 나갈까요?</h2>
-            <p>담은 장소 {placeCount}곳이 사라져요</p>
+            <p>{existing ? "이번에 편집한 내용이 사라져요." : `담은 장소 ${placeCount}곳이 사라져요`}</p>
             <div>
-              <button type="button" onClick={() => navigate(routes.home)}>
+              <button type="button" onClick={leave}>
                 나가기
               </button>
               <button type="button" onClick={() => setShowExitConfirm(false)}>

@@ -8,6 +8,8 @@ import type { ItineraryVersionView, SavedPlaceResponse, TripResponse } from "../
 import { resumeTripPath, tripPlanBackPath } from "../utils/navigation";
 import { apiTripToDraft, apiTripToSummary } from "../utils/serverTrip";
 import { dateLabel } from "../utils/trip";
+import DirectTripBuilder from "../components/direct-trip/DirectTripBuilder";
+import ItineraryIssues from "../components/course-completion/ItineraryIssues";
 
 interface TripPlanData {
   trip: TripResponse;
@@ -20,10 +22,11 @@ function timeLabel(value: string) {
 }
 
 function ServerTripPlan({ tripId }: { tripId: number }) {
-  const { search } = useLocation();
+  const { search, state } = useLocation();
   const [data, setData] = useState<TripPlanData>();
   const [error, setError] = useState("");
   const [activeDay, setActiveDay] = useState(0);
+  const [editing, setEditing] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -55,6 +58,18 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
   const summary = data && apiTripToSummary(data.trip);
   const days = data?.itinerary?.validation.days ?? [];
   const day = days[activeDay];
+  const excludedPlaceIds: string[] = Array.isArray(state?.excludedPlaceIds) ? state.excludedPlaceIds : [];
+
+  if (editing && data?.itinerary) {
+    return (
+      <DirectTripBuilder existing={{
+        draft: apiTripToDraft(data.trip),
+        days: data.itinerary.draft.days,
+        places: data.places,
+        onClose: () => setEditing(false),
+      }} />
+    );
+  }
 
   return (
     <div className="course-page-shell">
@@ -70,9 +85,18 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
               {data.itinerary ? (
                 <>
                   <h2>일정</h2>
-                  {data.itinerary.validation.summary.placesNeedingCheck > 0 && (
-                    <p role="status">확인이 필요한 장소 {data.itinerary.validation.summary.placesNeedingCheck}곳</p>
+                  <button type="button" className="course-inline-edit" onClick={() => setEditing(true)}>일정 직접 편집하기</button>
+                  {excludedPlaceIds.length > 0 && (
+                    <section aria-label="일정에 넣지 못한 장소">
+                      <p role="status">{excludedPlaceIds.length}곳은 일정에 넣지 못했어요.</p>
+                      <ul>
+                        {data.places.filter((place) => place.placeId && excludedPlaceIds.includes(place.placeId)).map((place) => (
+                          <li key={place.id}>{place.name}</li>
+                        ))}
+                      </ul>
+                    </section>
                   )}
+                  <ItineraryIssues validation={data.itinerary.validation} />
                   <div className="course-tabs" aria-label="여행 일차">
                     {days.map((item, index) => (
                       <button

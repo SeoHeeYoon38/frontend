@@ -558,10 +558,10 @@ export const TimelineNumber = styled.span`
   font-size: 10px;
 `;
 
-export const TimelineCard = styled.article`
+export const TimelineCard = styled.article<{ $hasImage: boolean }>`
   min-height: 100px;
   display: grid;
-  grid-template-columns: 74px 1fr 24px;
+  grid-template-columns: ${({ $hasImage }) => $hasImage ? "74px 1fr 24px" : "1fr 24px"};
   gap: 11px;
   padding: 12px;
   border: 1px solid ${border};

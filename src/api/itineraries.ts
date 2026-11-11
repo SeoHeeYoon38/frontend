@@ -1,9 +1,18 @@
 import { apiRequest } from "./client";
 import type {
+  GeneratedItineraryResponse,
   ItineraryDayInput,
   ItineraryVersionView,
   ValidationResult,
 } from "./types";
+
+export function generateItinerary(tripId: number, signal?: AbortSignal) {
+  return apiRequest<GeneratedItineraryResponse>(`/api/trips/${tripId}/itineraries/generate`, {
+    method: "POST",
+    signal,
+    timeoutMs: 180_000,
+  });
+}
 
 export function checkItinerary(
   tripId: number,
