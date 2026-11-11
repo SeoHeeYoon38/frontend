@@ -1,5 +1,6 @@
 export const routes = {
   login: "/login",
+  googleAuthCallback: "/auth/callback/google",
   onboardingProfile: "/onboarding/profile",
   onboardingPreferences: "/onboarding/preferences",
   onboardingComplete: "/onboarding/complete",

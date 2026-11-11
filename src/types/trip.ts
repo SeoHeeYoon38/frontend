@@ -9,6 +9,8 @@ export interface TripCity {
 }
 export interface TripPlace {
   id: string;
+  serverId?: number;
+  placeId?: string;
   title: string;
   city: string;
   category: PlaceCategory;
@@ -27,6 +29,7 @@ export interface Flight {
   arrival: string;
   from: string;
   to: string;
+  apiFlight?: import("../api/types").FlightInfo;
 }
 export interface Stay {
   id: string;
@@ -46,6 +49,7 @@ export interface Preferences {
   pace: string[];
   companion: string[];
   analyzed: boolean;
+  apiProfile?: import("../api/types").PreferenceProfile;
 }
 export interface TripDraft {
   version: 1;

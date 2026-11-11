@@ -199,7 +199,12 @@ export interface ValidationResult {
 
 export interface ItineraryVersionView {
   version: number;
-  source: "AI_GENERATED" | "USER_EDITED";
+  source:
+    | "AI_GENERATED"
+    | "AI_EDITED"
+    | "MANUAL_EDIT"
+    | "COURSE_ADD"
+    | "REVERT";
   baseVersion: number | null;
   createdBy: number;
   createdAt: string;

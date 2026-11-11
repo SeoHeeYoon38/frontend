@@ -32,6 +32,14 @@ export class ApiDisabledError extends Error {
   }
 }
 
+export function shouldUseMockFallback(reason: unknown) {
+  return (
+    reason instanceof ApiDisabledError ||
+    reason instanceof TypeError ||
+    (reason instanceof ApiError && [404, 501, 502, 503, 504].includes(reason.status))
+  );
+}
+
 interface ApiRequestOptions extends Omit<RequestInit, "body"> {
   auth?: boolean;
   body?: BodyInit | null;

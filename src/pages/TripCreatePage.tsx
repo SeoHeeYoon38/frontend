@@ -29,15 +29,23 @@ function AiTripCreatePage() {
     generating,
     progress,
     error,
+    preparingTrip,
     phases,
     update,
     move,
     back,
+    startPlacesStep,
     generate,
   } = useTripCreate();
 
   let content = (
-    <TripInfoStep draft={draft} onChange={update} onNext={() => move(2)} />
+    <TripInfoStep
+      draft={draft}
+      onChange={update}
+      onNext={startPlacesStep}
+      submitting={preparingTrip}
+      submitError={step === 1 ? error : ""}
+    />
   );
   if (step === 2)
     content = (

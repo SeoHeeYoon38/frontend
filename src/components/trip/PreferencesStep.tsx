@@ -2,6 +2,14 @@ import { useEffect, useRef, useState } from "react";
 import type { TripDraft } from "../../types/trip";
 import { preferenceExamples } from "../../data/tripData";
 import { analyzeMockPreferences } from "../../data/mocks/tripService";
+import { isServerTripId, preferenceAnalysisToDraft } from "../../api/adapters";
+import { shouldUseMockFallback } from "../../api/client";
+import { isApiEnabled } from "../../api/config";
+import { hasAuthSession } from "../../api/tokenStorage";
+import {
+  analyzePreferences,
+  savePreferences,
+} from "../../api/preferences";
 import sparkle from "../../assets/icons/status-ai-sparkle.svg";
 import * as S from "./Trip.styled";
 import * as P from "./PreferencesStep.styled";
@@ -20,6 +28,7 @@ function PreferencesStep({
 }: PreferencesStepProps) {
   const [busy, setBusy] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [analysisError, setAnalysisError] = useState("");
   const request = useRef<AbortController | null>(null);
   useEffect(() => () => request.current?.abort(), []);
   const preferences = draft.preferences;
@@ -27,6 +36,7 @@ function PreferencesStep({
     request.current?.abort();
     request.current = null;
     setBusy(false);
+    setAnalysisError("");
     onChange({
       ...draft,
       preferences: { ...preferences, text, analyzed: false },
@@ -37,6 +47,28 @@ function PreferencesStep({
       if (submitting) return;
       setSubmitting(true);
       try {
+        if (
+          isApiEnabled() &&
+          hasAuthSession() &&
+          isServerTripId(draft.tripId) &&
+          preferences.apiProfile
+        ) {
+          try {
+            await savePreferences(Number(draft.tripId), {
+              ...preferences.apiProfile,
+              rawText: preferences.text,
+            });
+          } catch (reason) {
+            if (!shouldUseMockFallback(reason)) {
+              setAnalysisError(
+                reason instanceof Error
+                  ? reason.message
+                  : "여행 취향을 저장하지 못했어요. 다시 시도해 주세요.",
+              );
+              return;
+            }
+          }
+        }
         await onGenerate();
       } finally {
         setSubmitting(false);
@@ -51,29 +83,63 @@ function PreferencesStep({
     const controller = new AbortController();
     request.current = controller;
     setBusy(true);
+    setAnalysisError("");
     try {
-      const result = await analyzeMockPreferences(
-        preferences.text,
-        controller.signal,
-      );
-      if (!controller.signal.aborted)
-        onChange({
-          ...draft,
-          preferences: {
+      let nextPreferences: TripDraft["preferences"];
+      if (
+        isApiEnabled() &&
+        hasAuthSession() &&
+        isServerTripId(draft.tripId)
+      ) {
+        try {
+          const result = await analyzePreferences(
+            Number(draft.tripId),
+            preferences.text,
+            controller.signal,
+          );
+          nextPreferences = preferenceAnalysisToDraft(result, draft);
+        } catch (reason) {
+          if (!shouldUseMockFallback(reason)) throw reason;
+          const result = await analyzeMockPreferences(
+            preferences.text,
+            controller.signal,
+          );
+          nextPreferences = {
             ...result,
             companion: result.companion.length
               ? result.companion
               : draft.companion
                 ? [draft.companion]
                 : [],
-          },
-        });
-    } catch (reason) {
-      if (!(reason instanceof DOMException && reason.name === "AbortError"))
+          };
+        }
+      } else {
+        const result = await analyzeMockPreferences(
+          preferences.text,
+          controller.signal,
+        );
+        nextPreferences = {
+          ...result,
+          companion: result.companion.length
+            ? result.companion
+            : draft.companion
+              ? [draft.companion]
+              : [],
+        };
+      }
+      if (!controller.signal.aborted)
         onChange({
           ...draft,
-          preferences: { ...preferences, pace: ["보통 강도"], analyzed: true },
+          preferences: nextPreferences,
         });
+    } catch (reason) {
+      if (!(reason instanceof DOMException && reason.name === "AbortError")) {
+        setAnalysisError(
+          reason instanceof Error
+            ? reason.message
+            : "여행 취향을 정리하지 못했어요. 다시 시도해 주세요.",
+        );
+      }
     } finally {
       if (request.current === controller) {
         request.current = null;
@@ -143,7 +209,9 @@ function PreferencesStep({
         )}
       </P.Preferences>
       <S.Footer>
-        {error && <S.ErrorText role="alert">{error}</S.ErrorText>}
+        {(error || analysisError) && (
+          <S.ErrorText role="alert">{error || analysisError}</S.ErrorText>
+        )}
         <S.Primary
           type="button"
           disabled={busy || submitting || !hasConditions}

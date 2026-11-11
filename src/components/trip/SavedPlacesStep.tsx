@@ -13,6 +13,19 @@ import { importMockPlaces } from "../../data/mocks/tripService";
 import { mergePlaces, placesError, toggleId } from "../../utils/trip";
 import TripSheet from "../common/TripSheet";
 import PlaceImportForm from "./PlaceImportForm";
+import type { PlaceImportInput } from "./PlaceImportForm";
+import { isServerTripId, savedPlaceToTripPlace } from "../../api/adapters";
+import { shouldUseMockFallback } from "../../api/client";
+import { isApiEnabled } from "../../api/config";
+import { hasAuthSession } from "../../api/tokenStorage";
+import {
+  enrichSavedPlaces,
+  importSharedList,
+  matchSavedPlace,
+  searchPlaces,
+  uploadTakeout,
+} from "../../api/places";
+import type { PlaceCandidate } from "../../api/types";
 import character from "../../assets/images/character-purple.webp";
 import emptyImage from "../../assets/images/character-empty-places.webp";
 import routeImage from "../../assets/images/map-course-preview.png";
@@ -57,6 +70,9 @@ function SavedPlacesStep({
   const [query, setQuery] = useState("");
   const [placeToMatch, setPlaceToMatch] = useState<TripPlace | null>(null);
   const [matchQuery, setMatchQuery] = useState("");
+  const [remoteMatchResults, setRemoteMatchResults] = useState<PlaceCandidate[]>([]);
+  const [matchBusy, setMatchBusy] = useState(false);
+  const [matchSearchError, setMatchSearchError] = useState("");
   const [busy, setBusy] = useState(false);
   useEffect(() => {
     onLoadingChange(busy);
@@ -76,6 +92,41 @@ function SavedPlacesStep({
         candidate.title.toLowerCase().includes(matchKeyword),
       )
     : [];
+  const useRemoteMatch = Boolean(
+    placeToMatch?.serverId &&
+      isServerTripId(draft.tripId) &&
+      isApiEnabled() &&
+      hasAuthSession(),
+  );
+  useEffect(() => {
+    if (!useRemoteMatch || !matchKeyword) return;
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => {
+      setMatchBusy(true);
+      setMatchSearchError("");
+      void searchPlaces(Number(draft.tripId), matchQuery.trim(), controller.signal)
+        .then((results) => {
+          if (!controller.signal.aborted) setRemoteMatchResults(results);
+        })
+        .catch((reason: unknown) => {
+          if (!controller.signal.aborted) {
+            setRemoteMatchResults([]);
+            setMatchSearchError(
+              reason instanceof Error
+                ? reason.message
+                : "장소를 검색하지 못했어요.",
+            );
+          }
+        })
+        .finally(() => {
+          if (!controller.signal.aborted) setMatchBusy(false);
+        });
+    }, 350);
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [draft.tripId, matchKeyword, matchQuery, useRemoteMatch]);
   const recommendedPlaces = showAllRecommended ? catalog : catalog.slice(0, 4);
   const selectedIds = new Set(draft.selectedPlaceIds);
   const pendingSelection = new Set(pendingIds);
@@ -92,18 +143,42 @@ function SavedPlacesStep({
   const allSelected =
     selectable.length > 0 &&
     selectable.every((place) => selectedIds.has(place.id));
-  async function importSamplePlaces() {
+  async function importSamplePlaces(input: PlaceImportInput) {
     if (request.current && !request.current.signal.aborted) return;
     const controller = new AbortController();
     request.current = controller;
     setBusy(true);
     setError("");
     try {
-      const places = await importMockPlaces(draft.city, controller.signal);
+      let places: TripPlace[];
+      let source: TripDraft["source"] = "mock";
+      const useApi =
+        isApiEnabled() && hasAuthSession() && isServerTripId(draft.tripId);
+
+      if (useApi) {
+        try {
+          const tripId = Number(draft.tripId);
+          if (input.method === "file") {
+            await uploadTakeout(tripId, input.file, controller.signal);
+          } else {
+            await importSharedList(tripId, input.link, controller.signal);
+          }
+          const response = await enrichSavedPlaces(tripId, controller.signal);
+          places = response.places.map((place) =>
+            savedPlaceToTripPlace(place, draft.city),
+          );
+          source = "file";
+        } catch (reason) {
+          if (!shouldUseMockFallback(reason)) throw reason;
+          places = await importMockPlaces(draft.city, controller.signal);
+        }
+      } else {
+        places = await importMockPlaces(draft.city, controller.signal);
+      }
       if (!controller.signal.aborted)
         onChange({
           ...draft,
-          source: "mock",
+          source,
           places: mergePlaces(draft.places, places),
         });
     } catch (cause) {
@@ -149,6 +224,36 @@ function SavedPlacesStep({
       ],
     });
   }
+  async function selectRemoteMatch(candidate: PlaceCandidate) {
+    if (!placeToMatch?.serverId || matchBusy) return;
+    setMatchBusy(true);
+    setMatchSearchError("");
+    try {
+      const response = await matchSavedPlace(
+        Number(draft.tripId),
+        placeToMatch.serverId,
+        candidate.placeId,
+      );
+      const places = response.places.map((place) =>
+        savedPlaceToTripPlace(place, draft.city),
+      );
+      const ids = new Set(places.map((place) => place.id));
+      onChange({
+        ...draft,
+        places,
+        selectedPlaceIds: draft.selectedPlaceIds.filter((id) => ids.has(id)),
+      });
+      setPlaceToMatch(null);
+    } catch (reason) {
+      setMatchSearchError(
+        reason instanceof Error
+          ? reason.message
+          : "선택한 장소를 저장하지 못했어요.",
+      );
+    } finally {
+      setMatchBusy(false);
+    }
+  }
   function renderPlace(place: TripPlace) {
     const checked = selectedIds.has(place.id);
     return (
@@ -173,6 +278,8 @@ function SavedPlacesStep({
             type="button"
             onClick={() => {
               setMatchQuery("");
+              setRemoteMatchResults([]);
+              setMatchSearchError("");
               setPlaceToMatch(place);
             }}
           >
@@ -189,7 +296,7 @@ function SavedPlacesStep({
       {busy ? (
         <P.LoadingState role="status" aria-live="polite">
           <P.LoadingCharacter src={character} alt="" />
-          <h2>샘플 장소를 불러오고 있어요</h2>
+          <h2>저장 장소를 불러오고 있어요</h2>
           <p>{draft.city}에서 장소를 찾고 있어요</p>
           <img src={loadingDots} alt="" />
         </P.LoadingState>
@@ -198,7 +305,7 @@ function SavedPlacesStep({
           <header>
             <S.Title>Google Maps 장소 가져오기</S.Title>
           </header>
-          <PlaceImportForm onImport={importSamplePlaces} />
+          <PlaceImportForm onImport={importSamplePlaces} busy={busy} />
           {error && <S.ErrorText role="alert">{error}</S.ErrorText>}
         </P.ConnectStep>
       ) : (
@@ -210,7 +317,9 @@ function SavedPlacesStep({
                 ? "코스에 포함된 장소를 확인하고 선택해 보세요"
                 : draft.source === "manual"
                   ? `${draft.city} 인기 장소나 추천 코스에서 바로 담을 수 있어요`
-                  : "데모에서 가져온 샘플 장소예요"}
+                  : draft.source === "file"
+                    ? "Google Maps에서 가져온 저장 장소예요"
+                    : "데모에서 가져온 샘플 장소예요"}
             </S.Subtitle>
           </header>
           <P.PlaceTabs>
@@ -219,7 +328,11 @@ function SavedPlacesStep({
               aria-pressed={tab === "saved"}
               onClick={() => setTab("saved")}
             >
-              {draft.source === "manual" ? "인기 장소" : "샘플 장소"}
+              {draft.source === "manual"
+                ? "인기 장소"
+                : draft.source === "file"
+                  ? "저장 장소"
+                  : "샘플 장소"}
             </button>
             <button
               type="button"
@@ -238,7 +351,9 @@ function SavedPlacesStep({
                     {draft.city}
                     {draft.source === "manual"
                       ? " 추천 장소"
-                      : " 샘플 장소"}{" "}
+                      : draft.source === "file"
+                        ? " 저장 장소"
+                        : " 샘플 장소"}{" "}
                     <b>
                       {draft.places.length}
                       곳
@@ -301,7 +416,7 @@ function SavedPlacesStep({
                   <img src={emptyGlow} alt="" />
                   <P.LoadingCharacter src={emptyImage} alt="" />
                 </P.EmptyArt>
-                <h2>{draft.city} 샘플 장소가 없어요</h2>
+                <h2>{draft.city} 저장 장소가 없어요</h2>
                 <p>
                   {draft.city} 인기 장소나 추천 코스에서 바로 담을 수 있어요
                 </p>
@@ -409,7 +524,11 @@ function SavedPlacesStep({
       {placeToMatch && (
         <TripSheet
           title="장소 이름으로 검색"
-          onClose={() => setPlaceToMatch(null)}
+          onClose={() => {
+            setPlaceToMatch(null);
+            setRemoteMatchResults([]);
+            setMatchSearchError("");
+          }}
         >
           <S.Help>이 핀이 가리키는 장소의 이름을 입력해 주세요.</S.Help>
           <S.Search>
@@ -419,25 +538,47 @@ function SavedPlacesStep({
               aria-label="매칭할 장소 이름"
               placeholder="장소 이름을 입력해 주세요"
               value={matchQuery}
-              onChange={(event) => setMatchQuery(event.target.value)}
+              onChange={(event) => {
+                setMatchQuery(event.target.value);
+                if (!event.target.value.trim()) {
+                  setRemoteMatchResults([]);
+                  setMatchSearchError("");
+                }
+              }}
             />
           </S.Search>
-          {matchKeyword && matchResults.length === 0 && (
-            <S.Help role="status">검색 결과가 없어요.</S.Help>
-          )}
+          {matchSearchError && <S.ErrorText role="alert">{matchSearchError}</S.ErrorText>}
+          {matchBusy && <S.Help role="status">장소를 검색하고 있어요.</S.Help>}
+          {matchKeyword &&
+            !matchBusy &&
+            (useRemoteMatch ? remoteMatchResults : matchResults).length === 0 && (
+              <S.Help role="status">검색 결과가 없어요.</S.Help>
+            )}
           <P.PlaceList>
-            {matchResults.map((candidate) => (
-              <P.MatchButton
-                key={candidate.id}
-                type="button"
-                onClick={() => {
-                  matchPlace(placeToMatch, candidate.id);
-                  setPlaceToMatch(null);
-                }}
-              >
-                {candidate.title} · {candidate.category}
-              </P.MatchButton>
-            ))}
+            {useRemoteMatch &&
+              remoteMatchResults.map((candidate) => (
+                <P.MatchButton
+                  key={candidate.placeId}
+                  type="button"
+                  disabled={matchBusy}
+                  onClick={() => void selectRemoteMatch(candidate)}
+                >
+                  {candidate.name} · {candidate.address}
+                </P.MatchButton>
+              ))}
+            {!useRemoteMatch &&
+              matchResults.map((candidate) => (
+                <P.MatchButton
+                  key={candidate.id}
+                  type="button"
+                  onClick={() => {
+                    matchPlace(placeToMatch, candidate.id);
+                    setPlaceToMatch(null);
+                  }}
+                >
+                  {candidate.title} · {candidate.category}
+                </P.MatchButton>
+              ))}
           </P.PlaceList>
         </TripSheet>
       )}

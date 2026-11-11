@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { TripDraft } from "../../types/trip";
 import { basicError, dateLabel, durationLabel } from "../../utils/trip";
 import { mockTripCities } from "../../data/mocks/tripData";
@@ -15,16 +15,52 @@ import car from "../../assets/icons/transport-car.svg";
 import plus from "../../assets/icons/action-add.svg";
 import * as S from "./Trip.styled";
 import * as P from "./TripInfoStep.styled";
+import { getCities } from "../../api/trips";
+import { isApiEnabled } from "../../api/config";
 interface TripInfoStepProps {
   draft: TripDraft;
   onChange: (draft: TripDraft) => void;
-  onNext: () => void;
+  onNext: () => void | Promise<void>;
+  submitting?: boolean;
+  submitError?: string;
 }
-function TripInfoStep({ draft, onChange, onNext }: TripInfoStepProps) {
+function TripInfoStep({
+  draft,
+  onChange,
+  onNext,
+  submitting = false,
+  submitError = "",
+}: TripInfoStepProps) {
   const [sheet, setSheet] = useState<
     "city" | "dates" | "people" | "flight" | "stay" | "car" | null
   >(null);
   const [error, setError] = useState("");
+  const [destinations, setDestinations] = useState(mockTripCities);
+  useEffect(() => {
+    if (!isApiEnabled()) return;
+    const controller = new AbortController();
+    void getCities(controller.signal)
+      .then((cities) => {
+        const supported = cities.flatMap((city) => {
+          const visual = mockTripCities.find((item) => item.name === city.name);
+          return visual
+            ? [{
+                ...visual,
+                country: city.country,
+                latitude: city.lat,
+                longitude: city.lng,
+              }]
+            : [];
+        });
+        if (!controller.signal.aborted && supported.length) {
+          setDestinations(supported);
+        }
+      })
+      .catch(() => {
+        // 공개 도시 API가 닫혀 있으면 디자인용 도시 목록을 그대로 사용합니다.
+      });
+    return () => controller.abort();
+  }, []);
   const valid = !basicError(draft);
   const datesReady =
     !!draft.startDate && !!draft.endDate && draft.endDate >= draft.startDate;
@@ -181,18 +217,23 @@ function TripInfoStep({ draft, onChange, onNext }: TripInfoStepProps) {
         </P.Optional>
       </P.InfoStep>
       <S.Footer>
-        <S.Primary type="button" disabled={!valid} onClick={onNext}>
-          다음
+        {submitError && <S.ErrorText role="alert">{submitError}</S.ErrorText>}
+        <S.Primary
+          type="button"
+          disabled={!valid || submitting}
+          onClick={() => void onNext()}
+        >
+          {submitting ? "여행 정보를 저장하고 있어요" : "다음"}
         </S.Primary>
       </S.Footer>
       {sheet === "city" && (
         <RegionSelect
           mode="trip"
-          destinations={mockTripCities}
+          destinations={destinations}
           recentDestinations={[]}
           initialDestination={
-            mockTripCities.find((city) => city.name === draft.city) ??
-            mockTripCities[0]
+            destinations.find((city) => city.name === draft.city) ??
+            destinations[0]
           }
           onClose={() => setSheet(null)}
           onSelect={(city) => {

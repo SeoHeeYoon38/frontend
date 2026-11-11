@@ -17,6 +17,12 @@ const router = createBrowserRouter([
         }),
       },
       {
+        path: routes.googleAuthCallback,
+        lazy: async () => ({
+          Component: (await import("../pages/AuthCallbackPage")).default,
+        }),
+      },
+      {
         path: routes.onboardingProfile,
         lazy: async () => ({
           Component: (await import("../pages/OnboardingPage")).default,
