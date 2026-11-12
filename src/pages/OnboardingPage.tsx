@@ -1,8 +1,12 @@
 import { useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { onboardingPreferencesToInput } from "../api/adapters";
-import { canStartGoogleLogin, googleAuthorizationUrl } from "../api/auth";
-import { shouldUseMockFallback } from "../api/client";
+import {
+  canStartGoogleLogin,
+  checkNickname,
+  googleAuthorizationUrl,
+  updateMyProfile,
+} from "../api/auth";
 import { apiMode, isApiEnabled } from "../api/config";
 import { saveUserPreferences } from "../api/preferences";
 import { hasAuthSession } from "../api/tokenStorage";
@@ -27,7 +31,11 @@ interface OnboardingState {
   agreements?: Record<AgreementKey, boolean>;
   nickname?: string;
   preferences?: string[];
+  email?: string;
+  introduction?: string;
 }
+
+const ONBOARDING_NICKNAME_STORAGE_KEY = "dotlo:onboarding:nickname";
 
 const initialAgreements = {
   service: false, privacy: false, age: false, location: false, marketing: false,
@@ -98,14 +106,25 @@ function OnboardingPage() {
     () => new URLSearchParams(location.search).get("terms") === "1",
   );
   const [agreementsState, setAgreementsState] = useState(() => onboarding?.agreements ?? initialAgreements);
-  const [nickname, setNickname] = useState(() => onboarding?.nickname ?? "하늘");
+  const [nickname, setNickname] = useState(
+    () =>
+      onboarding?.nickname ??
+      sessionStorage.getItem(ONBOARDING_NICKNAME_STORAGE_KEY) ??
+      "하늘",
+  );
   const [preferences, setPreferences] = useState<string[]>([]);
   const [savingPreferences, setSavingPreferences] = useState(false);
+  const [checkingNickname, setCheckingNickname] = useState(false);
+  const [nicknameError, setNicknameError] = useState("");
   const [error, setError] = useState("");
   const liveGoogleLogin = isApiEnabled() && canStartGoogleLogin();
   const demoAuthentication = allowDemoAuthentication(import.meta.env.DEV, apiMode);
+  const liveSession = isApiEnabled() && hasAuthSession();
 
-  const displayNickname = onboarding?.nickname ?? "하늘";
+  const displayNickname =
+    onboarding?.nickname ??
+    sessionStorage.getItem(ONBOARDING_NICKNAME_STORAGE_KEY) ??
+    "하늘";
   const allAgreed = useMemo(
     () => agreements.every(({ key }) => agreementsState[key]),
     [agreementsState],
@@ -141,6 +160,34 @@ function OnboardingPage() {
 
   if (location.pathname === routes.onboardingProfile) {
     const validation = validateNickname(nickname);
+    const continueProfile = async () => {
+      if (!validation.valid || checkingNickname) return;
+      const value = nickname.trim();
+      setNicknameError("");
+
+      if (liveSession) {
+        setCheckingNickname(true);
+        try {
+          const result = await checkNickname(value);
+          if (!result.available) {
+            setNicknameError("이미 사용 중인 닉네임이에요");
+            return;
+          }
+        } catch (reason) {
+          setNicknameError(
+            reason instanceof Error
+              ? reason.message
+              : "닉네임을 확인하지 못했어요. 다시 시도해 주세요.",
+          );
+          return;
+        } finally {
+          setCheckingNickname(false);
+        }
+      }
+
+      sessionStorage.setItem(ONBOARDING_NICKNAME_STORAGE_KEY, value);
+      navigate(routes.onboardingPreferences, { state: { nickname: value } });
+    };
     return (
       <S.FlowScreen>
         <S.FlowBody>
@@ -157,7 +204,10 @@ function OnboardingPage() {
               maxLength={12}
               value={nickname}
               aria-invalid={!validation.valid}
-              onChange={(event) => setNickname(event.target.value)}
+              onChange={(event) => {
+                setNickname(event.target.value);
+                setNicknameError("");
+              }}
             />
             <small>{nickname.length}/12</small>
             {nickname && (
@@ -166,17 +216,24 @@ function OnboardingPage() {
               </button>
             )}
           </S.NicknameField>
-          <S.ValidText $error={!validation.valid} role="status">
-            {validation.valid && <img src={validCheckIcon} alt="" />}
-            {validation.valid ? "데모에서 사용할 수 있는 닉네임이에요" : validation.message}
+          <S.ValidText $error={!validation.valid || Boolean(nicknameError)} role="status">
+            {validation.valid && !nicknameError && <img src={validCheckIcon} alt="" />}
+            {nicknameError ||
+              (checkingNickname
+                ? "닉네임을 확인하고 있어요"
+                : validation.valid
+                  ? liveSession
+                    ? "사용할 수 있는 형식의 닉네임이에요"
+                    : "데모에서 사용할 수 있는 닉네임이에요"
+                  : validation.message)}
           </S.ValidText>
         </S.FlowBody>
         <S.BottomButton
           type="button"
-          disabled={!validation.valid}
-          onClick={() => navigate(routes.onboardingPreferences, { state: { nickname: nickname.trim() } })}
+          disabled={!validation.valid || checkingNickname}
+          onClick={() => void continueProfile()}
         >
-          다음
+          {checkingNickname ? "확인하고 있어요" : "다음"}
         </S.BottomButton>
         <HomeIndicator />
       </S.FlowScreen>
@@ -193,32 +250,43 @@ function OnboardingPage() {
     };
     const complete = async (chosenPreferences: string[]) => {
       if (savingPreferences) return;
-      if (
-        chosenPreferences.length &&
-        isApiEnabled() &&
-        hasAuthSession()
-      ) {
+      let email = onboarding?.email;
+      let introduction = onboarding?.introduction;
+
+      if (liveSession) {
         setSavingPreferences(true);
         setError("");
         try {
-          await saveUserPreferences(
-            onboardingPreferencesToInput(chosenPreferences),
-          );
-        } catch (reason) {
-          if (!shouldUseMockFallback(reason)) {
-            setError(
-              reason instanceof Error
-                ? reason.message
-                : "여행 취향을 저장하지 못했어요. 다시 시도해 주세요.",
+          if (chosenPreferences.length) {
+            await saveUserPreferences(
+              onboardingPreferencesToInput(chosenPreferences),
             );
-            setSavingPreferences(false);
-            return;
           }
+          const user = await updateMyProfile({
+            nickname: displayNickname,
+            bio: null,
+            characterId: 1,
+          });
+          email = user.email;
+          introduction = user.bio ?? "";
+        } catch (reason) {
+          setError(
+            reason instanceof Error
+              ? reason.message
+              : "프로필과 여행 취향을 저장하지 못했어요. 다시 시도해 주세요.",
+          );
+          setSavingPreferences(false);
+          return;
         }
         setSavingPreferences(false);
       }
       navigate(routes.onboardingComplete, {
-        state: { nickname: displayNickname, preferences: chosenPreferences },
+        state: {
+          nickname: displayNickname,
+          preferences: chosenPreferences,
+          email,
+          introduction,
+        },
       });
     };
     return (
@@ -234,7 +302,7 @@ function OnboardingPage() {
           <S.Progress $complete aria-label="온보딩 2단계"><i /><i /></S.Progress>
           <h1>어떤 여행을 좋아하세요?</h1>
           <S.Description>
-            {isApiEnabled() && hasAuthSession()
+            {liveSession
               ? "고른 취향은 앞으로 만들 여행의 기본값으로 사용해요."
               : "고른 취향은 이 브라우저의 데모 프로필에 저장해요."}
           </S.Description>
@@ -271,11 +339,12 @@ function OnboardingPage() {
         const profile = parseProfileSettings(localStorage.getItem(PROFILE_STORAGE_KEY));
         saveProfileSettings(window.localStorage, {
           nickname: displayNickname,
-          email: profile?.email ?? "",
-          introduction: profile?.introduction ?? "",
+          email: onboarding?.email ?? profile?.email ?? "",
+          introduction: onboarding?.introduction ?? profile?.introduction ?? "",
           avatar: profile?.avatar ?? "blue",
           travelPreferences: onboarding?.preferences ?? [],
         });
+        sessionStorage.removeItem(ONBOARDING_NICKNAME_STORAGE_KEY);
       } catch {
         setError("브라우저에 데모 프로필을 저장하지 못했어요. 다시 시도해 주세요.");
         return;

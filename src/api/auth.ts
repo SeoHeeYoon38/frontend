@@ -1,4 +1,4 @@
-import { apiRequest } from "./client";
+import { apiRequest, queryString } from "./client";
 import { googleOAuthConfig } from "./config";
 import {
   clearAuthTokens,
@@ -16,7 +16,20 @@ export interface UserResponse {
   email: string;
   name: string;
   profileImageUrl: string | null;
+  nickname: string | null;
+  bio: string | null;
+  characterId: number | null;
   createdAt: string;
+}
+
+export interface ProfileUpdateInput {
+  nickname: string;
+  bio: string | null;
+  characterId: number;
+}
+
+export interface NicknameCheckResponse {
+  available: boolean;
 }
 
 export function canStartGoogleLogin() {
@@ -74,5 +87,23 @@ export async function logout() {
 
 export function getMe(signal?: AbortSignal) {
   return apiRequest<UserResponse>("/api/users/me", { signal });
+}
+
+export function checkNickname(nickname: string, signal?: AbortSignal) {
+  return apiRequest<NicknameCheckResponse>(
+    `/api/users/nickname/check${queryString({ nickname })}`,
+    { signal },
+  );
+}
+
+export function updateMyProfile(
+  input: ProfileUpdateInput,
+  signal?: AbortSignal,
+) {
+  return apiRequest<UserResponse>("/api/users/me", {
+    method: "PATCH",
+    json: input,
+    signal,
+  });
 }
 

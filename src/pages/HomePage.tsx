@@ -33,7 +33,9 @@ function HomePage() {
     const controller = new AbortController();
     void getMe(controller.signal)
       .then((user) => {
-        if (!controller.signal.aborted) setAccountName(user.name);
+        if (!controller.signal.aborted) {
+          setAccountName(user.nickname?.trim() || user.name);
+        }
       })
       .catch(() => {
         // 인증 서버를 사용할 수 없으면 로컬 프로필 이름을 유지합니다.
