@@ -115,6 +115,14 @@ export const Field = styled.div<{ $tone?: "default" | "success" | "error" }>`
   }
 `;
 
+export const ErrorNotice = styled.p`
+  margin: 0;
+  color: #e5484d;
+  font-size: 13px;
+  line-height: 19px;
+  text-align: center;
+`;
+
 export const InputWrap = styled.div`
   height: 50px;
   display: flex;

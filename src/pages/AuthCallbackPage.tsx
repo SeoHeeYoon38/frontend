@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { loginWithGoogleCode, validateOAuthState } from "../api/auth";
 import { routes } from "../config/routes";
+import { shouldCompleteSignup } from "../utils/authFlow";
 
 function AuthCallbackPage() {
   const navigate = useNavigate();
@@ -28,9 +29,12 @@ function AuthCallbackPage() {
     void loginWithGoogleCode(callback.code)
       .then((response) => {
         if (!controller.signal.aborted) {
-          navigate(response.newUser ? routes.onboardingProfile : routes.home, {
-            replace: true,
-          });
+          navigate(
+            shouldCompleteSignup(response.signupCompleted)
+              ? routes.onboardingTerms
+              : routes.home,
+            { replace: true },
+          );
         }
       })
       .catch((reason: unknown) => {
