@@ -10,6 +10,8 @@ import { readMockScenario } from "../utils/mockScenario";
 import { parseProfileSettings, PROFILE_STORAGE_KEY } from "../utils/mySettings";
 import { getMe } from "../api/auth";
 import { isApiEnabled } from "../api/config";
+import { getCourses } from "../api/courses";
+import { courseSummaryToHomeCourse } from "../api/adapters";
 import { hasAuthSession } from "../api/tokenStorage";
 import { apiTripToSummary } from "../utils/serverTrip";
 import { useMyTrips } from "../hooks/useMyTrips";
@@ -19,6 +21,11 @@ function HomePage() {
   const location = useLocation();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const data = readHomeTrips();
+  const [recommendedCourses, setRecommendedCourses] = useState(() =>
+    isApiEnabled() ? [] : data.courses,
+  );
+  const [coursePending, setCoursePending] = useState(isApiEnabled());
+  const [courseError, setCourseError] = useState("");
   const myTrips = useMyTrips(true);
   const [nickname] = useState(() => {
     try {
@@ -40,6 +47,24 @@ function HomePage() {
       .catch(() => {
         // 인증 서버를 사용할 수 없으면 로컬 프로필 이름을 유지합니다.
       });
+    return () => controller.abort();
+  }, []);
+  useEffect(() => {
+    if (!isApiEnabled()) return;
+    const controller = new AbortController();
+    void getCourses(undefined, controller.signal).then(
+      (courses) => {
+        if (controller.signal.aborted) return;
+        setRecommendedCourses(courses.map(courseSummaryToHomeCourse).slice(0, 5));
+        setCoursePending(false);
+        setCourseError("");
+      },
+      () => {
+        if (controller.signal.aborted) return;
+        setCoursePending(false);
+        setCourseError("추천 코스를 불러오지 못했어요.");
+      },
+    );
     return () => controller.abort();
   }, []);
   const storageNotice = readTripStorageNotice();
@@ -65,7 +90,9 @@ function HomePage() {
       {!myTrips.pending && !myTrips.error && (
         <MyTripsSection trips={trips} tripPath={tripPath} onCreateTrip={() => setIsCreateOpen(true)} />
       )}
-      <RecommendedCourses courses={data.courses} />
+      {coursePending && <p role="status">추천 코스를 불러오고 있어요.</p>}
+      {courseError && <p role="alert">{courseError}</p>}
+      {!coursePending && !courseError && <RecommendedCourses courses={recommendedCourses} />}
       <SharedTripsSection trips={data.sharedTrips} />
       {isCreateOpen && <CreateTripSheet onClose={() => setIsCreateOpen(false)} />}
     </>

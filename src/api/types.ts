@@ -219,6 +219,39 @@ export interface GeneratedItineraryResponse {
   excludedPlaceIds: string[];
 }
 
+export interface ItineraryDiff {
+  changes: Array<{
+    kind: "ADDED" | "REMOVED" | "MOVED_DAY" | "STAY_CHANGED" | "FIXED_START_CHANGED";
+    itemId: string;
+    placeId: string;
+    fromDate: string | null;
+    toDate: string | null;
+    fromStayMinutes: number | null;
+    toStayMinutes: number | null;
+    fromFixedStart: string | null;
+    toFixedStart: string | null;
+  }>;
+  reorderedDays: string[];
+}
+
+export interface ItineraryEditPreview {
+  baseVersion: number;
+  reason: string;
+  itinerary: {
+    draft: ItineraryDraft;
+    validation: ValidationResult;
+  };
+  diff: ItineraryDiff;
+}
+
+export interface ItineraryVersionSummary {
+  version: number;
+  source: ItineraryVersionView["source"];
+  baseVersion: number | null;
+  createdBy: number;
+  createdAt: string;
+}
+
 export interface FlightPoint {
   airport: string;
   time: string;
@@ -286,5 +319,42 @@ export interface CourseDetailResponse extends CourseSummaryResponse {
       imageUrl: string | null;
     }>;
   }>;
+}
+
+export interface MyStatsResponse {
+  savedPlaceCount: number;
+  savedCourseCount: number;
+  completedTripCount: number;
+}
+
+export interface InvitePreviewResponse {
+  city: string;
+  startDate: string;
+  endDate: string;
+  companion: CompanionCode;
+  inviterName: string | null;
+  memberCount: number;
+  maxMembers: number;
+  savedPlaceCount: number;
+  expiresAt: string;
+}
+
+export interface InviteAcceptResponse {
+  tripId: number;
+}
+
+export interface InviteResponse {
+  token: string;
+  expiresAt: string;
+}
+
+export interface MemberResponse {
+  userId: number;
+  name: string;
+  profileImageUrl: string | null;
+  characterId: number | null;
+  role: "OWNER" | "MEMBER";
+  me: boolean;
+  joinedAt: string;
 }
 

@@ -26,3 +26,36 @@ export interface CourseTheme {
   image: string;
   interest: CourseInterest;
 }
+
+export interface TravelerCoursePlace {
+  id: string;
+  name: string;
+  category: string;
+  image: string;
+  travelTime?: string;
+  distance?: string;
+}
+
+export interface TravelerCourseDay {
+  label: string;
+  places: TravelerCoursePlace[];
+}
+
+export interface TravelerCourseView {
+  id: string;
+  city: string;
+  duration: string;
+  tags: string[];
+  title: string;
+  author: string;
+  authorNote: string;
+  publishedAt: string;
+  description: string;
+  placeCount: number;
+  transport: string;
+  hero: string;
+  authorImage: string;
+  routePreview: string;
+  mapFull: string;
+  days: TravelerCourseDay[];
+}

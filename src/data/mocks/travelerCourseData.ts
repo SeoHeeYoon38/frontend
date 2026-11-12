@@ -9,22 +9,9 @@ import sannenzakaHero from "../../assets/traveler-course/sannenzaka-hero.png";
 import sannenzakaMap from "../../assets/traveler-course/sannenzaka-map.png";
 import sannenzakaPhoto2 from "../../assets/traveler-course/sannenzaka-photo-2.png";
 import sannenzakaPhoto3 from "../../assets/traveler-course/sannenzaka-photo-3.png";
+import type { TravelerCourseDay, TravelerCourseView } from "../../types/course";
 
-export interface TravelerCoursePlace {
-  id: string;
-  name: string;
-  category: string;
-  image: string;
-  travelTime?: string;
-  distance?: string;
-}
-
-export interface TravelerCourseDay {
-  label: string;
-  places: TravelerCoursePlace[];
-}
-
-export const travelerCourse = {
+export const travelerCourse: TravelerCourseView = {
   id: "kyoto-walk",
   city: "교토",
   duration: "2박 3일",
