@@ -1,10 +1,3 @@
-interface OnboardingProfile {
-  nickname: string | null;
-}
-
-export function shouldCompleteOnboarding(
-  newUser: boolean,
-  user: OnboardingProfile,
-) {
-  return newUser || !user.nickname?.trim();
+export function shouldCompleteSignup(signupCompleted: boolean | undefined) {
+  return signupCompleted !== true;
 }

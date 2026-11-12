@@ -7,12 +7,16 @@ const publicRoutePatterns = [
   /^\/my\/account\/policies\/[^/]+\/?$/,
 ];
 
-const onboardingRoutePattern = /^\/onboarding\/(profile|preferences|complete)\/?$/;
+const onboardingRoutePattern = /^\/onboarding\/(terms|profile|preferences|complete)\/?$/;
+
+export function isOnboardingRoute(pathname: string) {
+  return onboardingRoutePattern.test(pathname);
+}
 
 export function isPublicRoute(pathname: string, allowOnboarding = false) {
   return (
     publicRoutePatterns.some((pattern) => pattern.test(pathname)) ||
-    (allowOnboarding && onboardingRoutePattern.test(pathname))
+    (allowOnboarding && isOnboardingRoute(pathname))
   );
 }
 

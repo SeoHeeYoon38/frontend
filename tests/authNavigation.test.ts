@@ -20,6 +20,7 @@ test("홈과 온보딩, 앱 내부 화면은 로그인으로 보낸다", () => {
 });
 
 test("개발용 데모에서는 세션 없이 온보딩 단계를 이동할 수 있다", () => {
+  assert.equal(authRedirectPath("/onboarding/terms", true), null);
   assert.equal(authRedirectPath("/onboarding/profile", true), null);
   assert.equal(authRedirectPath("/onboarding/preferences", true), null);
   assert.equal(authRedirectPath("/onboarding/complete", true), null);

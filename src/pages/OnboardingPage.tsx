@@ -1,11 +1,10 @@
 import { useMemo, useState } from "react";
-import { useLocation, useNavigate } from "react-router";
+import { Navigate, useLocation, useNavigate } from "react-router";
 import { onboardingPreferencesToInput } from "../api/adapters";
 import {
   canStartGoogleLogin,
-  checkNickname,
+  completeSignup,
   googleAuthorizationUrl,
-  updateMyProfile,
 } from "../api/auth";
 import { apiMode, isApiEnabled } from "../api/config";
 import { saveUserPreferences } from "../api/preferences";
@@ -26,6 +25,7 @@ import { allowDemoAuthentication } from "../utils/authNavigation";
 import * as S from "./OnboardingPage.styled";
 
 type AgreementKey = "service" | "privacy" | "age" | "location" | "marketing";
+type AgreementState = Record<AgreementKey, boolean>;
 
 interface OnboardingState {
   agreements?: Record<AgreementKey, boolean>;
@@ -36,10 +36,25 @@ interface OnboardingState {
 }
 
 const ONBOARDING_NICKNAME_STORAGE_KEY = "dotlo:onboarding:nickname";
+const ONBOARDING_AGREEMENTS_STORAGE_KEY = "dotlo:onboarding:agreements";
 
-const initialAgreements = {
+const initialAgreements: AgreementState = {
   service: false, privacy: false, age: false, location: false, marketing: false,
 };
+
+function readStoredAgreements(): AgreementState | null {
+  try {
+    const stored = sessionStorage.getItem(ONBOARDING_AGREEMENTS_STORAGE_KEY);
+    if (!stored) return null;
+    const value = JSON.parse(stored) as Partial<AgreementState>;
+    const keys: AgreementKey[] = ["service", "privacy", "age", "location", "marketing"];
+    return keys.every((key) => typeof value[key] === "boolean")
+      ? (value as AgreementState)
+      : null;
+  } catch {
+    return null;
+  }
+}
 
 const agreements: Array<{ key: AgreementKey; required: boolean; label: string; details?: boolean }> = [
   { key: "service", required: true, label: "서비스 이용약관", details: true },
@@ -102,10 +117,12 @@ function OnboardingPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const onboarding = location.state as OnboardingState | null;
-  const [termsOpen, setTermsOpen] = useState(
-    () => new URLSearchParams(location.search).get("terms") === "1",
+  const termsOpen =
+    location.pathname === routes.onboardingTerms ||
+    new URLSearchParams(location.search).get("terms") === "1";
+  const [agreementsState, setAgreementsState] = useState(
+    () => onboarding?.agreements ?? readStoredAgreements() ?? initialAgreements,
   );
-  const [agreementsState, setAgreementsState] = useState(() => onboarding?.agreements ?? initialAgreements);
   const [nickname, setNickname] = useState(
     () =>
       onboarding?.nickname ??
@@ -114,8 +131,8 @@ function OnboardingPage() {
   );
   const [preferences, setPreferences] = useState<string[]>([]);
   const [savingPreferences, setSavingPreferences] = useState(false);
-  const [checkingNickname, setCheckingNickname] = useState(false);
-  const [nicknameError, setNicknameError] = useState("");
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [profileError, setProfileError] = useState("");
   const [error, setError] = useState("");
   const liveGoogleLogin = isApiEnabled() && canStartGoogleLogin();
   const demoAuthentication = allowDemoAuthentication(import.meta.env.DEV, apiMode);
@@ -138,9 +155,9 @@ function OnboardingPage() {
     setAgreementsState({ service: next, privacy: next, age: next, location: next, marketing: next });
   };
 
-  const continueAfterTerms = () => {
+  const startGoogleLogin = () => {
     if (!liveGoogleLogin && demoAuthentication) {
-      navigate(routes.onboardingProfile);
+      navigate(routes.onboardingTerms);
       return;
     }
     if (!liveGoogleLogin) {
@@ -158,35 +175,67 @@ function OnboardingPage() {
     }
   };
 
+  const continueAfterTerms = () => {
+    sessionStorage.setItem(
+      ONBOARDING_AGREEMENTS_STORAGE_KEY,
+      JSON.stringify(agreementsState),
+    );
+    navigate(routes.onboardingProfile, {
+      state: { agreements: agreementsState },
+    });
+  };
+
+  if (
+    location.pathname === routes.onboardingProfile &&
+    liveSession &&
+    !requiredAgreed
+  ) {
+    return <Navigate to={routes.onboardingTerms} replace />;
+  }
+
   if (location.pathname === routes.onboardingProfile) {
     const validation = validateNickname(nickname);
     const continueProfile = async () => {
-      if (!validation.valid || checkingNickname) return;
+      if (!validation.valid || savingProfile) return;
       const value = nickname.trim();
-      setNicknameError("");
+      setProfileError("");
+      let email = onboarding?.email;
+      let introduction = onboarding?.introduction;
 
       if (liveSession) {
-        setCheckingNickname(true);
+        setSavingProfile(true);
         try {
-          const result = await checkNickname(value);
-          if (!result.available) {
-            setNicknameError("이미 사용 중인 닉네임이에요");
-            return;
-          }
+          await completeSignup({
+            agreements: {
+              terms: agreementsState.service,
+              privacy: agreementsState.privacy,
+              age14: agreementsState.age,
+              location: agreementsState.location,
+            },
+            nickname: value,
+            characterId: 1,
+          });
         } catch (reason) {
-          setNicknameError(
+          setProfileError(
             reason instanceof Error
               ? reason.message
-              : "닉네임을 확인하지 못했어요. 다시 시도해 주세요.",
+              : "가입 정보를 저장하지 못했어요. 다시 시도해 주세요.",
           );
           return;
         } finally {
-          setCheckingNickname(false);
+          setSavingProfile(false);
         }
       }
 
       sessionStorage.setItem(ONBOARDING_NICKNAME_STORAGE_KEY, value);
-      navigate(routes.onboardingPreferences, { state: { nickname: value } });
+      navigate(routes.onboardingPreferences, {
+        state: {
+          agreements: agreementsState,
+          nickname: value,
+          email,
+          introduction,
+        },
+      });
     };
     return (
       <S.FlowScreen>
@@ -206,7 +255,7 @@ function OnboardingPage() {
               aria-invalid={!validation.valid}
               onChange={(event) => {
                 setNickname(event.target.value);
-                setNicknameError("");
+                setProfileError("");
               }}
             />
             <small>{nickname.length}/12</small>
@@ -216,11 +265,11 @@ function OnboardingPage() {
               </button>
             )}
           </S.NicknameField>
-          <S.ValidText $error={!validation.valid || Boolean(nicknameError)} role="status">
-            {validation.valid && !nicknameError && <img src={validCheckIcon} alt="" />}
-            {nicknameError ||
-              (checkingNickname
-                ? "닉네임을 확인하고 있어요"
+          <S.ValidText $error={!validation.valid || Boolean(profileError)} role="status">
+            {validation.valid && !profileError && <img src={validCheckIcon} alt="" />}
+            {profileError ||
+              (savingProfile
+                ? "가입 정보를 저장하고 있어요"
                 : validation.valid
                   ? liveSession
                     ? "사용할 수 있는 형식의 닉네임이에요"
@@ -230,10 +279,10 @@ function OnboardingPage() {
         </S.FlowBody>
         <S.BottomButton
           type="button"
-          disabled={!validation.valid || checkingNickname}
+          disabled={!validation.valid || savingProfile}
           onClick={() => void continueProfile()}
         >
-          {checkingNickname ? "확인하고 있어요" : "다음"}
+          {savingProfile ? "저장하고 있어요" : "다음"}
         </S.BottomButton>
         <HomeIndicator />
       </S.FlowScreen>
@@ -262,18 +311,11 @@ function OnboardingPage() {
               onboardingPreferencesToInput(chosenPreferences),
             );
           }
-          const user = await updateMyProfile({
-            nickname: displayNickname,
-            bio: null,
-            characterId: 1,
-          });
-          email = user.email;
-          introduction = user.bio ?? "";
         } catch (reason) {
           setError(
             reason instanceof Error
               ? reason.message
-              : "프로필과 여행 취향을 저장하지 못했어요. 다시 시도해 주세요.",
+              : "여행 취향을 저장하지 못했어요. 다시 시도해 주세요.",
           );
           setSavingPreferences(false);
           return;
@@ -345,6 +387,7 @@ function OnboardingPage() {
           travelPreferences: onboarding?.preferences ?? [],
         });
         sessionStorage.removeItem(ONBOARDING_NICKNAME_STORAGE_KEY);
+        sessionStorage.removeItem(ONBOARDING_AGREEMENTS_STORAGE_KEY);
       } catch {
         setError("브라우저에 데모 프로필을 저장하지 못했어요. 다시 시도해 주세요.");
         return;
@@ -380,7 +423,7 @@ function OnboardingPage() {
           <S.ProviderButton
             type="button"
             disabled={!liveGoogleLogin && !demoAuthentication}
-            onClick={() => setTermsOpen(true)}
+            onClick={startGoogleLogin}
           >
             <img src={googleIcon} alt="" />
             {liveGoogleLogin
@@ -398,12 +441,16 @@ function OnboardingPage() {
       )}
       {termsOpen && (
         <>
-          <S.Dim onClick={() => setTermsOpen(false)} />
+          <S.Dim
+            onClick={() => {
+              if (!liveSession) navigate(routes.login);
+            }}
+          />
           <S.TermsSheet role="dialog" aria-modal="true" aria-labelledby="terms-title">
             <S.Grabber />
-            <h2 id="terms-title">{liveGoogleLogin ? "약관에 동의해 주세요" : "약관 동의 체험"}</h2>
+            <h2 id="terms-title">{liveSession ? "약관에 동의해 주세요" : "약관 동의 체험"}</h2>
             <p>
-              {liveGoogleLogin
+              {liveSession
                 ? "도틀로를 이용하려면 필수 약관 동의가 필요해요."
                 : "필수 항목을 선택하면 데모 프로필을 만들 수 있어요."}
             </p>

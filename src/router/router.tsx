@@ -23,6 +23,12 @@ const router = createBrowserRouter([
         }),
       },
       {
+        path: routes.onboardingTerms,
+        lazy: async () => ({
+          Component: (await import("../pages/OnboardingPage")).default,
+        }),
+      },
+      {
         path: routes.onboardingProfile,
         lazy: async () => ({
           Component: (await import("../pages/OnboardingPage")).default,

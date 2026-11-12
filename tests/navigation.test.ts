@@ -46,6 +46,7 @@ test("홈의 주요 탭과 알림 경로가 앱 안에 등록된다", () => {
 
 test("로그인과 온보딩 단계가 순서대로 등록된다", () => {
   assert.equal(routes.login, "/login");
+  assert.equal(routes.onboardingTerms, "/onboarding/terms");
   assert.equal(routes.onboardingProfile, "/onboarding/profile");
   assert.equal(routes.onboardingPreferences, "/onboarding/preferences");
   assert.equal(routes.onboardingComplete, "/onboarding/complete");

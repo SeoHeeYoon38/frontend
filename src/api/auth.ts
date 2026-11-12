@@ -9,6 +9,7 @@ import {
 
 export interface LoginResponse extends AuthTokens {
   newUser: boolean;
+  signupCompleted: boolean;
 }
 
 export interface UserResponse {
@@ -19,7 +20,19 @@ export interface UserResponse {
   nickname: string | null;
   bio: string | null;
   characterId: number | null;
+  signupCompleted: boolean;
   createdAt: string;
+}
+
+export interface SignupInput {
+  agreements: {
+    terms: boolean;
+    privacy: boolean;
+    age14: boolean;
+    location: boolean;
+  };
+  nickname: string;
+  characterId: number;
 }
 
 export interface ProfileUpdateInput {
@@ -31,6 +44,8 @@ export interface ProfileUpdateInput {
 export interface NicknameCheckResponse {
   available: boolean;
 }
+
+export const SIGNUP_COMPLETED_EVENT = "dotlo:signup-completed";
 
 export function canStartGoogleLogin() {
   return Boolean(googleOAuthConfig.clientId && googleOAuthConfig.redirectUri);
@@ -87,6 +102,15 @@ export async function logout() {
 
 export function getMe(signal?: AbortSignal) {
   return apiRequest<UserResponse>("/api/users/me", { signal });
+}
+
+export async function completeSignup(input: SignupInput, signal?: AbortSignal) {
+  await apiRequest<void>("/api/users/me/signup", {
+    method: "POST",
+    json: input,
+    signal,
+  });
+  window.dispatchEvent(new Event(SIGNUP_COMPLETED_EVENT));
 }
 
 export function checkNickname(nickname: string, signal?: AbortSignal) {
