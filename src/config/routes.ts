@@ -15,6 +15,7 @@ export const routes = {
   notificationSettings: "/my/notifications",
   accountSettings: "/my/account",
   policyDetail: "/my/account/policies/:policyId",
+  privacyPolicy: "/terms/privacy",
   googleMapsSettings: "/my/account/google-maps",
   withdrawal: "/my/account/withdrawal",
   notices: "/my/support/notices",

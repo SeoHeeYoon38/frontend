@@ -5,6 +5,7 @@ const publicRoutePatterns = [
   /^\/auth\/callback\/google\/?$/,
   /^\/invite\/[^/]+\/?$/,
   /^\/my\/account\/policies\/[^/]+\/?$/,
+  /^\/terms\/privacy\/?$/,
 ];
 
 const onboardingRoutePattern = /^\/onboarding\/(profile|preferences|complete)\/?$/;
