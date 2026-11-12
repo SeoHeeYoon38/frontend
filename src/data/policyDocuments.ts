@@ -70,4 +70,6 @@ export const isPolicyDocumentId = (value: string | undefined): value is PolicyDo
   Boolean(value && value in policyDocuments);
 
 export const policyPath = (id: PolicyDocumentId, fromLogin = false) =>
-  `/my/account/policies/${id}${fromLogin ? "?from=login" : ""}`;
+  id === "privacy" && fromLogin
+    ? "/terms/privacy?from=login"
+    : `/my/account/policies/${id}${fromLogin ? "?from=login" : ""}`;

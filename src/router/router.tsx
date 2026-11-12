@@ -121,6 +121,12 @@ const router = createBrowserRouter([
         }),
       },
       {
+        path: routes.privacyPolicy,
+        lazy: async () => ({
+          Component: (await import("../pages/PrivacyPolicyPage")).default,
+        }),
+      },
+      {
         path: routes.googleMapsSettings,
         lazy: async () => ({
           Component: (await import("../pages/GoogleMapsSettingsPage")).default,

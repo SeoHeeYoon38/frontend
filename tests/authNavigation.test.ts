@@ -11,6 +11,8 @@ test("로그인과 콜백, 초대, 약관 상세는 세션 없이 열 수 있다
   assert.equal(isPublicRoute("/auth/callback/google"), true);
   assert.equal(isPublicRoute("/invite/sample-token"), true);
   assert.equal(isPublicRoute("/my/account/policies/privacy"), true);
+  assert.equal(isPublicRoute("/terms/privacy"), true);
+  assert.equal(authRedirectPath("/terms/privacy"), null);
 });
 
 test("홈과 온보딩, 앱 내부 화면은 로그인으로 보낸다", () => {

@@ -53,7 +53,7 @@ test("로그인과 온보딩 단계가 순서대로 등록된다", () => {
   assert.equal(routes.invite, "/invite/:inviteId");
   assert.equal(routes.policyDetail, "/my/account/policies/:policyId");
   assert.equal(policyPath("service"), "/my/account/policies/service");
-  assert.equal(policyPath("privacy", true), "/my/account/policies/privacy?from=login");
+  assert.equal(policyPath("privacy", true), "/terms/privacy?from=login");
 });
 
 test("직접 일정 만들기 모드는 AI 여행 만들기와 분리된다", () => {
