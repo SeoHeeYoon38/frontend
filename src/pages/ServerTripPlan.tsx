@@ -1,10 +1,22 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router";
 import { ApiError } from "../api/client";
-import { getLatestItinerary } from "../api/itineraries";
+import {
+  applyItineraryEdit,
+  getItineraryHistory,
+  getLatestItinerary,
+  requestItineraryEdit,
+  revertItinerary,
+} from "../api/itineraries";
 import { getSavedPlaces } from "../api/places";
 import { getTrip } from "../api/trips";
-import type { ItineraryVersionView, SavedPlaceResponse, TripResponse } from "../api/types";
+import type {
+  ItineraryEditPreview,
+  ItineraryVersionSummary,
+  ItineraryVersionView,
+  SavedPlaceResponse,
+  TripResponse,
+} from "../api/types";
 import { resumeTripPath, tripPlanBackPath } from "../utils/navigation";
 import { apiTripToDraft, apiTripToSummary } from "../utils/serverTrip";
 import { dateLabel } from "../utils/trip";
@@ -15,11 +27,20 @@ interface TripPlanData {
   trip: TripResponse;
   itinerary: ItineraryVersionView | null;
   places: SavedPlaceResponse[];
+  history: ItineraryVersionSummary[];
 }
 
 function timeLabel(value: string) {
   return (value.split("T")[1] ?? value).slice(0, 5);
 }
+
+const sourceLabels: Record<ItineraryVersionSummary["source"], string> = {
+  AI_GENERATED: "AI 일정 생성",
+  AI_EDITED: "AI 수정",
+  MANUAL_EDIT: "직접 수정",
+  COURSE_ADD: "코스 추가",
+  REVERT: "되돌리기",
+};
 
 function ServerTripPlan({ tripId }: { tripId: number }) {
   const { search, state } = useLocation();
@@ -27,6 +48,11 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
   const [error, setError] = useState("");
   const [activeDay, setActiveDay] = useState(0);
   const [editing, setEditing] = useState(false);
+  const [editMessage, setEditMessage] = useState("");
+  const [editPreview, setEditPreview] = useState<ItineraryEditPreview>();
+  const [editPending, setEditPending] = useState(false);
+  const [actionError, setActionError] = useState("");
+  const [notice, setNotice] = useState("");
 
   useEffect(() => {
     const controller = new AbortController();
@@ -42,7 +68,8 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
         });
         if (signal.aborted) return;
         const saved = itinerary ? await getSavedPlaces(tripId, signal).catch(() => undefined) : undefined;
-        if (!signal.aborted) setData({ trip, itinerary, places: saved?.places ?? [] });
+        const history = itinerary ? await getItineraryHistory(tripId, signal).catch(() => []) : [];
+        if (!signal.aborted) setData({ trip, itinerary, places: saved?.places ?? [], history });
       } catch (reason) {
         if (signal.aborted) return;
         setError(reason instanceof ApiError && reason.code === "TRIP_NOT_FOUND"
@@ -59,6 +86,62 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
   const days = data?.itinerary?.validation.days ?? [];
   const day = days[activeDay];
   const excludedPlaceIds: string[] = Array.isArray(state?.excludedPlaceIds) ? state.excludedPlaceIds : [];
+
+  const reloadHistory = async () => {
+    const history = await getItineraryHistory(tripId);
+    setData((current) => current ? { ...current, history } : current);
+  };
+
+  const requestEdit = async () => {
+    const message = editMessage.trim();
+    if (!message || editPending) return;
+    setEditPending(true);
+    setActionError("");
+    setNotice("");
+    try {
+      setEditPreview(await requestItineraryEdit(tripId, message));
+    } catch (reason) {
+      setActionError(reason instanceof Error ? reason.message : "수정안을 만들지 못했어요.");
+    } finally {
+      setEditPending(false);
+    }
+  };
+
+  const applyEdit = async () => {
+    if (!editPreview || editPending) return;
+    setEditPending(true);
+    setActionError("");
+    try {
+      const itinerary = await applyItineraryEdit(tripId, editPreview.baseVersion);
+      setData((current) => current ? { ...current, itinerary } : current);
+      setEditPreview(undefined);
+      setEditMessage("");
+      setActiveDay(0);
+      setNotice("수정한 일정을 적용했어요.");
+      await reloadHistory();
+    } catch (reason) {
+      setActionError(reason instanceof Error ? reason.message : "수정안을 적용하지 못했어요.");
+    } finally {
+      setEditPending(false);
+    }
+  };
+
+  const revert = async (version: number) => {
+    if (editPending) return;
+    setEditPending(true);
+    setActionError("");
+    try {
+      const itinerary = await revertItinerary(tripId, version);
+      setData((current) => current ? { ...current, itinerary } : current);
+      setActiveDay(0);
+      setNotice(`${version}번 일정으로 되돌렸어요.`);
+      await reloadHistory();
+    } catch (reason) {
+      setActionError(reason instanceof Error ? reason.message : "일정을 되돌리지 못했어요.");
+    } finally {
+      setEditPending(false);
+    }
+  };
 
   if (editing && data?.itinerary) {
     return (
@@ -77,6 +160,8 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
         <div className="course-content">
           <Link to={tripPlanBackPath(search)}>여행 목록으로 돌아가기</Link>
           {error && <p role="alert">{error}</p>}
+          {actionError && <p role="alert">{actionError}</p>}
+          {notice && <p role="status">{notice}</p>}
           {!data && !error && <p role="status">여행 일정을 불러오고 있어요.</p>}
           {data && summary && (
             <section className="course-section">
@@ -128,6 +213,57 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
                       })}
                     </ol>
                   ) : <p>이날 일정에 담긴 장소가 없어요.</p>}
+                  <section aria-labelledby="ai-edit-title">
+                    <h2 id="ai-edit-title">AI로 일정 수정하기</h2>
+                    <textarea
+                      value={editMessage}
+                      maxLength={500}
+                      onChange={(event) => setEditMessage(event.target.value)}
+                      placeholder="예: 2일차 점심을 빼고 오사카성을 넣어줘"
+                      aria-label="AI 일정 수정 요청"
+                    />
+                    <button
+                      type="button"
+                      disabled={!editMessage.trim() || editPending}
+                      onClick={() => void requestEdit()}
+                    >
+                      {editPending && !editPreview ? "수정안을 만들고 있어요" : "수정안 확인하기"}
+                    </button>
+                    {editPreview && (
+                      <div>
+                        <h3>수정안</h3>
+                        <p>{editPreview.reason}</p>
+                        <p>
+                          변경 {editPreview.diff.changes.length}건
+                          {editPreview.diff.reorderedDays.length > 0 &&
+                            ` · 순서 변경 ${editPreview.diff.reorderedDays.length}일`}
+                        </p>
+                        <button type="button" disabled={editPending} onClick={() => void applyEdit()}>
+                          {editPending ? "적용하고 있어요" : "이 일정 적용하기"}
+                        </button>
+                        <button type="button" disabled={editPending} onClick={() => setEditPreview(undefined)}>
+                          기존 일정 유지
+                        </button>
+                      </div>
+                    )}
+                  </section>
+                  {data.history.length > 0 && (
+                    <section aria-labelledby="history-title">
+                      <h2 id="history-title">일정 변경 이력</h2>
+                      <ul>
+                        {data.history.map((item) => (
+                          <li key={item.version}>
+                            <span>{sourceLabels[item.source]} · {new Date(item.createdAt).toLocaleString("ko-KR")}</span>
+                            {item.version !== data.itinerary?.version && (
+                              <button type="button" disabled={editPending} onClick={() => void revert(item.version)}>
+                                이 버전으로 되돌리기
+                              </button>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
+                  )}
                 </>
               ) : (
                 <>

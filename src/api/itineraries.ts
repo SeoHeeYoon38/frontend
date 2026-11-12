@@ -1,7 +1,9 @@
 import { apiRequest } from "./client";
 import type {
   GeneratedItineraryResponse,
+  ItineraryEditPreview,
   ItineraryDayInput,
+  ItineraryVersionSummary,
   ItineraryVersionView,
   ValidationResult,
 } from "./types";
@@ -46,6 +48,46 @@ export function getLatestItinerary(tripId: number, signal?: AbortSignal) {
   return apiRequest<ItineraryVersionView>(
     `/api/trips/${tripId}/itineraries/latest`,
     { signal },
+  );
+}
+
+export function requestItineraryEdit(
+  tripId: number,
+  message: string,
+  signal?: AbortSignal,
+) {
+  return apiRequest<ItineraryEditPreview>(
+    `/api/trips/${tripId}/itineraries/edit-requests`,
+    { method: "POST", json: { message }, signal, timeoutMs: 180_000 },
+  );
+}
+
+export function applyItineraryEdit(
+  tripId: number,
+  baseVersion: number,
+  signal?: AbortSignal,
+) {
+  return apiRequest<ItineraryVersionView>(
+    `/api/trips/${tripId}/itineraries/${baseVersion}/apply`,
+    { method: "POST", signal, timeoutMs: 180_000 },
+  );
+}
+
+export function getItineraryHistory(tripId: number, signal?: AbortSignal) {
+  return apiRequest<ItineraryVersionSummary[]>(
+    `/api/trips/${tripId}/itineraries`,
+    { signal },
+  );
+}
+
+export function revertItinerary(
+  tripId: number,
+  version: number,
+  signal?: AbortSignal,
+) {
+  return apiRequest<ItineraryVersionView>(
+    `/api/trips/${tripId}/itineraries/${version}/revert`,
+    { method: "POST", signal },
   );
 }
 
