@@ -35,7 +35,12 @@ function ServerSavedPlaces({ tripId, onContinue, onPick, pickedPlaceIds }: Serve
     const controller = new AbortController();
     const { signal } = controller;
     void getSavedPlaces(tripId, signal).then(
-      (response) => { if (!signal.aborted) setPlaces(response.places); },
+      (response) => {
+        if (!signal.aborted) {
+          setPlaces(response.places);
+          setShowImport(response.places.length === 0);
+        }
+      },
       () => { if (!signal.aborted) setError("저장 장소를 불러오지 못했어요."); },
     );
     return () => {
@@ -88,6 +93,19 @@ function ServerSavedPlaces({ tripId, onContinue, onPick, pickedPlaceIds }: Serve
   }
 
   const canContinue = places?.some((place) => place.matchStatus === "MATCHED" && place.placeId);
+
+  if (showImport) {
+    return (
+      <P.ConnectStep aria-busy={busy}>
+        <PlaceImportForm
+          onImport={importPlaces}
+          onSkip={() => setShowImport(false)}
+          busy={busy}
+          importError={error}
+        />
+      </P.ConnectStep>
+    );
+  }
 
   return (
     <P.PlacesStep $empty={false} aria-busy={busy}>
@@ -181,7 +199,6 @@ function ServerSavedPlaces({ tripId, onContinue, onPick, pickedPlaceIds }: Serve
           <P.MatchButton type="button" disabled={busy} aria-expanded={showImport} onClick={() => setShowImport(!showImport)}>
             Google Maps에서 가져오기
           </P.MatchButton>
-          {showImport && <PlaceImportForm onImport={importPlaces} busy={busy} />}
           {onContinue && <S.Primary type="button" disabled={busy || !canContinue} onClick={() => onContinue(places)}>다음</S.Primary>}
         </>
       )}

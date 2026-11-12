@@ -26,7 +26,6 @@ import {
   uploadTakeout,
 } from "../../api/places";
 import type { PlaceCandidate } from "../../api/types";
-import character from "../../assets/images/character-purple.webp";
 import emptyImage from "../../assets/images/character-empty-places.webp";
 import routeImage from "../../assets/images/map-course-preview.png";
 import emptyGlow from "../../assets/icons/effect-empty-places-glow.svg";
@@ -35,7 +34,6 @@ import cafe from "../../assets/icons/category-cafe.svg";
 import camera from "../../assets/icons/category-sightseeing.svg";
 import shopping from "../../assets/icons/category-shopping.svg";
 import searchIcon from "../../assets/icons/search-default.svg";
-import loadingDots from "../../assets/icons/status-loading-dots.svg";
 import chevronIcon from "../../assets/icons/nav-chevron-right.svg";
 import * as S from "./Trip.styled";
 import * as P from "./SavedPlacesStep.styled";
@@ -75,9 +73,9 @@ function SavedPlacesStep({
   const [matchSearchError, setMatchSearchError] = useState("");
   const [busy, setBusy] = useState(false);
   useEffect(() => {
-    onLoadingChange(busy);
+    onLoadingChange(false);
     return () => onLoadingChange(false);
-  }, [busy, onLoadingChange]);
+  }, [onLoadingChange]);
   const [error, setError] = useState("");
   const [course, setCourse] = useState<PlaceCourse | null>(null);
   const [pendingIds, setPendingIds] = useState<string[]>([]);
@@ -293,20 +291,21 @@ function SavedPlacesStep({
     courses.find((item) => item.id === course?.id)?.places ?? [];
   return (
     <>
-      {busy ? (
-        <P.LoadingState role="status" aria-live="polite">
-          <P.LoadingCharacter src={character} alt="" />
-          <h2>저장 장소를 불러오고 있어요</h2>
-          <p>{draft.city}에서 장소를 찾고 있어요</p>
-          <img src={loadingDots} alt="" />
-        </P.LoadingState>
-      ) : !ready ? (
+      {!ready ? (
         <P.ConnectStep>
-          <header>
-            <S.Title>Google Maps 장소 가져오기</S.Title>
-          </header>
-          <PlaceImportForm onImport={importSamplePlaces} busy={busy} />
-          {error && <S.ErrorText role="alert">{error}</S.ErrorText>}
+          <PlaceImportForm
+            onImport={importSamplePlaces}
+            busy={busy}
+            importError={error}
+            onSkip={() => {
+              onChange({
+                ...draft,
+                source: "manual",
+                places: mergePlaces(draft.places, catalog),
+              });
+              setTab("saved");
+            }}
+          />
         </P.ConnectStep>
       ) : (
         <P.PlacesStep $empty={emptySaved}>
@@ -488,23 +487,9 @@ function SavedPlacesStep({
           )}
         </P.PlacesStep>
       )}
-      {!busy && (
+      {ready && !busy && (
         <S.Footer>
-          {!ready ? (
-            <S.TextButton
-              type="button"
-              onClick={() => {
-                onChange({
-                  ...draft,
-                  source: "manual",
-                  places: mergePlaces(draft.places, catalog),
-                });
-                setTab("saved");
-              }}
-            >
-              추천 장소에서 골라볼게요
-            </S.TextButton>
-          ) : emptySaved ? (
+          {emptySaved ? (
             <S.Primary type="button" onClick={() => setTab("courses")}>
               추천 코스에서 장소 고르기
             </S.Primary>
