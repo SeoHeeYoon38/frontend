@@ -28,6 +28,7 @@ function HomePage() {
   const [courseError, setCourseError] = useState("");
   const myTrips = useMyTrips(true);
   const [nickname] = useState(() => {
+    if (isApiEnabled()) return undefined;
     try {
       return parseProfileSettings(localStorage.getItem(PROFILE_STORAGE_KEY))?.nickname;
     } catch {
@@ -35,6 +36,7 @@ function HomePage() {
     }
   });
   const [accountName, setAccountName] = useState<string>();
+  const [accountError, setAccountError] = useState("");
   useEffect(() => {
     if (!isApiEnabled() || !hasAuthSession()) return;
     const controller = new AbortController();
@@ -42,10 +44,17 @@ function HomePage() {
       .then((user) => {
         if (!controller.signal.aborted) {
           setAccountName(user.nickname?.trim() || user.name);
+          setAccountError("");
         }
       })
-      .catch(() => {
-        // 인증 서버를 사용할 수 없으면 로컬 프로필 이름을 유지합니다.
+      .catch((reason: unknown) => {
+        if (!controller.signal.aborted) {
+          setAccountError(
+            reason instanceof Error
+              ? reason.message
+              : "사용자 정보를 불러오지 못했어요.",
+          );
+        }
       });
     return () => controller.abort();
   }, []);
@@ -78,6 +87,7 @@ function HomePage() {
   return (
     <>
       {!myTrips.enabled && storageNotice && <p role="alert">{storageNotice}</p>}
+      {accountError && <p role="alert">{accountError}</p>}
       <HomeIntro
         name={accountName ?? nickname ?? (myTrips.enabled ? "" : data.userName)}
         trip={nextTrip}

@@ -34,10 +34,14 @@ function TripInfoStep({
   const [sheet, setSheet] = useState<
     "city" | "dates" | "people" | "flight" | "stay" | "car" | null
   >(null);
+  const liveCities = isApiEnabled();
   const [error, setError] = useState("");
-  const [destinations, setDestinations] = useState(mockTripCities);
+  const [destinations, setDestinations] = useState(() =>
+    liveCities ? [] : mockTripCities,
+  );
+  const [citiesPending, setCitiesPending] = useState(liveCities);
   useEffect(() => {
-    if (!isApiEnabled()) return;
+    if (!liveCities) return;
     const controller = new AbortController();
     void getCities(controller.signal)
       .then((cities) => {
@@ -52,15 +56,27 @@ function TripInfoStep({
               }]
             : [];
         });
-        if (!controller.signal.aborted && supported.length) {
+        if (!controller.signal.aborted) {
           setDestinations(supported);
+          setCitiesPending(false);
+          if (!supported.length) {
+            setError("현재 선택할 수 있는 여행 도시가 없어요.");
+          }
         }
       })
-      .catch(() => {
-        // 공개 도시 API가 닫혀 있으면 디자인용 도시 목록을 그대로 사용합니다.
+      .catch((reason: unknown) => {
+        if (!controller.signal.aborted) {
+          setDestinations([]);
+          setCitiesPending(false);
+          setError(
+            reason instanceof Error
+              ? reason.message
+              : "여행 도시를 불러오지 못했어요. 다시 시도해 주세요.",
+          );
+        }
       });
     return () => controller.abort();
-  }, []);
+  }, [liveCities]);
   const valid = !basicError(draft);
   const datesReady =
     !!draft.startDate && !!draft.endDate && draft.endDate >= draft.startDate;
@@ -151,10 +167,11 @@ function TripInfoStep({
                 type="button"
                 $filled={!!draft.city}
                 onClick={() => setSheet("city")}
+                disabled={citiesPending || !destinations.length}
                 aria-haspopup="dialog"
               >
                 <img src={pin} alt="" />
-                {draft.city || "어디로"}
+                {draft.city || (citiesPending ? "도시 불러오는 중" : "어디로")}
                 <img src={chevron} alt="" />
               </P.FieldButton>
               로
