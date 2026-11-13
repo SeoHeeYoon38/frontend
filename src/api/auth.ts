@@ -6,6 +6,7 @@ import {
   saveAuthTokens,
   type AuthTokens,
 } from "./tokenStorage";
+import type { MyStatsResponse } from "./types";
 
 export interface LoginResponse extends AuthTokens {
   newUser: boolean;
@@ -102,6 +103,10 @@ export async function logout() {
 
 export function getMe(signal?: AbortSignal) {
   return apiRequest<UserResponse>("/api/users/me", { signal });
+}
+
+export function getMyStats(signal?: AbortSignal) {
+  return apiRequest<MyStatsResponse>("/api/users/me/stats", { signal });
 }
 
 export async function completeSignup(input: SignupInput, signal?: AbortSignal) {

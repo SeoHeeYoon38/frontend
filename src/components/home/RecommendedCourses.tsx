@@ -5,6 +5,7 @@ import * as S from "./RecommendedCourses.styled";
 import * as C from "./common.styled";
 import { Link, useNavigate } from "react-router";
 import { routes } from "../../config/routes";
+import { travelerCoursePath } from "../../utils/navigation";
 
 interface RecommendedCoursesProps {
   courses: CourseSummary[];
@@ -35,7 +36,7 @@ function RecommendedCourses({ courses }: RecommendedCoursesProps) {
             {courses.map((course) => (
               <S.Card
                 as={Link}
-                to={routes.courses}
+                to={travelerCoursePath(course.id)}
                 aria-label={`${course.title.replace("\n", " ")} 코스 둘러보기`}
                 key={course.id}
               >

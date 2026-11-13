@@ -1,6 +1,9 @@
 import type { TripDraft, TripPlace } from "../types/trip";
+import type { TravelCourse, CourseInterest } from "../types/course";
+import type { CourseSummary } from "../types/home";
 import type {
   CompanionCode,
+  CourseSummaryResponse,
   PlaceCategoryCode,
   PreferenceAnalysis,
   PreferenceChip,
@@ -126,6 +129,51 @@ export function onboardingPreferencesToInput(
     avoid: [],
     notes: [],
     rawText: null,
+  };
+}
+
+function courseInterest(tags: string[]): CourseInterest[] {
+  const values = new Set<CourseInterest>();
+  tags.forEach((tag) => {
+    const normalized = tag.toLowerCase();
+    if (/맛|미식|카페|food|cafe/.test(normalized)) values.add("미식");
+    if (/산책|도시|골목|walk|city/.test(normalized)) values.add("도시 산책");
+    if (/휴양|휴식|바다|resort|relax/.test(normalized)) values.add("휴양");
+  });
+  return values.size ? [...values] : ["전체"];
+}
+
+function courseCover(course: CourseSummaryResponse) {
+  return course.coverImageUrl || "";
+}
+
+export function courseSummaryToTravelCourse(
+  course: CourseSummaryResponse,
+): TravelCourse {
+  return {
+    id: String(course.id),
+    title: course.title,
+    city: course.city,
+    country: course.country,
+    duration: `${course.nightCount}박 ${course.dayCount}일`,
+    author: course.author.name,
+    image: courseCover(course),
+    avatar: course.author.imageUrl || undefined,
+    description: course.author.sourceLabel || course.transportSummary,
+    interests: courseInterest(course.tags),
+  };
+}
+
+export function courseSummaryToHomeCourse(
+  course: CourseSummaryResponse,
+): CourseSummary {
+  return {
+    id: String(course.id),
+    title: course.title,
+    description: course.transportSummary,
+    category: course.tags[0] ?? course.city,
+    courseCount: course.stopCount,
+    coverImage: courseCover(course),
   };
 }
 

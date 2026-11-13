@@ -23,6 +23,8 @@ function CoursesPage() {
     initialDestination,
     popularCourses,
     travelerCourses,
+    pending,
+    error,
   } = useCourseFilters();
   return (
     <>
@@ -82,12 +84,16 @@ function CoursesPage() {
           ))}
         </S.Interests>
       </S.Filters>
-      <CourseCollections
-        key={`${destination?.name ?? country}-${interest}`}
-        popularCourses={popularCourses}
-        themes={themes}
-        travelerCourses={travelerCourses}
-      />
+      {pending && <p role="status">코스를 불러오고 있어요.</p>}
+      {error && <p role="alert">{error}</p>}
+      {!pending && !error && (
+        <CourseCollections
+          key={`${destination?.name ?? country}-${interest}`}
+          popularCourses={popularCourses}
+          themes={themes}
+          travelerCourses={travelerCourses}
+        />
+      )}
       {isRegionOpen && (
         <RegionSelect
           destinations={destinations}

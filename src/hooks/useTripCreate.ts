@@ -19,10 +19,16 @@ import { generateItinerary } from "../api/itineraries";
 import { isApiEnabled } from "../api/config";
 import { hasAuthSession } from "../api/tokenStorage";
 import { createTrip as createApiTrip, updateTrip as updateApiTrip } from "../api/trips";
-import type { TripResponse } from "../api/types";
+import { saveFlights, saveRental, saveStays } from "../api/reservations";
+import type { ReservationResponse, TripResponse } from "../api/types";
+import { applyReservationsToDraft } from "../api/reservationAdapters";
 import { apiTripToDraft } from "../utils/serverTrip";
 
-function initialDraft(trip?: TripResponse, places?: TripPlace[]): TripDraft {
+function initialDraft(
+  trip?: TripResponse,
+  places?: TripPlace[],
+  reservations?: ReservationResponse,
+): TripDraft {
   let saved: string | null = null;
   try {
     saved = sessionStorage.getItem(DRAFT_KEY);
@@ -30,7 +36,10 @@ function initialDraft(trip?: TripResponse, places?: TripPlace[]): TripDraft {
   }
   const draft = readDraft(saved);
   if (trip) {
-    const resumed = apiTripToDraft(trip, draft.tripId === String(trip.id) ? draft : undefined);
+    const resumed = applyReservationsToDraft(
+      apiTripToDraft(trip, draft.tripId === String(trip.id) ? draft : undefined),
+      reservations,
+    );
     if (!places) return resumed;
     const placeIds = new Set(places.filter((place) => !place.closed && !place.needsMatch).map((place) => place.id));
     return {
@@ -57,10 +66,14 @@ function initialDraft(trip?: TripResponse, places?: TripPlace[]): TripDraft {
   );
   return { ...draft, tripId: draft.tripId || crypto.randomUUID() };
 }
-function useTripCreate(trip?: TripResponse, places?: TripPlace[]) {
+function useTripCreate(
+  trip?: TripResponse,
+  places?: TripPlace[],
+  reservations?: ReservationResponse,
+) {
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
-  const [draft, setDraft] = useState(() => initialDraft(trip, places));
+  const [draft, setDraft] = useState(() => initialDraft(trip, places, reservations));
   const [isGenerating, setGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState("");
@@ -117,7 +130,32 @@ function useTripCreate(trip?: TripResponse, places?: TripPlace[]) {
       const response = isServerTripId(draft.tripId)
         ? await updateApiTrip(Number(draft.tripId), input)
         : await createApiTrip(input);
-      update({ ...draft, tripId: String(response.id) });
+      const serverTripId = response.id;
+      if (draft.outbound?.apiFlight || draft.inbound?.apiFlight) {
+        await saveFlights(
+          serverTripId,
+          draft.outbound?.apiFlight ?? null,
+          draft.inbound?.apiFlight ?? null,
+        );
+      }
+      if (draft.stays.length > 0 && draft.stays.every((stay) => stay.placeId)) {
+        await saveStays(
+          serverTripId,
+          draft.stays.map((stay) => ({
+            placeId: stay.placeId!,
+            checkIn: stay.startDate,
+            checkOut: stay.endDate,
+          })),
+        );
+      }
+      if (draft.rental?.placeId) {
+        await saveRental(
+          serverTripId,
+          draft.rental.days,
+          draft.rental.placeId,
+        );
+      }
+      update({ ...draft, tripId: String(serverTripId) });
       move(2);
     } catch (reason) {
       setError(

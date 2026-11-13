@@ -12,6 +12,9 @@ import feedbackIcon from "../assets/figma/my-pen.svg";
 import blueAvatar from "../assets/images/character-blue.webp";
 import purpleAvatar from "../assets/images/character-purple.webp";
 import googleMapsLogo from "../assets/images/brand-google-maps.webp";
+import { getMe, getMyStats } from "../api/auth";
+import { isApiEnabled } from "../api/config";
+import { hasAuthSession } from "../api/tokenStorage";
 import { routes } from "../config/routes";
 import { myProfile } from "../data/mocks/myData";
 import {
@@ -23,7 +26,14 @@ import * as S from "./MyPage.styled";
 
 function MyPage() {
   const location = useLocation();
-  const [profile] = useState(() => readProfileSettings(window.localStorage));
+  const liveProfile = isApiEnabled() && hasAuthSession();
+  const [profile, setProfile] = useState(() => readProfileSettings(window.localStorage));
+  const [stats, setStats] = useState(() => ({
+    savedPlaceCount: myProfile.savedPlaceCount,
+    savedCourseCount: myProfile.savedCourseCount,
+    visitedTripCount: myProfile.visitedTripCount,
+  }));
+  const [apiError, setApiError] = useState("");
   const [notificationCount] = useState(() =>
     countEnabledNotifications(readNotificationSettings(window.localStorage)),
   );
@@ -37,10 +47,43 @@ function MyPage() {
     return () => window.clearTimeout(timeoutId);
   }, [showSavedToast]);
 
+  useEffect(() => {
+    if (!liveProfile) return;
+    const controller = new AbortController();
+    const { signal } = controller;
+
+    void Promise.all([getMe(signal), getMyStats(signal)]).then(
+      ([user, nextStats]) => {
+        if (signal.aborted) return;
+        setProfile((current) => ({
+          ...current,
+          nickname: user.nickname?.trim() || user.name,
+          email: user.email,
+          introduction: user.bio ?? "",
+          avatar: user.characterId === 2 ? "purple" : "blue",
+        }));
+        setStats({
+          savedPlaceCount: nextStats.savedPlaceCount,
+          savedCourseCount: nextStats.savedCourseCount,
+          visitedTripCount: nextStats.completedTripCount,
+        });
+        setApiError("");
+      },
+      () => {
+        if (!signal.aborted) {
+          setApiError("프로필 정보를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.");
+        }
+      },
+    );
+
+    return () => controller.abort();
+  }, [liveProfile]);
+
   const avatar = profile.avatar === "purple" ? purpleAvatar : blueAvatar;
 
   return (
     <S.Page>
+      {apiError && <p role="alert">{apiError}</p>}
       <S.ProfileSection>
         <S.Avatar>
           <img src={avatar} alt="" />
@@ -55,17 +98,17 @@ function MyPage() {
       <S.Stats aria-label="저장 및 여행 요약">
         <S.StatLink to={`${routes.savedItems}?tab=places`}>
           <img src={locationIcon} alt="" />
-          <strong>{myProfile.savedPlaceCount}</strong>
+          <strong>{stats.savedPlaceCount}</strong>
           <span>저장한 장소</span>
         </S.StatLink>
         <S.StatLink to={`${routes.savedItems}?tab=courses`}>
           <img src={courseIcon} alt="" />
-          <strong>{myProfile.savedCourseCount}</strong>
+          <strong>{stats.savedCourseCount}</strong>
           <span>저장한 코스</span>
         </S.StatLink>
         <S.StatLink to={`${routes.myTrips}?tab=past`}>
           <img src={airplaneIcon} alt="" />
-          <strong>{myProfile.visitedTripCount}</strong>
+          <strong>{stats.visitedTripCount}</strong>
           <span>다녀온 여행</span>
         </S.StatLink>
       </S.Stats>
@@ -95,7 +138,7 @@ function MyPage() {
         <S.MenuLink to={routes.accountSettings}>
           <img src={profileIcon} alt="" />
           <span>계정 관리</span>
-          <small>데모</small>
+          <small>{liveProfile ? "Google 계정" : "데모"}</small>
           <S.MenuChevron src={chevronIcon} alt="" />
         </S.MenuLink>
       </S.MenuSection>

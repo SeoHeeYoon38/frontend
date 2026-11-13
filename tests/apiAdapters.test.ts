@@ -2,12 +2,15 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   isServerTripId,
+  courseSummaryToHomeCourse,
+  courseSummaryToTravelCourse,
   onboardingPreferencesToInput,
   preferenceResultToDraft,
   savedPlaceToTripPlace,
   tripDraftToApiInput,
 } from "../src/api/adapters.ts";
 import type { TripDraft } from "../src/types/trip.ts";
+import { applyReservationsToDraft } from "../src/api/reservationAdapters.ts";
 
 const draft: TripDraft = {
   version: 1,
@@ -119,5 +122,71 @@ test("사용자 기본 취향 응답을 여행 취향 화면 모델로 재사용
   assert.deepEqual(preferences.tastes, ["카페", "자연"]);
   assert.deepEqual(preferences.pace, ["여유롭게", "적게 걷기", "늦게 시작"]);
   assert.equal(preferences.analyzed, true);
+});
+
+test("백엔드 코스 목록을 홈과 코스 둘러보기 화면 모델로 변환한다", () => {
+  const course = {
+    id: 3,
+    title: "교토 골목 산책",
+    country: "일본",
+    city: "교토",
+    dayCount: 3,
+    nightCount: 2,
+    stopCount: 7,
+    coverImageUrl: "https://example.test/kyoto.jpg",
+    transportSummary: "도보와 버스",
+    author: {
+      name: "산책하는 유진",
+      imageUrl: "",
+      sourceLabel: "직접 다녀온 여행",
+      travelMonth: "2026-03",
+    },
+    tags: ["도시 산책", "카페"],
+  };
+
+  assert.deepEqual(courseSummaryToHomeCourse(course), {
+    id: "3",
+    title: "교토 골목 산책",
+    description: "도보와 버스",
+    category: "도시 산책",
+    courseCount: 7,
+    coverImage: "https://example.test/kyoto.jpg",
+  });
+  assert.deepEqual(courseSummaryToTravelCourse(course).interests, [
+    "도시 산책",
+    "미식",
+  ]);
+});
+
+test("백엔드 예약 응답을 여행 정보 화면에 다시 채운다", () => {
+  const restored = applyReservationsToDraft(draft, {
+    tripId: 12,
+    flights: null,
+    stays: [{
+      placeId: "hotel-1",
+      name: "난바 호텔",
+      address: "오사카 난바",
+      lat: 34.66,
+      lng: 135.5,
+      checkIn: "2026-11-18",
+      checkOut: "2026-11-20",
+    }],
+    rental: {
+      dates: ["2026-11-20"],
+      placeId: "rental-1",
+      name: "간사이 공항",
+      address: "오사카부",
+      lat: 34.43,
+      lng: 135.24,
+    },
+  });
+
+  assert.equal(restored.stays[0]?.placeId, "hotel-1");
+  assert.equal(restored.stays[0]?.name, "난바 호텔");
+  assert.deepEqual(restored.rental, {
+    days: ["2026-11-20"],
+    location: "간사이 공항",
+    placeId: "rental-1",
+  });
 });
 

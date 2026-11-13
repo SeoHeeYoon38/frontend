@@ -19,7 +19,8 @@ import * as S from "./TripCreatePage.styled";
 import { isServerTripId, savedPlaceToTripPlace } from "../api/adapters";
 import { getSavedPlaces } from "../api/places";
 import { getTrip } from "../api/trips";
-import type { TripResponse } from "../api/types";
+import { getReservations } from "../api/reservations";
+import type { ReservationResponse, TripResponse } from "../api/types";
 import { routes } from "../config/routes";
 import type { TripPlace } from "../types/trip";
 import { isApiEnabled } from "../api/config";
@@ -37,7 +38,11 @@ function TripCreatePage() {
 }
 
 function ResumeTrip({ tripId }: { tripId: number }) {
-  const [resumed, setResumed] = useState<{ trip: TripResponse; places?: TripPlace[] }>();
+  const [resumed, setResumed] = useState<{
+    trip: TripResponse;
+    places?: TripPlace[];
+    reservations?: ReservationResponse;
+  }>();
   const [error, setError] = useState(false);
 
   useEffect(() => {
@@ -45,15 +50,28 @@ function ResumeTrip({ tripId }: { tripId: number }) {
     const { signal } = controller;
     void getTrip(tripId, signal).then(async (trip) => {
       if (signal.aborted) return;
-      const saved = await getSavedPlaces(tripId, signal).catch(() => undefined);
+      const [saved, reservations] = await Promise.all([
+        getSavedPlaces(tripId, signal).catch(() => undefined),
+        getReservations(tripId, signal).catch(() => undefined),
+      ]);
       if (!signal.aborted) {
-        setResumed({ trip, places: saved?.places.map((place) => savedPlaceToTripPlace(place, trip.city)) });
+        setResumed({
+          trip,
+          places: saved?.places.map((place) => savedPlaceToTripPlace(place, trip.city)),
+          reservations,
+        });
       }
     }).catch(() => { if (!signal.aborted) setError(true); });
     return () => controller.abort();
   }, [tripId]);
 
-  if (resumed) return <AiTripCreatePage trip={resumed.trip} places={resumed.places} />;
+  if (resumed) return (
+    <AiTripCreatePage
+      trip={resumed.trip}
+      places={resumed.places}
+      reservations={resumed.reservations}
+    />
+  );
 
   return (
     <Layout variant="trip" step={1}>
@@ -67,7 +85,15 @@ function ResumeTrip({ tripId }: { tripId: number }) {
   );
 }
 
-function AiTripCreatePage({ trip, places }: { trip?: TripResponse; places?: TripPlace[] }) {
+function AiTripCreatePage({
+  trip,
+  places,
+  reservations,
+}: {
+  trip?: TripResponse;
+  places?: TripPlace[];
+  reservations?: ReservationResponse;
+}) {
   const [importing, setImporting] = useState(false);
   const {
     draft,
@@ -82,7 +108,7 @@ function AiTripCreatePage({ trip, places }: { trip?: TripResponse; places?: Trip
     back,
     startPlacesStep,
     generate,
-  } = useTripCreate(trip, places);
+  } = useTripCreate(trip, places, reservations);
 
   let content = (
     <TripInfoStep

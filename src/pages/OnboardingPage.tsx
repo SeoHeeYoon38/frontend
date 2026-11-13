@@ -3,6 +3,7 @@ import { Navigate, useLocation, useNavigate } from "react-router";
 import { onboardingPreferencesToInput } from "../api/adapters";
 import {
   canStartGoogleLogin,
+  checkNickname,
   completeSignup,
   googleAuthorizationUrl,
 } from "../api/auth";
@@ -205,6 +206,11 @@ function OnboardingPage() {
       if (liveSession) {
         setSavingProfile(true);
         try {
+          const nicknameCheck = await checkNickname(value);
+          if (!nicknameCheck.available) {
+            setProfileError("이미 사용 중인 닉네임이에요.");
+            return;
+          }
           await completeSignup({
             agreements: {
               terms: agreementsState.service,
