@@ -21,16 +21,18 @@ function useCourseFilters() {
   );
   const [interest, setInterest] = useState<CourseInterest>("전체");
   const [isRegionOpen, setIsRegionOpen] = useState(false);
-  const [destinations, setDestinations] = useState(mockDestinations);
-  const [courseCatalog, setCourseCatalog] = useState<TravelCourse[]>([
-    ...mockPopularCourses,
-    ...mockTravelerCourses,
-  ]);
-  const [pending, setPending] = useState(isApiEnabled());
+  const liveCourses = isApiEnabled();
+  const [destinations, setDestinations] = useState<CourseDestination[]>(() =>
+    liveCourses ? [] : mockDestinations,
+  );
+  const [courseCatalog, setCourseCatalog] = useState<TravelCourse[]>(() =>
+    liveCourses ? [] : [...mockPopularCourses, ...mockTravelerCourses],
+  );
+  const [pending, setPending] = useState(liveCourses);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!isApiEnabled()) return;
+    if (!liveCourses) return;
     const controller = new AbortController();
     const { signal } = controller;
     void Promise.all([getCities(signal), getCourses(undefined, signal)]).then(
@@ -54,7 +56,7 @@ function useCourseFilters() {
       },
     );
     return () => controller.abort();
-  }, []);
+  }, [liveCourses]);
 
   const country = destination?.country ?? "일본";
   const cities = destinations.filter((city) => city.country === country);

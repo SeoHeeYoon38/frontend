@@ -27,12 +27,18 @@ import * as S from "./MyPage.styled";
 function MyPage() {
   const location = useLocation();
   const liveProfile = isApiEnabled() && hasAuthSession();
-  const [profile, setProfile] = useState(() => readProfileSettings(window.localStorage));
+  const [profile, setProfile] = useState(() => {
+    const stored = readProfileSettings(window.localStorage);
+    return liveProfile
+      ? { ...stored, nickname: "", email: "", introduction: "" }
+      : stored;
+  });
   const [stats, setStats] = useState(() => ({
-    savedPlaceCount: myProfile.savedPlaceCount,
-    savedCourseCount: myProfile.savedCourseCount,
-    visitedTripCount: myProfile.visitedTripCount,
+    savedPlaceCount: liveProfile ? 0 : myProfile.savedPlaceCount,
+    savedCourseCount: liveProfile ? 0 : myProfile.savedCourseCount,
+    visitedTripCount: liveProfile ? 0 : myProfile.visitedTripCount,
   }));
+  const [apiPending, setApiPending] = useState(liveProfile);
   const [apiError, setApiError] = useState("");
   const [notificationCount] = useState(() =>
     countEnabledNotifications(readNotificationSettings(window.localStorage)),
@@ -68,10 +74,12 @@ function MyPage() {
           visitedTripCount: nextStats.completedTripCount,
         });
         setApiError("");
+        setApiPending(false);
       },
       () => {
         if (!signal.aborted) {
           setApiError("프로필 정보를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.");
+          setApiPending(false);
         }
       },
     );
@@ -83,6 +91,7 @@ function MyPage() {
 
   return (
     <S.Page>
+      {apiPending && <p role="status">프로필 정보를 불러오고 있어요.</p>}
       {apiError && <p role="alert">{apiError}</p>}
       <S.ProfileSection>
         <S.Avatar>

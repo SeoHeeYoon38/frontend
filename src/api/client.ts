@@ -1,4 +1,5 @@
-import { apiBaseUrl, isApiEnabled } from "./config";
+import { apiBaseUrl, apiMode, isApiEnabled } from "./config";
+import { allowsMockFallback } from "./mode";
 import {
   clearAuthTokens,
   getAccessToken,
@@ -33,7 +34,7 @@ export class ApiDisabledError extends Error {
 }
 
 export function shouldUseMockFallback(reason: unknown) {
-  return (
+  return allowsMockFallback(apiMode) && (
     reason instanceof ApiDisabledError ||
     reason instanceof TypeError ||
     (reason instanceof ApiError && [404, 501, 502, 503, 504].includes(reason.status))
