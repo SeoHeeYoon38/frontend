@@ -12,7 +12,8 @@ import { isServerTripId, savedPlaceToTripPlace, tripDraftToApiInput } from "../.
 import { isApiEnabled } from "../../api/config";
 import { hasAuthSession } from "../../api/tokenStorage";
 import { createTrip, updateTrip } from "../../api/trips";
-import type { ItineraryDayInput, ItineraryVisitInput, SavedPlaceResponse } from "../../api/types";
+import { saveItinerary } from "../../api/itineraries";
+import type { ItineraryDayInput, ItineraryVersionView, ItineraryVisitInput, SavedPlaceResponse } from "../../api/types";
 import { useItineraryCheck } from "../../hooks/useItineraryCheck";
 import { createGeneratedTrip, mockTripStatus, placeIcon, saveMockTrip, tripStorageNotice } from "../../data/mocks/mockTripService";
 import { dateLabel, durationLabel, emptyDraft, rangeDates } from "../../utils/trip";
@@ -23,6 +24,7 @@ import settingsIcon from "../../assets/course-completion/settings.svg";
 import backIcon from "../../assets/icons/nav-back.svg";
 import closeIcon from "../../assets/icons/action-close.svg";
 import { routes } from "../../config/routes";
+import { serverTripPlanPath } from "../../utils/navigation";
 import {
   directTripPlaces as osakaPlaces,
   directTripRecentSearches,
@@ -50,6 +52,8 @@ interface ExistingTrip {
   draft: TripDraft;
   days: ItineraryDayInput[];
   places: SavedPlaceResponse[];
+  version: number;
+  onSaved: (itinerary: ItineraryVersionView) => void;
   onClose: () => void;
 }
 
@@ -78,6 +82,7 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
   const [notice, setNotice] = useState("");
   const [changed, setChanged] = useState(false);
   const [preparingTrip, setPreparingTrip] = useState(false);
+  const [savingItinerary, setSavingItinerary] = useState(false);
   const preparingRequest = useRef<AbortController | null>(null);
   useEffect(() => () => preparingRequest.current?.abort(), []);
   const { validation, checking, checkError, resetCheck, validate } = useItineraryCheck(Number(draft.tripId));
@@ -185,6 +190,8 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
   };
 
   const addSelectedPlaces = () => {
+    resetCheck();
+    setChanged(true);
     setDayPlaces((current) => ({
       ...current,
       [selectedDay]: Array.from(
@@ -305,12 +312,39 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
     </S.PlainScreen>
   );
 
-  const saveTrip = () => {
+  const liveDays = () => rangeDates(draft.startDate, draft.endDate).map((date, index) => ({
+    date,
+    visits: (dayPlaces[index + 1] ?? []).map((id) => livePlaces[id].visit),
+  }));
+
+  const saveTrip = async () => {
     if (live) {
-      void validate(rangeDates(draft.startDate, draft.endDate).map((date, index) => ({
-        date,
-        visits: (dayPlaces[index + 1] ?? []).map((id) => livePlaces[id].visit),
-      })));
+      const days = liveDays();
+      if (!validation?.summary.valid) {
+        await validate(days);
+        return;
+      }
+      if (savingItinerary) return;
+      setSavingItinerary(true);
+      setNotice("");
+      try {
+        const itinerary = await saveItinerary(
+          Number(draft.tripId),
+          days,
+          existing?.version ?? null,
+        );
+        setChanged(false);
+        if (existing) {
+          existing.onSaved(itinerary);
+          existing.onClose();
+        } else {
+          navigate(serverTripPlanPath("generated", draft.tripId), { replace: true });
+        }
+      } catch (reason) {
+        setNotice(reason instanceof Error ? reason.message : "일정을 저장하지 못했어요.");
+      } finally {
+        setSavingItinerary(false);
+      }
       return;
     }
     const trip = createGeneratedTrip(draft);
@@ -486,10 +520,18 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
       <S.BottomAction $floating>
         <button
           type="button"
-          disabled={!hasAnyPlace || checking}
-          onClick={saveTrip}
+          disabled={!hasAnyPlace || checking || savingItinerary}
+          onClick={() => void saveTrip()}
         >
-          {checking ? "일정 검증 중…" : live ? "일정 검증하기" : "저장하기"}
+          {checking
+            ? "일정 검증 중…"
+            : savingItinerary
+              ? "일정 저장 중…"
+              : live
+                ? validation?.summary.valid
+                  ? "검증한 일정 저장하기"
+                  : "일정 검증하기"
+                : "저장하기"}
         </button>
       </S.BottomAction>
     </S.PlanScreen>

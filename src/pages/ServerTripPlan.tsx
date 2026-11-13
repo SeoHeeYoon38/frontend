@@ -149,6 +149,13 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
         draft: apiTripToDraft(data.trip),
         days: data.itinerary.draft.days,
         places: data.places,
+        version: data.itinerary.version,
+        onSaved: (itinerary) => {
+          setData((current) => current ? { ...current, itinerary } : current);
+          setActiveDay(0);
+          setNotice("직접 편집한 일정을 저장했어요.");
+          void reloadHistory();
+        },
         onClose: () => setEditing(false),
       }} />
     );

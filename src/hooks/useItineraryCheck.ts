@@ -27,7 +27,10 @@ export function useItineraryCheck(tripId: number) {
     setCheckError("");
     try {
       const result = await checkItinerary(tripId, days, "USER_EDITED", controller.signal);
-      if (!controller.signal.aborted) setValidation(result);
+      if (!controller.signal.aborted) {
+        setValidation(result);
+        return result;
+      }
     } catch (reason) {
       if (!controller.signal.aborted) {
         setCheckError(reason instanceof Error ? reason.message : "일정을 검증하지 못했어요.");
@@ -38,6 +41,7 @@ export function useItineraryCheck(tripId: number) {
         setChecking(false);
       }
     }
+    return undefined;
   }
 
   return { validation, checking, checkError, resetCheck, validate };
