@@ -10,6 +10,7 @@ import {
   tripDraftToApiInput,
 } from "../src/api/adapters.ts";
 import type { TripDraft } from "../src/types/trip.ts";
+import { applyReservationsToDraft } from "../src/utils/serverTrip.ts";
 
 const draft: TripDraft = {
   version: 1,
@@ -155,5 +156,37 @@ test("백엔드 코스 목록을 홈과 코스 둘러보기 화면 모델로 변
     "도시 산책",
     "미식",
   ]);
+});
+
+test("백엔드 예약 응답을 여행 정보 화면에 다시 채운다", () => {
+  const restored = applyReservationsToDraft(draft, {
+    tripId: 12,
+    flights: null,
+    stays: [{
+      placeId: "hotel-1",
+      name: "난바 호텔",
+      address: "오사카 난바",
+      lat: 34.66,
+      lng: 135.5,
+      checkIn: "2026-11-18",
+      checkOut: "2026-11-20",
+    }],
+    rental: {
+      dates: ["2026-11-20"],
+      placeId: "rental-1",
+      name: "간사이 공항",
+      address: "오사카부",
+      lat: 34.43,
+      lng: 135.24,
+    },
+  });
+
+  assert.equal(restored.stays[0]?.placeId, "hotel-1");
+  assert.equal(restored.stays[0]?.name, "난바 호텔");
+  assert.deepEqual(restored.rental, {
+    days: ["2026-11-20"],
+    location: "간사이 공항",
+    placeId: "rental-1",
+  });
 });
 

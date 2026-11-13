@@ -33,6 +33,7 @@ export interface Flight {
 }
 export interface Stay {
   id: string;
+  placeId?: string;
   name: string;
   address: string;
   city: string;
@@ -42,6 +43,7 @@ export interface Stay {
 export interface Rental {
   days: string[];
   location: string;
+  placeId?: string;
 }
 export interface Preferences {
   text: string;

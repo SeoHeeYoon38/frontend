@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Flight, Stay, TripDraft } from "../../types/trip";
 import { mockFlights, mockHotels } from "../../data/mocks/tripData";
 import {
@@ -20,8 +20,10 @@ import * as S from "./Trip.styled";
 import { isServerTripId } from "../../api/adapters";
 import { shouldUseMockFallback } from "../../api/client";
 import { isApiEnabled } from "../../api/config";
-import { saveFlights, searchFlights } from "../../api/reservations";
+import { searchPlaces } from "../../api/places";
+import { saveFlights, saveRental, saveStays, searchFlights } from "../../api/reservations";
 import { hasAuthSession } from "../../api/tokenStorage";
+import type { PlaceCandidate } from "../../api/types";
 
 interface OptionalInfoSheetProps {
   mode: "flight" | "stay" | "car";
@@ -57,12 +59,16 @@ function OptionalInfoSheet({
   const [isSearching, setIsSearching] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [pendingHotel, setPendingHotel] = useState<{
+    placeId?: string;
     name: string;
     city: string;
     address: string;
   } | null>(null);
   const [carDays, setCarDays] = useState(draft.rental?.days ?? []);
   const [location, setLocation] = useState(draft.rental?.location ?? "");
+  const [rentalPlaceId, setRentalPlaceId] = useState(draft.rental?.placeId);
+  const [remotePlaces, setRemotePlaces] = useState<PlaceCandidate[]>();
+  const [searchError, setSearchError] = useState("");
   const timelineRef = useRef<HTMLDivElement>(null);
   const drag = useRef<{ id: string; edge: "start" | "end" } | null>(null);
   const dates = rangeDates(draft.startDate, draft.endDate);
@@ -80,11 +86,43 @@ function OptionalInfoSheet({
       previous.length++;
     else gaps.push({ start: index, length: 1 });
   });
-  const hotels = mockHotels.filter(
-    (hotel) =>
-      hotel.name.toLowerCase().includes(hotelQuery.trim().toLowerCase()) ||
-      hotel.address.includes(hotelQuery.trim()),
-  );
+  const liveReservations =
+    isApiEnabled() && hasAuthSession() && isServerTripId(draft.tripId);
+  const activePlaceQuery = mode === "stay" ? hotelQuery : location;
+  const hotels = liveReservations
+    ? (remotePlaces ?? []).map((place) => ({ ...place, city: draft.city }))
+    : mockHotels.filter(
+        (hotel) =>
+          hotel.name.toLowerCase().includes(hotelQuery.trim().toLowerCase()) ||
+          hotel.address.includes(hotelQuery.trim()),
+      );
+
+  useEffect(() => {
+    const query = activePlaceQuery.trim();
+    if (!liveReservations || (mode === "stay" && !isSearching) || query.length < 2) {
+      return;
+    }
+    if (mode === "car" && rentalPlaceId) return;
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => {
+      setSearchError("");
+      void searchPlaces(Number(draft.tripId), query, controller.signal).then(
+        (results) => {
+          if (!controller.signal.aborted) setRemotePlaces(results);
+        },
+        (reason: unknown) => {
+          if (!controller.signal.aborted) {
+            setRemotePlaces([]);
+            setSearchError(reason instanceof Error ? reason.message : "장소를 검색하지 못했어요.");
+          }
+        },
+      );
+    }, 350);
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [activePlaceQuery, draft.rental?.location, draft.tripId, isSearching, liveReservations, mode, rentalPlaceId]);
 
   async function findFlight() {
     if (!validDate(start) || !validDate(end) || end < start) {
@@ -98,7 +136,7 @@ function OptionalInfoSheet({
       return;
     }
     const date = flightTab === "outbound" ? start : end;
-    if (isApiEnabled() && hasAuthSession() && isServerTripId(draft.tripId)) {
+    if (isApiEnabled() && hasAuthSession()) {
       setSaving(true);
       try {
         const results = await searchFlights(code, date);
@@ -145,7 +183,7 @@ function OptionalInfoSheet({
     setFlight({ ...match, date: flightTab === "outbound" ? start : end });
   }
   function addHotel(
-    hotel: { name: string; city: string; address: string },
+    hotel: { placeId?: string; name: string; city: string; address: string },
     approved = false,
   ) {
     if (hotel.city !== draft.city && !approved) {
@@ -172,6 +210,7 @@ function OptionalInfoSheet({
     }
     const stay: Stay = {
       id: previous?.id ?? crypto.randomUUID(),
+      placeId: hotel.placeId,
       name: hotel.name,
       address: hotel.address,
       city: hotel.city,
@@ -323,12 +362,82 @@ function OptionalInfoSheet({
         setError(message);
         return;
       }
+      if (liveReservations) {
+        if (stays.some((stay) => !stay.placeId)) {
+          setError("서버 검색 결과에서 숙소를 선택해 주세요.");
+          return;
+        }
+        setSaving(true);
+        try {
+          const response = await saveStays(
+            Number(draft.tripId),
+            stays.map((stay) => ({
+              placeId: stay.placeId!,
+              checkIn: stay.startDate,
+              checkOut: stay.endDate,
+            })),
+          );
+          onSave({
+            ...draft,
+            stays: response.stays.map((stay) => ({
+              id: `stay-${stay.placeId}-${stay.checkIn}`,
+              placeId: stay.placeId,
+              name: stay.name,
+              address: stay.address,
+              city: draft.city,
+              startDate: stay.checkIn,
+              endDate: stay.checkOut,
+            })),
+          });
+          return;
+        } catch (reason) {
+          setError(reason instanceof Error ? reason.message : "숙소를 저장하지 못했어요.");
+          return;
+        } finally {
+          setSaving(false);
+        }
+      }
       onSave({ ...draft, stays });
-    } else if (carDays.length && location.trim())
+    } else if (carDays.length && location.trim()) {
+      if (liveReservations) {
+        if (!rentalPlaceId) {
+          setError("서버 검색 결과에서 픽업·반납 장소를 선택해 주세요.");
+          return;
+        }
+        setSaving(true);
+        try {
+          const response = await saveRental(
+            Number(draft.tripId),
+            [...carDays].sort(),
+            rentalPlaceId,
+          );
+          onSave({
+            ...draft,
+            rental: response.rental
+              ? {
+                  days: response.rental.dates,
+                  location: response.rental.name,
+                  placeId: response.rental.placeId,
+                }
+              : null,
+          });
+          return;
+        } catch (reason) {
+          setError(reason instanceof Error ? reason.message : "렌터카 정보를 저장하지 못했어요.");
+          return;
+        } finally {
+          setSaving(false);
+        }
+      }
       onSave({
         ...draft,
-        rental: { days: [...carDays].sort(), location: location.trim() },
+        rental: {
+          days: [...carDays].sort(),
+          location: location.trim(),
+          placeId: rentalPlaceId,
+        },
       });
+    }
   }
   const title =
     mode === "flight"
@@ -553,6 +662,7 @@ function OptionalInfoSheet({
                   onChange={(event) => {
                     setHotelQuery(event.target.value);
                     setPendingHotel(null);
+                    setRemotePlaces(undefined);
                   }}
                 />
               </S.Search>
@@ -560,7 +670,7 @@ function OptionalInfoSheet({
                 {hotels.map((hotel) => (
                   <button
                     type="button"
-                    key={hotel.id}
+                    key={("placeId" in hotel && hotel.placeId) || ("id" in hotel && hotel.id) || hotel.name}
                     onClick={() => addHotel(hotel)}
                   >
                     <strong>{hotel.name}</strong>
@@ -571,15 +681,17 @@ function OptionalInfoSheet({
               {hotelQuery.trim() && !hotels.length && (
                 <>
                   <S.Help>
-                    숙소 검색 결과가 없어요. 주소를 직접 입력해 주세요.
+                    {liveReservations
+                      ? "숙소 검색 결과가 없어요. 다른 이름으로 검색해 주세요."
+                      : "숙소 검색 결과가 없어요. 주소를 직접 입력해 주세요."}
                   </S.Help>
-                  <S.Input
+                  {!liveReservations && <S.Input
                     aria-label="숙소 주소 직접 입력"
                     placeholder="숙소 주소"
                     value={hotelQuery}
                     onChange={(event) => setHotelQuery(event.target.value)}
-                  />
-                  <S.Chip
+                  />}
+                  {!liveReservations && <S.Chip
                     type="button"
                     onClick={() =>
                       addHotel({
@@ -590,9 +702,10 @@ function OptionalInfoSheet({
                     }
                   >
                     이 주소로 등록
-                  </S.Chip>
+                  </S.Chip>}
                 </>
               )}
+              {searchError && <S.ErrorText role="alert">{searchError}</S.ErrorText>}
               {pendingHotel && (
                 <>
                   <S.ErrorText role="alert">
@@ -642,9 +755,33 @@ function OptionalInfoSheet({
               placeholder="공항, 역, 영업소 검색"
               maxLength={200}
               value={location}
-              onChange={(event) => setLocation(event.target.value)}
+              onChange={(event) => {
+                setLocation(event.target.value);
+                setRentalPlaceId(undefined);
+                setRemotePlaces(undefined);
+              }}
             />
           </S.Search>
+          {liveReservations && location.trim().length >= 2 && (
+            <S.Results>
+              {(remotePlaces ?? []).map((place) => (
+                <button
+                  type="button"
+                  key={place.placeId}
+                  onClick={() => {
+                    setLocation(place.name);
+                    setRentalPlaceId(place.placeId);
+                    setRemotePlaces(undefined);
+                    setSearchError("");
+                  }}
+                >
+                  <strong>{place.name}</strong>
+                  <small>{place.address}</small>
+                </button>
+              ))}
+            </S.Results>
+          )}
+          {searchError && <S.ErrorText role="alert">{searchError}</S.ErrorText>}
           <S.Help>
             {carDays.length
               ? "렌터카 쓰는 날은 근교까지 넓게 짜요"
