@@ -1,11 +1,10 @@
-export type ApiMode = "auto" | "live" | "mock";
+import { resolveApiMode } from "./mode";
+
+export type { ApiMode } from "./mode";
 
 const configuredMode = import.meta.env.VITE_API_MODE;
 
-export const apiMode: ApiMode =
-  configuredMode === "live" || configuredMode === "mock"
-    ? configuredMode
-    : "auto";
+export const apiMode = resolveApiMode(configuredMode, import.meta.env.PROD);
 
 export const apiBaseUrl = (
   import.meta.env.VITE_API_BASE_URL ||
