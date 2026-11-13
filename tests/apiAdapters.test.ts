@@ -10,7 +10,7 @@ import {
   tripDraftToApiInput,
 } from "../src/api/adapters.ts";
 import type { TripDraft } from "../src/types/trip.ts";
-import { applyReservationsToDraft } from "../src/utils/serverTrip.ts";
+import { applyReservationsToDraft } from "../src/api/reservationAdapters.ts";
 
 const draft: TripDraft = {
   version: 1,

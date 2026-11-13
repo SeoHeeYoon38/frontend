@@ -21,7 +21,8 @@ import { hasAuthSession } from "../api/tokenStorage";
 import { createTrip as createApiTrip, updateTrip as updateApiTrip } from "../api/trips";
 import { saveFlights, saveRental, saveStays } from "../api/reservations";
 import type { ReservationResponse, TripResponse } from "../api/types";
-import { applyReservationsToDraft, apiTripToDraft } from "../utils/serverTrip";
+import { applyReservationsToDraft } from "../api/reservationAdapters";
+import { apiTripToDraft } from "../utils/serverTrip";
 
 function initialDraft(
   trip?: TripResponse,
