@@ -296,9 +296,14 @@ export interface CourseSummaryResponse {
   dayCount: number;
   nightCount: number;
   stopCount: number;
-  coverImageUrl: string;
+  coverImageUrl: string | null;
   transportSummary: string;
-  author: { name: string; imageUrl: string; sourceLabel: string; travelMonth: string };
+  author: {
+    name: string;
+    imageUrl: string | null;
+    sourceLabel: string;
+    travelMonth: string | null;
+  };
   tags: string[];
 }
 
