@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
-import { getMe, updateMyProfile } from "../api/auth";
+import { checkNickname, getMe, updateMyProfile } from "../api/auth";
 import { isApiEnabled } from "../api/config";
 import { hasAuthSession } from "../api/tokenStorage";
 import cameraIcon from "../assets/course-settings/camera.svg";
@@ -94,6 +94,13 @@ function ProfileEditPage() {
     if (liveProfile) {
       setSaving(true);
       try {
+        if (profile.nickname !== initialProfile.nickname) {
+          const nicknameCheck = await checkNickname(profile.nickname);
+          if (!nicknameCheck.available) {
+            setServerError("이미 사용 중인 닉네임이에요.");
+            return;
+          }
+        }
         const user = await updateMyProfile({
           nickname: profile.nickname,
           bio: profile.introduction || null,
