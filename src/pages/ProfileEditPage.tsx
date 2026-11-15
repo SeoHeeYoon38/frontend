@@ -7,6 +7,7 @@ import cameraIcon from "../assets/course-settings/camera.svg";
 import backIcon from "../assets/icons/nav-back.svg";
 import blueAvatar from "../assets/images/character-blue.webp";
 import purpleAvatar from "../assets/images/character-purple.webp";
+import ProfileCharacterSheet from "../components/common/ProfileCharacterSheet";
 import { routes } from "../config/routes";
 import {
   readProfileSettings,
@@ -196,18 +197,9 @@ function ProfileEditPage() {
       </S.Cta>
 
       {showPhotoSheet && (
-        <S.Overlay role="presentation" onClick={() => setShowPhotoSheet(false)}>
-          <S.PhotoSheet role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
-            <strong>프로필 사진</strong>
-            <button type="button" onClick={() => { setAvatar("purple"); setShowPhotoSheet(false); }}>
-              앨범에서 사진 선택
-            </button>
-            <button type="button" onClick={() => { setAvatar("blue"); setShowPhotoSheet(false); }}>
-              기본 이미지로 변경
-            </button>
-            <button type="button" onClick={() => setShowPhotoSheet(false)}>취소</button>
-          </S.PhotoSheet>
-        </S.Overlay>
+        <ProfileCharacterSheet current={avatar} title="프로필 사진 변경"
+          onClose={() => setShowPhotoSheet(false)}
+          onApply={(value) => { setAvatar(value); setShowPhotoSheet(false); }} />
       )}
 
       {showLeaveDialog && (

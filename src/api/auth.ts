@@ -47,6 +47,15 @@ export interface NicknameCheckResponse {
 }
 
 export const SIGNUP_COMPLETED_EVENT = "dotlo:signup-completed";
+const RECENT_LOGIN_KEY = "dotlo:recent-login";
+
+export function hasRecentGoogleLogin() {
+  try {
+    return localStorage.getItem(RECENT_LOGIN_KEY) === "google";
+  } catch {
+    return false;
+  }
+}
 
 export function canStartGoogleLogin() {
   return Boolean(googleOAuthConfig.clientId && googleOAuthConfig.redirectUri);
@@ -83,6 +92,11 @@ export async function loginWithGoogleCode(code: string) {
     json: { code },
   });
   saveAuthTokens(response);
+  try {
+    localStorage.setItem(RECENT_LOGIN_KEY, "google");
+  } catch {
+    // 로그인 세션은 브라우저 저장소에 접근할 수 없어도 유지돼요.
+  }
   return response;
 }
 
