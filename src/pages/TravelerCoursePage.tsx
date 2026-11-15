@@ -12,6 +12,7 @@ import { travelerCourse } from "../data/mocks/travelerCourseData";
 import { mockTripCities } from "../data/mocks/tripData";
 import TravelerCourseMap from "../components/traveler-course/TravelerCourseMap";
 import TravelerPlaceDetail from "../components/traveler-course/TravelerPlaceDetail";
+import { PlaceThumbnail } from "../components/common/PlacePhoto";
 import * as S from "./TravelerCoursePage.styled";
 import { importedTripPath } from "../utils/navigation";
 import { createImportedTrip, saveMockTrip, tripStorageNotice } from "../data/mocks/mockTripService";
@@ -153,6 +154,7 @@ function TravelerCoursePage() {
     return (
       <TravelerCourseMap
         course={course}
+        photoCourseId={liveCourseId ?? undefined}
         activeDay={activeDay}
         onBack={() => setScreen("course")}
         onDayChange={setActiveDay}
@@ -165,7 +167,7 @@ function TravelerCoursePage() {
   }
 
   if (screen === "place") {
-    return <TravelerPlaceDetail place={selectedPlace} city={course.city} onBack={() => setScreen("map")} />;
+    return <TravelerPlaceDetail key={selectedPlaceId} place={selectedPlace} city={course.city} photoCourseId={liveCourseId ?? undefined} onBack={() => setScreen("map")} />;
   }
 
   return (
@@ -226,7 +228,7 @@ function TravelerCoursePage() {
                 <S.Rail><b>{index + 1}</b>{index < day.places.length - 1 && <i />}</S.Rail>
                 <S.PlaceContent>
                   <S.PlaceCard type="button" onClick={() => { setSelectedPlaceId(place.id); setScreen("place"); }}>
-                    <img src={place.image} alt="" />
+                    {liveCourseId ? <PlaceThumbnail courseId={liveCourseId} placeId={place.id} name={place.name} /> : <img src={place.image} alt="" />}
                     <span><strong>{place.name}</strong><small>{place.category}</small></span>
                   </S.PlaceCard>
                   {place.travelTime && <S.Move><img src={walkIcon} alt="" />{place.travelTime}<span>{place.distance}</span></S.Move>}

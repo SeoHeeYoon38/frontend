@@ -29,6 +29,7 @@ import type { TravelLeg } from "../api/types";
 import { travelModeLabels } from "../utils/trip";
 import TripSummary from "../components/course-completion/TripSummary";
 import TripSheet from "../components/common/TripSheet";
+import { PlaceGallery } from "../components/common/PlacePhoto";
 import backIcon from "../assets/icons/nav-back.svg";
 import settingsIcon from "../assets/course-completion/settings.svg";
 import { routes } from "../config/routes";
@@ -54,6 +55,7 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
   const [error, setError] = useState("");
   const [activeDay, setActiveDay] = useState(0);
   const [mapExpanded, setMapExpanded] = useState(false);
+  const [photoPlace, setPhotoPlace] = useState<{ placeId: string; name: string }>();
   const [editing, setEditing] = useState<"itinerary" | "places">();
   const [showAiEdit, setShowAiEdit] = useState(false);
   const [travelModes, setTravelModes] = useState<Record<string, TravelLeg["mode"]>>({});
@@ -304,7 +306,7 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
                       <CourseRouteMap places={mapPlaces} city={summary.city} day={activeDay + 1} schematic expanded />
                     </TripSheet>
                   )}
-                  <TripTimeline day={activeDay + 1} visits={(day?.visits ?? []).map((visit, index, visits) => {
+                  <TripTimeline day={activeDay + 1} onOpenPlace={(placeId, name) => setPhotoPlace({ placeId, name })} visits={(day?.visits ?? []).map((visit, index, visits) => {
                     const place = placesById.get(visit.placeId);
                     const next = visits[index + 1];
                     const key = next && JSON.stringify([day?.date, visit.itemId, next.itemId]);
@@ -312,6 +314,7 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
                     return {
                       id: visit.itemId,
                       name: place?.name,
+                      photoPlaceId: visit.placeId,
                       address: place?.address,
                       timing: `${timeLabel(visit.start)} – ${timeLabel(visit.end)}`,
                       connection: next && key && mode && (
@@ -329,6 +332,11 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
                       ),
                     };
                   })} />
+                  {photoPlace && (
+                    <TripSheet title={photoPlace.name} onClose={() => setPhotoPlace(undefined)}>
+                      <div className="server-place-gallery"><PlaceGallery {...photoPlace} /></div>
+                    </TripSheet>
+                  )}
                   {travelSelection && (
                     <TravelModeSheet
                       {...travelSelection}
