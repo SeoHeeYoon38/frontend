@@ -27,22 +27,6 @@ export const Header = styled.header`
   h1 { margin: 0; font-size: 17px; line-height: 24px; letter-spacing: -0.085px; }
 `;
 
-export const NoticeList = styled.ul`
-  margin: 0;
-  padding: 0;
-  list-style: none;
-
-  li { border-bottom: 1px solid #e4e6ec; }
-  li > button { width: 100%; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 18px 20px; text-align: left; }
-  li > button > span { display: flex; align-items: center; gap: 6px; }
-  li > button > span img { width: 5px; height: 5px; }
-  li > button b { color: #8a8a8e; font-size: 12px; line-height: 17px; }
-  li > button b[data-new="true"] { color: #0079c2; }
-  li > button strong { font-size: 15px; line-height: 22px; font-weight: 500; }
-  li > button small { color: #8a8a8e; font-size: 12px; line-height: 17px; }
-  li > p { margin: -4px 0 0; padding: 0 20px 18px; color: #5c5c63; font-size: 14px; line-height: 22px; }
-`;
-
 export const Categories = styled.nav`
   display: flex;
   gap: 8px;
@@ -117,6 +101,26 @@ export const PhotoButton = styled.button`
   span { color: #8a8a8e; font-size: 11px; line-height: 15px; }
 `;
 
+export const SupportNotice = styled.p`
+  margin: 16px 0 0;
+  padding: 0 20px;
+  color: #5c5c63;
+  font-size: 14px;
+
+  form & { padding: 0; }
+`;
+
+export const AttachmentList = styled.ul`
+  display: grid;
+  gap: 8px;
+  padding: 0;
+  list-style: none;
+
+  li { display: flex; justify-content: space-between; gap: 12px; }
+  span { overflow-wrap: anywhere; }
+  button { flex: none; color: #5c5c63; }
+`;
+
 export const Submit = styled.button`
   position: fixed;
   right: max(calc((100vw - 402px) / 2 + 20px), 20px);
@@ -134,20 +138,6 @@ export const Submit = styled.button`
   font-weight: 700 !important;
 
   &:disabled { background: #d1d1d6 !important; }
-`;
-
-export const Overlay = styled.div`
-  position: fixed;
-  z-index: 12;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  background: rgba(10,10,26,.45);
-
-  > div { width: min(calc(100% - 48px), 354px); padding: 28px 24px 20px; border-radius: 24px; background: #ffffff; text-align: center; }
-  h2 { margin: 0; font-size: 20px; line-height: 28px; }
-  p { margin: 8px 0 24px; color: #5c5c63; font-size: 14px; line-height: 20px; }
-  button { width: 100%; height: 50px; border-radius: 14px; color: #ffffff; background: #090738; text-align: center; font-weight: 700; }
 `;
 
 export const HomeIndicator = styled.div`

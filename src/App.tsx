@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Navigate, Outlet, ScrollRestoration, useLocation, useMatch } from "react-router";
-import { getMe, SIGNUP_COMPLETED_EVENT } from "./api/auth";
+import { getMe, SIGNUP_COMPLETED_EVENT, type UserResponse } from "./api/auth";
 import { apiMode } from "./api/config";
 import { hasAuthSession } from "./api/tokenStorage";
 import { routes } from "./config/routes";
@@ -17,6 +17,8 @@ type SignupStatus = "idle" | "checking" | "complete" | "incomplete" | "error";
 function App() {
   const location = useLocation();
   const hasSession = hasAuthSession();
+  const [account, setAccount] = useState<UserResponse>();
+  if (!hasSession && account) setAccount(undefined);
   const [signupStatus, setSignupStatus] = useState<SignupStatus>(() =>
     hasSession ? "checking" : "idle",
   );
@@ -37,6 +39,7 @@ function App() {
     void getMe(controller.signal)
       .then((user) => {
         if (!controller.signal.aborted) {
+          setAccount(user);
           setSignupStatus(
             shouldCompleteSignup(user.signupCompleted) ? "incomplete" : "complete",
           );
@@ -80,7 +83,7 @@ function App() {
   return (
     <>
       <GlobalStyle />
-      <Outlet />
+      <Outlet context={hasSession ? account : undefined} />
       <ScrollRestoration />
     </>
   );
