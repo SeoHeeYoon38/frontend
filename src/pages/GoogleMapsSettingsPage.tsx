@@ -2,6 +2,7 @@ import { Link } from "react-router";
 import backIcon from "../assets/icons/nav-back.svg";
 import googleMapsLogo from "../assets/images/brand-google-maps.webp";
 import { routes } from "../config/routes";
+import { isApiEnabled } from "../api/config";
 import * as S from "./GoogleMapsSettingsPage.styled";
 
 function GoogleMapsSettingsPage() {
@@ -18,15 +19,16 @@ function GoogleMapsSettingsPage() {
         <S.Logo><img src={googleMapsLogo} alt="" /></S.Logo>
         <span>
           <strong>Google Maps 저장 장소</strong>
-          <small>여행을 만들 때 가져오기 흐름을 체험할 수 있어요.</small>
+          <small>공개 목록 링크나 Takeout 파일을 가져올 수 있어요.</small>
         </span>
       </S.Status>
 
       <S.Band />
       <S.ListSection>
         <h2>가져오기 방법</h2>
-        <p>Google Takeout에서 ‘저장됨’을 내보낸 ZIP·CSV 파일(최대 20MB)이나 공개 목록 공유 링크를 선택할 수 있어요.</p>
-        <p>데모에서는 파일과 링크 형식만 확인하고 샘플 장소를 표시해요.</p>
+        <p>Google Maps의 저장 목록을 공개로 설정한 뒤 공유 링크를 복사해 주세요.</p>
+        <p>Google Takeout에서 ‘저장됨’을 내보낸 ZIP·CSV 파일(최대 20MB)도 가져올 수 있어요.</p>
+        {!isApiEnabled() && <p>데모에서는 파일과 링크 형식을 확인한 뒤 샘플 장소를 표시해요.</p>}
         <Link to={routes.createTrip}>AI 맞춤 여행 만들기 →</Link>
       </S.ListSection>
       <S.HomeIndicator />

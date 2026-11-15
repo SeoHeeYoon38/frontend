@@ -29,6 +29,7 @@ function ServerSavedPlaces({ tripId, onContinue, onPick, pickedPlaceIds }: Serve
   const [showImport, setShowImport] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [importNotice, setImportNotice] = useState("");
   const request = useRef<AbortController | null>(null);
 
   useEffect(() => {
@@ -69,11 +70,16 @@ function ServerSavedPlaces({ tripId, onContinue, onPick, pickedPlaceIds }: Serve
 
   function importPlaces(input: PlaceImportInput) {
     return run(async (signal) => {
-      if (input.method === "file") await uploadTakeout(tripId, input.file, signal);
-      else await importSharedList(tripId, input.link, signal);
+      setImportNotice("");
+      const imported = input.method === "file"
+        ? await uploadTakeout(tripId, input.file, signal)
+        : await importSharedList(tripId, input.link, signal);
       const response = await enrichSavedPlaces(tripId, signal);
       if (!signal.aborted) {
         setPlaces(response.places);
+        setImportNotice(imported.totalNewCount > 0
+          ? `새 장소 ${imported.totalNewCount}곳을 가져왔어요.`
+          : "가져오기를 완료했어요. 새로 추가된 장소는 없어요.");
         setShowImport(false);
       }
     });
@@ -110,6 +116,7 @@ function ServerSavedPlaces({ tripId, onContinue, onPick, pickedPlaceIds }: Serve
   return (
     <P.PlacesStep $empty={false} aria-busy={busy}>
       <P.PlacesTitle>저장 장소</P.PlacesTitle>
+      {importNotice && <p role="status">{importNotice}</p>}
       {onContinue && <S.Subtitle>확인된 저장 장소를 바탕으로 AI 일정을 만들어요.</S.Subtitle>}
       {error && <S.ErrorText role="alert">{error}</S.ErrorText>}
       {!places && !error && <p role="status">저장 장소를 불러오고 있어요.</p>}
