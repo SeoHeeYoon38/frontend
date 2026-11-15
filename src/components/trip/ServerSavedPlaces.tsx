@@ -19,9 +19,14 @@ interface ServerSavedPlacesProps {
   onContinue?: (places: SavedPlaceResponse[]) => void;
   onPick?: (place: SavedPlaceResponse) => void;
   pickedPlaceIds?: Set<string>;
+  pickLabel?: string;
+  pickedLabel?: string;
 }
 
-function ServerSavedPlaces({ tripId, onContinue, onPick, pickedPlaceIds }: ServerSavedPlacesProps) {
+function ServerSavedPlaces({
+  tripId, onContinue, onPick, pickedPlaceIds,
+  pickLabel = "일정에 담기", pickedLabel = "이날 일정에 담았어요",
+}: ServerSavedPlacesProps) {
   const [places, setPlaces] = useState<SavedPlaceResponse[]>();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<PlaceCandidate[]>();
@@ -145,7 +150,7 @@ function ServerSavedPlaces({ tripId, onContinue, onPick, pickedPlaceIds }: Serve
                     disabled={busy || pickedPlaceIds?.has(place.placeId)}
                     onClick={() => onPick(place)}
                   >
-                    {pickedPlaceIds?.has(place.placeId) ? "이날 일정에 담았어요" : "일정에 담기"}
+                    {pickedPlaceIds?.has(place.placeId) ? pickedLabel : pickLabel}
                   </P.MatchButton>
                 )}
                 {["PENDING", "NEEDS_REVIEW", "NOT_FOUND"].includes(place.matchStatus) && (

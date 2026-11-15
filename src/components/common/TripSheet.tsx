@@ -10,6 +10,7 @@ interface TripSheetProps {
   variant?: "default" | "course" | "people" | "dates";
   contentGap?: number;
   compactHeader?: boolean;
+  closeDisabled?: boolean;
 }
 function TripSheet({
   title,
@@ -20,6 +21,7 @@ function TripSheet({
   variant = "default",
   contentGap,
   compactHeader = false,
+  closeDisabled = false,
 }: TripSheetProps) {
   const ref = useRef<HTMLDialogElement>(null);
   const id = useId();
@@ -37,7 +39,10 @@ function TripSheet({
       $course={variant === "course"}
       ref={ref}
       aria-labelledby={id}
-      onCancel={onClose}
+      onCancel={(event) => {
+        if (closeDisabled) event.preventDefault();
+        else onClose();
+      }}
     >
       <S.Grabber />
       <S.SheetHeader
@@ -53,6 +58,7 @@ function TripSheet({
           aria-label="닫기"
           data-close
           autoFocus
+          disabled={closeDisabled}
           onClick={onClose}
         >
           <img src={close} alt="" />

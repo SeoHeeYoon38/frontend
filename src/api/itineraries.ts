@@ -3,6 +3,7 @@ import type {
   GeneratedItineraryResponse,
   ItineraryEditPreview,
   ItineraryDayInput,
+  ItineraryDiff,
   ItineraryVersionSummary,
   ItineraryVersionView,
   ValidationResult,
@@ -49,6 +50,19 @@ export function getLatestItinerary(tripId: number, signal?: AbortSignal) {
     `/api/trips/${tripId}/itineraries/latest`,
     { signal },
   );
+}
+
+export function addPlaceToItinerary(tripId: number, placeId: string, day: number) {
+  return apiRequest<{
+    placeName: string;
+    reason: string;
+    itinerary: ItineraryVersionView;
+    diff: ItineraryDiff;
+  }>(`/api/trips/${tripId}/itineraries/add-place`, {
+    method: "POST",
+    json: { placeId, day },
+    timeoutMs: 180_000,
+  });
 }
 
 export function requestItineraryEdit(
