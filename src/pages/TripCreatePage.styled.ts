@@ -25,8 +25,21 @@ export const Generation = styled.div`
   flex-direction: column;
   align-items: center;
   text-align: center;
-  padding: 80px 0 48px;
+  padding: 80px 16px 48px;
   gap: 24px;
+  @media (max-height: 600px) {
+    padding-top: 24px;
+    gap: 20px;
+  }
+`;
+
+export const GenerationCopy = styled.div`
+  display: grid;
+  gap: 8px;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: keep-all;
+
   h1 {
     font-size: 24px;
     line-height: 1.4;
@@ -34,12 +47,9 @@ export const Generation = styled.div`
   }
   p {
     color: #8a8a8e;
-    margin: 8px 0 0;
+    margin: 0;
     font-size: 14px;
-  }
-  @media (max-height: 600px) {
-    padding-top: 24px;
-    gap: 20px;
+    line-height: 1.5;
   }
 `;
 export const SymbolBox = styled.div`
@@ -106,8 +116,9 @@ export const GenerationGlow = styled.img<{ $tone: "purple" | "cyan" }>`
 `;
 
 export const GenerationNotice = styled.p`
-  margin: -16px 0 0 !important;
-  color: #5c5c63 !important;
-  font-size: 12px !important;
-  line-height: 17px;
+  && {
+    color: #5c5c63;
+    font-size: 12px;
+    line-height: 17px;
+  }
 `;

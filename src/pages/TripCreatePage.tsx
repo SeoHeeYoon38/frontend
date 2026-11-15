@@ -176,7 +176,7 @@ function AiTripCreatePage({
             <img src={logo} alt="Dotlo" />
           </div>
         </S.SymbolBox>
-        <div>
+        <S.GenerationCopy>
           <h1>
             {draft.city} {durationLabel(draft.startDate, draft.endDate)} 코스를
             <br />
@@ -184,7 +184,7 @@ function AiTripCreatePage({
           </h1>
           <p>최대 3분 정도 걸릴 수 있어요</p>
           <S.GenerationNotice>화면을 닫지 않고 잠시 기다려 주세요</S.GenerationNotice>
-        </div>
+        </S.GenerationCopy>
         <S.GenerationSteps>
           {phases.map((phase, index) => (
             <li key={phase} data-pending={index > progress}>
