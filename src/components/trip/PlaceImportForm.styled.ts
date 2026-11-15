@@ -47,24 +47,29 @@ export const SkipButton = styled.button`
   min-height: 40px; margin-top: auto; color: #8a8a8e; font-size: 14px; text-align: center;
 `;
 
-export const GuideNotice = styled(InfoBox)`
-  background: #fff9d9; p { color: #5f5b40; } strong { color: #292719; }
-`;
-
 export const GuideList = styled.ol`
-  display: flex; flex-direction: column; gap: 16px; margin: 0; padding: 0; list-style: none;
+  display: flex; flex-direction: column; gap: 10px; margin: 0; padding: 0; list-style: none;
 `;
 
 export const GuideStep = styled.li`
-  display: flex; align-items: flex-start; gap: 12px;
-  > b { width: 22px; height: 22px; display: grid; place-items: center; flex: 0 0 auto; border-radius: 50%; background: #e8f7ff; color: #0079c2; font-size: 11px; }
-  div { display: flex; min-width: 0; flex-direction: column; gap: 3px; }
-  strong { font-size: 13px; line-height: 19px; } small { color: #8a8a8e; font-size: 11px; line-height: 16px; }
+  display: grid; gap: 10px; padding: 16px; border: 1px solid #e0e3eb; border-radius: 16px;
+  &:first-child { border-color: #090738; }
+  > div { display: flex; align-items: flex-start; gap: 12px; }
+  b { width: 28px; height: 28px; display: grid; place-items: center; flex: 0 0 auto; border-radius: 50%; background: #daf5fc; color: #0079c2; font-size: 13px; }
+  &:first-child b { background: #090738; color: #fff; }
+  strong { display: block; font-size: 16px; line-height: 22px; }
+  small { display: block; color: #6b6b70; font-size: 12px; line-height: 18px; }
+`;
+
+export const GuideChecks = styled.section`
+  display: grid; gap: 8px; padding: 14px; border-radius: 12px; background: #f1f3f9;
+  p { display: flex; gap: 8px; margin: 0; align-items: flex-start; font-size: 13px; line-height: 19px; }
+  img { width: 14px; height: 14px; flex: 0 0 auto; }
 `;
 
 export const ExternalLink = styled.a`
-  min-height: 42px; display: grid; place-items: center; border: 1px solid #dadae2; border-radius: 12px;
-  color: #1a1a1a; font-size: 13px; font-weight: 700; text-decoration: none;
+  min-height: 42px; display: grid; place-items: center; border-radius: 12px; background: #daf5fc;
+  color: #0079c2; font-size: 13px; font-weight: 700; text-decoration: none;
 `;
 
 export const DropZone = styled.label`
@@ -129,6 +134,17 @@ export const GuideLink = styled.button`
 export const LinkForm = styled.form`
   display: flex; min-height: 320px; flex: 1; flex-direction: column; gap: 10px;
   label { font-size: 13px; font-weight: 700; }
-  input { width: 100%; min-width: 0; padding: 14px; border: 1px solid #dedee5; border-radius: 12px; font-size: 13px; outline: none; }
-  input:focus { border-color: #090738; box-shadow: 0 0 0 2px rgb(9 7 56 / 8%); }
+`;
+
+export const LinkInput = styled.div`
+  display: flex; gap: 8px; align-items: center; padding: 8px; border-radius: 12px; background: #f1f3f9;
+  &:focus-within { outline: 1px solid #090738; }
+  input { flex: 1; min-width: 0; padding: 8px; border: 0; background: transparent; font-size: 13px; }
+  button { flex-shrink: 0; min-height: 36px; padding: 6px 10px; border: 1px solid #e0e3eb; border-radius: 8px; background: #fff; font-size: 13px; }
+`;
+
+export const LinkGuide = styled.section`
+  padding: 16px; border: 1px solid #e0e3eb; border-radius: 16px;
+  strong { font-size: 14px; }
+  ol { display: grid; gap: 8px; margin: 12px 0; padding-inline-start: 24px; font-size: 12px; line-height: 18px; color: #5c5c63; }
 `;
