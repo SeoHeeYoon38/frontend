@@ -93,7 +93,7 @@ export const MenuList = styled.div`
   gap: 0;
 `;
 
-export const MenuButton = styled.button<{ $danger?: boolean }>`
+const MenuRow = styled.div<{ $danger?: boolean }>`
   width: 100%;
   min-height: 52px;
   padding: 14px 0 !important;
@@ -103,10 +103,6 @@ export const MenuButton = styled.button<{ $danger?: boolean }>`
   align-items: center;
   text-align: left;
   border-radius: 10px !important;
-
-  &:hover {
-    background: #f7f7fa;
-  }
 
   > img {
     width: 24px;
@@ -120,6 +116,20 @@ export const MenuButton = styled.button<{ $danger?: boolean }>`
     line-height: 1.5;
     font-weight: 500;
     letter-spacing: -0.35px;
+  }
+`;
+
+export const MenuValue = styled(MenuRow)`
+  grid-template-columns: 28px minmax(0, 1fr) minmax(0, auto);
+  > span:last-child {
+    white-space: normal;
+    text-align: right;
+  }
+`;
+
+export const MenuButton = styled(MenuRow).attrs({ as: "button" as const })`
+  &:hover:not(:disabled) {
+    background: #f7f7fa;
   }
 `;
 
