@@ -277,3 +277,5 @@ export function readDraft(value: string | null): TripDraft {
 export function timeLabel(value: string) {
   return (value.split("T")[1] ?? value).slice(0, 5);
 }
+
+export const travelModeLabels = { WALK: "도보", TRANSIT: "대중교통", DRIVE: "차량" } as const;

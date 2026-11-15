@@ -638,3 +638,96 @@
     width: 20px;
   }
 }
+.travel-mode-connection {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.travel-mode-connection button {
+  padding: 6px 10px;
+  border-radius: 20px;
+  background: #f1f2f7;
+  font-size: 12px;
+}
+
+.travel-mode-description {
+  margin: 0;
+  color: #5c5c63;
+}
+
+.travel-mode-options {
+  display: grid;
+  min-width: 0;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.travel-mode-option {
+  position: relative;
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 22px;
+  align-items: center;
+  gap: 14px;
+  min-height: 72px;
+  padding: 12px 16px;
+  border: 1px solid #e2e4ec;
+  border-radius: 14px;
+  cursor: pointer;
+}
+
+.travel-mode-option:has(input:checked) {
+  border-color: #090738;
+  background: #f2f3fa;
+}
+
+.travel-mode-option:has(input:focus-visible) {
+  outline: 2px solid #7a6fe0;
+}
+
+.travel-mode-option input {
+  position: absolute;
+  opacity: 0;
+}
+
+.travel-mode-icon {
+  display: grid;
+  height: 40px;
+  place-items: center;
+  border-radius: 12px;
+  background: #f4f5fa;
+}
+
+.travel-mode-icon img {
+  width: 22px;
+  height: 22px;
+}
+
+.travel-mode-option small {
+  display: block;
+  margin-top: 4px;
+  color: #777783;
+}
+
+.travel-mode-indicator {
+  display: grid;
+  height: 22px;
+  place-items: center;
+  border: 1px solid #dfe2eb;
+  border-radius: 50%;
+}
+
+.travel-mode-option:has(input:checked) .travel-mode-indicator {
+  color: white;
+  background: #090738;
+}
+
+.travel-mode-all {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #5c5c63;
+  font-size: 14px;
+}

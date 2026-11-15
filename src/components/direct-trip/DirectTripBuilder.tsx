@@ -54,6 +54,8 @@ interface ExistingTrip {
   days: ItineraryDayInput[];
   places: SavedPlaceResponse[];
   version: number;
+  initialDay?: number;
+  openPlaceSearch?: boolean;
   onSaved: (itinerary: ItineraryVersionView) => void;
   onClose: () => void;
 }
@@ -64,7 +66,7 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
   const [live] = useState(() => Boolean(existing) || (isApiEnabled() && hasAuthSession()));
   const mockScenario = live ? undefined : readMockScenario(location.search);
   const [stage, setStage] = useState<DirectTripStage>(() => {
-    if (existing) return "itinerary";
+    if (existing) return existing.openPlaceSearch ? "search" : "itinerary";
     if (
       mockScenario === "direct-search-empty" ||
       mockScenario === "direct-google-unlinked"
@@ -111,7 +113,7 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
       id: place.id, name: place.title, category: place.category, detail: place.description,
       image: place.image, source: "recommend" as const,
     })), [draft.city]);
-  const [selectedDay, setSelectedDay] = useState(1);
+  const [selectedDay, setSelectedDay] = useState(existing?.initialDay ?? 1);
   const [searchTab, setSearchTab] = useState<DirectTripSearchTab>(() =>
     mockScenario === "direct-google-unlinked" ? "google" : "recommend",
   );
@@ -313,25 +315,26 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
     </S.PlainScreen>
   );
 
-  const liveDays = () => rangeDates(draft.startDate, draft.endDate).map((date, index) => ({
+  const liveDays = useMemo(() => rangeDates(draft.startDate, draft.endDate).map((date, index) => ({
     date,
-    visits: (dayPlaces[index + 1] ?? []).map((id) => livePlaces[id].visit),
-  }));
+    visits: (dayPlaces[index + 1] ?? []).flatMap((id) => livePlaces[id] ? [livePlaces[id].visit] : []),
+  })), [draft.startDate, draft.endDate, dayPlaces, livePlaces]);
+
+  useEffect(() => {
+    if (!live || stage !== "itinerary" || !hasAnyPlace || (existing && !changed)) return;
+    const timer = window.setTimeout(() => void validate(liveDays), 300);
+    return () => window.clearTimeout(timer);
+  }, [live, stage, hasAnyPlace, existing, changed, liveDays, validate]);
 
   const saveTrip = async () => {
     if (live) {
-      const days = liveDays();
-      if (!validation?.summary.valid) {
-        await validate(days);
-        return;
-      }
-      if (savingItinerary) return;
+      if (savingItinerary || checking || !validation?.summary.valid) return;
       setSavingItinerary(true);
       setNotice("");
       try {
         const itinerary = await saveItinerary(
           Number(draft.tripId),
-          days,
+          liveDays,
           existing?.version ?? null,
         );
         setChanged(false);
@@ -514,7 +517,12 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
             </S.Timeline>
           </S.FilledPlan>
         )}
-        {checkError && <p role="alert">{checkError}</p>}
+        {checkError && (
+          <div>
+            <p role="alert">{checkError}</p>
+            <button type="button" onClick={() => void validate(liveDays)}>다시 시도</button>
+          </div>
+        )}
         {validation && (
           <>
             <p role="status">일정을 검증했어요. 변경한 일정은 이 화면에서 확인할 수 있어요.</p>
@@ -527,18 +535,14 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
       <S.BottomAction $floating>
         <button
           type="button"
-          disabled={!hasAnyPlace || checking || savingItinerary}
+          disabled={!hasAnyPlace || checking || savingItinerary || (live && !validation?.summary.valid)}
           onClick={() => void saveTrip()}
         >
           {checking
             ? "일정 검증 중…"
             : savingItinerary
               ? "일정 저장 중…"
-              : live
-                ? validation?.summary.valid
-                  ? "검증한 일정 저장하기"
-                  : "일정 검증하기"
-                : "저장하기"}
+              : "저장하기"}
         </button>
       </S.BottomAction>
     </S.PlanScreen>
