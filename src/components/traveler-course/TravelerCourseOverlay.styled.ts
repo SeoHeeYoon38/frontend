@@ -83,7 +83,7 @@ export const MapCanvas = styled.div`
   position: absolute;
   top: 100px;
   right: 0;
-  bottom: 0;
+  bottom: min(340px, 44dvh);
   left: 0;
   overflow: hidden;
   background: #e7edf0;
@@ -93,6 +93,14 @@ export const MapCanvas = styled.div`
     height: 100%;
     object-fit: cover;
     object-position: center top;
+  }
+
+  > .course-map {
+    height: 100%;
+  }
+
+  > p {
+    margin: 20px;
   }
 `;
 
@@ -119,7 +127,7 @@ export const DaySheet = styled.section`
   left: 0;
   right: 0;
   bottom: 0;
-  height: 340px;
+  height: min(340px, 44dvh);
   overflow-y: auto;
   padding: 28px 20px 32px;
   border-radius: 28px 28px 0 0;
@@ -149,6 +157,12 @@ export const DaySheet = styled.section`
     color: #8a8a8e;
     font-size: 12px;
   }
+`;
+
+export const MapTravel = styled.p`
+  margin: 0 0 8px 44px;
+  color: #5c5c63;
+  font-size: 12px;
 `;
 
 export const MapPlaceRow = styled.button`
