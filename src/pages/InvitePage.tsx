@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router";
 import calendarIcon from "../assets/invite/calendar.svg";
 import dashImage from "../assets/invite/dash.svg";
@@ -56,6 +56,9 @@ function InviteDetails({ inviteId }: { inviteId?: string }) {
   const [accepting, setAccepting] = useState(false);
   const [error, setError] = useState(inviteState === "expired" ? "초대가 만료됐어요." : "");
   const [attempt, setAttempt] = useState(0);
+  const acceptRequest = useRef<AbortController | null>(null);
+
+  useEffect(() => () => acceptRequest.current?.abort(), []);
 
   useEffect(() => {
     if (!inviteId || demo) return;
@@ -77,6 +80,7 @@ function InviteDetails({ inviteId }: { inviteId?: string }) {
   }, [demo, inviteId, attempt]);
 
   const joinTrip = async () => {
+    if (acceptRequest.current) return;
     if (!inviteId || demo) {
       navigate(tripCommunityPath("home"));
       return;
@@ -90,17 +94,23 @@ function InviteDetails({ inviteId }: { inviteId?: string }) {
       }
       return;
     }
+    const controller = new AbortController();
+    acceptRequest.current = controller;
     setAccepting(true);
     setError("");
     try {
-      const result = await acceptInvite(inviteId);
+      const result = await acceptInvite(inviteId, controller.signal);
+      if (controller.signal.aborted) return;
       navigate(serverTripPlanPath("my-trips", String(result.tripId)), {
         replace: true,
         state: { inviteAccepted: true },
       });
     } catch (reason) {
+      if (controller.signal.aborted) return;
       setError(inviteError(reason, "초대를 수락하지 못했어요. 다시 시도해 주세요."));
       setAccepting(false);
+    } finally {
+      acceptRequest.current = null;
     }
   };
 
@@ -180,7 +190,7 @@ function InviteDetails({ inviteId }: { inviteId?: string }) {
         <button type="button" disabled={accepting} onClick={() => void joinTrip()}>
           {accepting ? "참여하고 있어요" : demo ? "공동 계획 데모 보기" : "초대 수락하기"}
         </button>
-        <S.LaterButton type="button" onClick={() => navigate(routes.home)}>나중에 볼게요</S.LaterButton>
+        <S.LaterButton type="button" disabled={accepting} onClick={() => navigate(routes.home)}>나중에 볼게요</S.LaterButton>
         <S.HomeIndicator />
       </S.Actions>
     </S.Page>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { loginWithGoogleCode, validateOAuthState } from "../api/auth";
 import { routes } from "../config/routes";
@@ -8,28 +8,33 @@ import { takePendingInvitePath } from "../utils/navigation";
 function AuthCallbackPage() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const [callback] = useState(() => {
-    const code = params.get("code");
-    if (params.get("error")) {
-      return { code: null, error: "Google 로그인이 취소되었어요." };
-    }
-    if (!code || !validateOAuthState(params.get("state"))) {
-      return {
-        code: null,
-        error: "로그인 정보를 확인하지 못했어요. 다시 시도해 주세요.",
-      };
-    }
-    return { code, error: "" };
-  });
-  const [error, setError] = useState(callback.error);
+  const code = params.get("code");
+  const state = params.get("state");
+  const cancelled = params.has("error");
+  const [failure, setFailure] = useState<{ code: string | null; state: string | null; message: string }>();
+  const exchange = useRef<{ code: string | null; state: string | null; request: ReturnType<typeof loginWithGoogleCode> } | null>(null);
+  const error = cancelled
+    ? "Google 로그인이 취소되었어요."
+    : failure && failure.code === code && failure.state === state ? failure.message : "";
 
   useEffect(() => {
-    if (!callback.code) return;
-
-    const controller = new AbortController();
-    void loginWithGoogleCode(callback.code)
+    if (cancelled) return;
+    let attempt = exchange.current;
+    if (!attempt || attempt.code !== code || attempt.state !== state) {
+      // StrictMode에서 effect가 다시 실행돼도 같은 인증 코드 교환을 사용한다.
+      const request = Promise.resolve().then(() => {
+        if (!code || !validateOAuthState(state)) {
+          throw new Error("로그인 정보를 확인하지 못했어요. 다시 시도해 주세요.");
+        }
+        return loginWithGoogleCode(code);
+      });
+      attempt = { code, state, request };
+      exchange.current = attempt;
+    }
+    let active = true;
+    void attempt.request
       .then((response) => {
-        if (!controller.signal.aborted) {
+        if (active) {
           navigate(
             shouldCompleteSignup(response.signupCompleted)
               ? routes.onboardingTerms
@@ -39,16 +44,18 @@ function AuthCallbackPage() {
         }
       })
       .catch((reason: unknown) => {
-        if (!controller.signal.aborted) {
-          setError(
-            reason instanceof Error
+        if (active) {
+          setFailure({
+            code,
+            state,
+            message: reason instanceof Error
               ? reason.message
               : "로그인을 완료하지 못했어요. 다시 시도해 주세요.",
-          );
+          });
         }
       });
-    return () => controller.abort();
-  }, [callback, navigate]);
+    return () => { active = false; };
+  }, [cancelled, code, state, navigate]);
 
   return (
     <main aria-busy={!error} style={{ minHeight: "100dvh", display: "grid", placeItems: "center", padding: 24 }}>
