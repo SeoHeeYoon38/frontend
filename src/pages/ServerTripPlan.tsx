@@ -205,7 +205,12 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
           setData((current) => current ? { ...current, itinerary } : current);
           setActiveDay(0);
           setNotice("직접 편집한 일정을 저장했어요.");
-          void reloadHistory();
+          void reloadHistory().catch(() => undefined);
+          void getSavedPlaces(tripId).then(({ places }) => {
+            setData((current) => current?.itinerary?.version === itinerary.version
+              ? { ...current, places }
+              : current);
+          }).catch(() => undefined);
         },
         onClose: () => setEditing(false),
       }} />

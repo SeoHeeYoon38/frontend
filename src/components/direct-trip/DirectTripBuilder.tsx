@@ -266,16 +266,16 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
     }
   }
 
-  function addLivePlace(saved: SavedPlaceResponse) {
-    const { placeId } = saved;
-    if (!placeId || (dayPlaces[selectedDay] ?? []).some((id) => livePlaces[id]?.visit.placeId === placeId)) return;
-    const place = savedPlaceToTripPlace(saved, draft.city);
-    const id = `v-${crypto.randomUUID()}`;
-    resetCheck();
-    setChanged(true);
-    setLivePlaces((current) => ({
-      ...current,
-      [id]: {
+  function addLivePlaces(savedPlaces: SavedPlaceResponse[]) {
+    const existingIds = new Set((dayPlaces[selectedDay] ?? []).map((id) => livePlaces[id]?.visit.placeId));
+    const additions: typeof livePlaces = {};
+    for (const saved of savedPlaces) {
+      const { placeId } = saved;
+      if (!placeId || existingIds.has(placeId)) continue;
+      existingIds.add(placeId);
+      const place = savedPlaceToTripPlace(saved, draft.city);
+      const id = `v-${crypto.randomUUID()}`;
+      additions[id] = {
         id,
         name: place.title,
         category: place.category,
@@ -283,9 +283,14 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
         image: place.image,
         source: "google",
         visit: { itemId: id, placeId },
-      },
-    }));
-    setDayPlaces((current) => ({ ...current, [selectedDay]: [...(current[selectedDay] ?? []), id] }));
+      };
+    }
+    const ids = Object.keys(additions);
+    if (!ids.length) return;
+    resetCheck();
+    setChanged(true);
+    setLivePlaces((current) => ({ ...current, ...additions }));
+    setDayPlaces((current) => ({ ...current, [selectedDay]: [...(current[selectedDay] ?? []), ...ids] }));
     setStage("itinerary");
   }
 
@@ -687,7 +692,9 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
           <S.SearchScroll>
             <ServerSavedPlaces
               tripId={Number(draft.tripId)}
-              onPick={addLivePlace}
+              recommendationCity={draft.city}
+              onPickMany={addLivePlaces}
+              pickDay={selectedDay}
               pickedPlaceIds={new Set((dayPlaces[selectedDay] ?? []).map((id) => livePlaces[id].visit.placeId))}
             />
           </S.SearchScroll>

@@ -137,6 +137,7 @@ function AiTripCreatePage({
       <ServerSavedPlaces
         key={draft.tripId}
         tripId={Number(draft.tripId)}
+        recommendationCity={draft.city}
         onContinue={(saved) => {
           const places = saved.map((place) => savedPlaceToTripPlace(place, draft.city));
           update({
