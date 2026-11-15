@@ -29,13 +29,14 @@ export const AnalysisProgress = styled(Step)`
 
   p { margin: 0; }
 `;
-export const Prompt = styled.div<{ $active: boolean; $analyzed: boolean }>`
+export const Prompt = styled.div<{ $active: boolean; $exceeded: boolean }>`
   position: relative;
   margin-top: 35px;
-  height: 132px;
-  border: 1.5px solid ${({ $active }) => ($active ? "#090738" : "transparent")};
-  border-radius: 16px;
-  background: ${({ $analyzed }) => ($analyzed ? "white" : "#f5f6f8")};
+  min-height: ${({ $exceeded }) => ($exceeded ? "236px" : "132px")};
+  border: 1.5px solid ${({ $active, $exceeded }) => ($exceeded ? "#ef4444" : $active ? "#090738" : "#e4e6ec")};
+  border-radius: 20px;
+  background: white;
+  box-shadow: 0 8px 20px rgb(9 7 56 / 5%);
   padding: 14.5px 16.5px 38px;
   textarea {
     font: inherit;
@@ -45,7 +46,7 @@ export const Prompt = styled.div<{ $active: boolean; $analyzed: boolean }>`
     border: 0;
     outline: 0;
     width: 100%;
-    height: 76px;
+    height: ${({ $exceeded }) => ($exceeded ? "178px" : "76px")};
     resize: none;
     min-height: 76px;
   }
@@ -58,7 +59,27 @@ export const Prompt = styled.div<{ $active: boolean; $analyzed: boolean }>`
     right: 18px;
     font-size: 11px;
     color: #b5b5bd;
+    b { font-weight: 500; color: ${({ $exceeded }) => ($exceeded ? "#ef4444" : "inherit")}; }
   }
+`;
+
+export const PromptError = styled.p`
+  margin: -6px 4px 0;
+  color: #d72b38;
+  font-size: 13px;
+`;
+
+export const AiBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 9px;
+  margin-bottom: 8px;
+  border-radius: 20px;
+  color: #090738;
+  background: #fff;
+  font-size: 11px;
+  font-weight: 700;
 `;
 export const Analysis = styled.div`
   border: 1px solid #e2e1ee;
@@ -98,8 +119,29 @@ export const Preferences = styled(Step)`
   }
 `;
 export const ExampleTitle = styled.h2`
-  font-size: 15px;
-  margin: 14px 0;
+  color: #5c5c63;
+  font-size: 14px;
+  margin: 14px 0 12px;
+`;
+
+export const Examples = styled.div`
+  display: grid;
+  gap: 8px;
+`;
+
+export const Example = styled.button`
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) 16px;
+  align-items: center;
+  gap: 12px;
+  min-height: 54px;
+  padding: 10px 14px 10px 12px;
+  border: 1px solid #e4e6ec;
+  border-radius: 14px;
+  background: #fff;
+  font-size: 14px;
+
+  span { display: grid; height: 32px; place-items: center; border-radius: 10px; background: #f1f2f8; }
 `;
 export const TasteNumber = styled.span`
   display: inline-grid;
