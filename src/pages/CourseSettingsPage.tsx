@@ -2,6 +2,11 @@ import { useLocation, useNavigate } from "react-router";
 import backIcon from "../assets/course-settings/back.svg";
 import shareIcon from "../assets/course-settings/link.svg";
 import memberIcon from "../assets/course-settings-details/menu-members.svg";
+import inviteIcon from "../assets/course-settings-details/menu-invite.svg";
+import inviteBadgeIcon from "../assets/course-settings-details/member-add.svg";
+import pinIcon from "../assets/course-settings-details/menu-pin.svg";
+import cameraIcon from "../assets/course-settings-details/menu-camera.svg";
+import daysIcon from "../assets/course-settings-details/menu-days.svg";
 import deleteIcon from "../assets/course-settings-details/menu-delete.svg";
 import chevronIcon from "../assets/figma/settings-chevron.svg";
 import { isServerTripId } from "../api/adapters";
@@ -34,9 +39,12 @@ function CourseSettingsPage() {
 function ServerCourseSettings({ tripId }: { tripId: number }) {
   const navigate = useNavigate();
   const { search } = useLocation();
-  const [data, setData] = useState<{ trip: TripResponse; members: MemberResponse[] }>();
+  const [trip, setTrip] = useState<TripResponse>();
+  const [members, setMembers] = useState<MemberResponse[]>();
   const [loadError, setLoadError] = useState("");
+  const [memberError, setMemberError] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  const [memberAttempt, setMemberAttempt] = useState(0);
   const [showMembers, setShowMembers] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
   const [showShare, setShowShare] = useState(false);
@@ -48,9 +56,9 @@ function ServerCourseSettings({ tripId }: { tripId: number }) {
   useEffect(() => {
     const controller = new AbortController();
     const { signal } = controller;
-    void Promise.all([getTrip(tripId, signal), getTripMembers(tripId, signal)]).then(
-      ([trip, members]) => {
-        if (!signal.aborted) setData({ trip, members });
+    void getTrip(tripId, signal).then(
+      (response) => {
+        if (!signal.aborted) setTrip(response);
       },
       () => {
         if (!signal.aborted) setLoadError("여행 설정을 불러오지 못했어요. 다시 시도해 주세요.");
@@ -59,11 +67,25 @@ function ServerCourseSettings({ tripId }: { tripId: number }) {
     return () => controller.abort();
   }, [tripId, attempt]);
 
-  const currentMember = data?.members.find((member) => member.me);
+  useEffect(() => {
+    const controller = new AbortController();
+    const { signal } = controller;
+    void getTripMembers(tripId, signal).then(
+      (response) => {
+        if (!signal.aborted) setMembers(response);
+      },
+      () => {
+        if (!signal.aborted) setMemberError(true);
+      },
+    );
+    return () => controller.abort();
+  }, [tripId, memberAttempt]);
+
+  const currentMember = members?.find((member) => member.me);
   const owner = currentMember?.role === "OWNER";
-  const summary = data && apiTripToSummary(data.trip);
+  const summary = trip && apiTripToSummary(trip);
   const leaveMessage = owner
-    ? data?.members.length === 1
+    ? members?.length === 1
       ? "혼자 참여한 여행이라 나가면 여행이 삭제돼요."
       : "먼저 참여한 멤버에게 방장이 넘어가고, 나는 여행에서 나가요."
     : "나간 뒤에는 여행을 볼 수 없어요. 다시 참여하려면 초대 링크가 필요해요.";
@@ -93,8 +115,8 @@ function ServerCourseSettings({ tripId }: { tripId: number }) {
   return (
     <S.PageShell>
       <S.Page>
-        {showMembers && data ? (
-          <CourseSettingsDetailView view="members" members={data.members} onBack={() => setShowMembers(false)} onInvite={() => setShowInvite(true)} />
+        {showMembers && members ? (
+          <CourseSettingsDetailView view="members" members={members} onBack={() => setShowMembers(false)} onInvite={() => setShowInvite(true)} />
         ) : (
           <>
             <S.Navigation aria-label="코스 설정 탐색">
@@ -113,29 +135,42 @@ function ServerCourseSettings({ tripId }: { tripId: number }) {
                     setAttempt((value) => value + 1);
                   }}>다시 시도</button>
                 </>
-              ) : !data || !summary ? <p role="status">여행 설정을 불러오고 있어요.</p> : (
+              ) : !trip || !summary ? <p role="status">여행 설정을 불러오고 있어요.</p> : (
                 <>
                   <S.SettingsSection aria-label="여행 정보">
                     <h2>여행 정보</h2>
-                    <strong>{summary.title}</strong>
-                    <p>{summary.dateLabel}</p>
+                    <S.MenuList>
+                      <S.MenuValue>
+                        <img src={pinIcon} alt="" />
+                        <span>{summary.title}</span>
+                        <S.MenuMeta>{summary.dateLabel}, {trip.companionCount}명</S.MenuMeta>
+                      </S.MenuValue>
+                      <S.MenuValue>
+                        <img src={cameraIcon} alt="" />
+                        <span>대표 이미지</span>
+                        <S.MenuMeta>이미지 없음</S.MenuMeta>
+                      </S.MenuValue>
+                    </S.MenuList>
                   </S.SettingsSection>
                   <S.Divider />
                   <S.SettingsSection aria-label="함께하기">
                     <h2>함께하기</h2>
                     <S.MenuList>
                       <S.MenuButton type="button" onClick={() => setShowInvite(true)}>
-                        <img src={memberIcon} alt="" />
+                        <S.IconStack>
+                          <img src={inviteIcon} alt="" />
+                          <img src={inviteBadgeIcon} alt="" />
+                        </S.IconStack>
                         <span>친구 초대</span>
                         <S.Chevron src={chevronIcon} alt="" />
                       </S.MenuButton>
-                      <S.MenuButton type="button" onClick={() => setShowMembers(true)}>
+                      <S.MenuButton type="button" disabled={!members} onClick={() => setShowMembers(true)}>
                         <img src={memberIcon} alt="" />
                         <span>멤버 관리</span>
-                        <S.MenuMeta>{data.members.length}명</S.MenuMeta>
+                        {members && <S.MenuMeta>{members.length}명</S.MenuMeta>}
                         <S.Chevron src={chevronIcon} alt="" />
                       </S.MenuButton>
-                      {data.trip.status === "CONFIRMED" && (
+                      {trip.status === "CONFIRMED" && (
                         <S.MenuButton type="button" onClick={() => setShowShare(true)}>
                           <img src={shareIcon} alt="" />
                           <span>일정 공유</span>
@@ -143,6 +178,24 @@ function ServerCourseSettings({ tripId }: { tripId: number }) {
                         </S.MenuButton>
                       )}
                     </S.MenuList>
+                    {memberError ? (
+                      <>
+                        <p role="alert">여행 구성원을 불러오지 못했어요.</p>
+                        <button type="button" onClick={() => {
+                          setMemberError(false);
+                          setMemberAttempt((value) => value + 1);
+                        }}>구성원 다시 불러오기</button>
+                      </>
+                    ) : !members && <p role="status">여행 구성원을 불러오고 있어요.</p>}
+                  </S.SettingsSection>
+                  <S.Divider />
+                  <S.SettingsSection aria-label="일정 관리">
+                    <h2>일정 관리</h2>
+                    <S.MenuValue>
+                      <img src={daysIcon} alt="" />
+                      <span>여행 기간</span>
+                      <S.MenuMeta>{summary.durationLabel ?? "날짜 미정"}</S.MenuMeta>
+                    </S.MenuValue>
                   </S.SettingsSection>
                   {currentMember && <>
                     <S.Divider />
