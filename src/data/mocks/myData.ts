@@ -90,7 +90,7 @@ export const savedPlaces: SavedPlace[] = [
 
 export const savedCourses: SavedCourse[] = [
   {
-    id: "kyoto-alley-walk",
+    id: "kyoto-walk",
     title: "교토 골목 산책",
     durationLabel: "3박 4일",
     city: "교토",
