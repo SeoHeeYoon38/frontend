@@ -5,12 +5,14 @@ import CreateTripSheet from "../components/common/CreateTripSheet";
 import HomeIntro from "../components/home/HomeIntro";
 import MyTripsSection from "../components/home/MyTripsSection";
 import RecommendedCourses from "../components/home/RecommendedCourses";
-import SharedTripsSection from "../components/home/SharedTripsSection";
 import { readMockScenario } from "../utils/mockScenario";
 import { parseProfileSettings, PROFILE_STORAGE_KEY } from "../utils/mySettings";
 import { getMe } from "../api/auth";
 import { isApiEnabled } from "../api/config";
 import { getCourses } from "../api/courses";
+import { getTripMembers } from "../api/members";
+import blueAvatar from "../assets/images/character-blue.webp";
+import purpleAvatar from "../assets/images/character-purple.webp";
 import { courseSummaryToHomeCourse } from "../api/adapters";
 import { hasAuthSession } from "../api/tokenStorage";
 import { apiTripToSummary } from "../utils/serverTrip";
@@ -37,6 +39,7 @@ function HomePage() {
   });
   const [accountName, setAccountName] = useState<string>();
   const [accountError, setAccountError] = useState("");
+  const [tripAvatars, setTripAvatars] = useState<{ tripId: string; images: string[] }>();
   useEffect(() => {
     if (!isApiEnabled() || !hasAuthSession()) return;
     const controller = new AbortController();
@@ -82,6 +85,30 @@ function HomePage() {
   const nextTrip = myTrips.enabled
     ? trips.find((trip, index) => trip.status === "upcoming" && myTrips.trips[index].status === "CONFIRMED") ?? null
     : showEmptyTrips ? null : data.nextTrip;
+  const featuredTripId = myTrips.enabled ? nextTrip?.id : undefined;
+  useEffect(() => {
+    if (!featuredTripId) return;
+    const controller = new AbortController();
+    const { signal } = controller;
+    void getTripMembers(Number(featuredTripId), signal).then(
+      (members) => {
+        if (signal.aborted) return;
+        setTripAvatars({
+          tripId: featuredTripId,
+          images: members.map((member) =>
+            member.profileImageUrl?.trim() || (member.characterId === 2 ? purpleAvatar : blueAvatar),
+          ),
+        });
+      },
+      () => {
+        if (!signal.aborted) setTripAvatars({ tripId: featuredTripId, images: [] });
+      },
+    );
+    return () => controller.abort();
+  }, [featuredTripId]);
+  const featuredTrip = nextTrip && tripAvatars?.tripId === nextTrip.id
+    ? { ...nextTrip, memberAvatars: tripAvatars.images }
+    : nextTrip;
   const tripPath = myTrips.enabled ? (id: string) => serverTripPlanPath("home", id) : undefined;
 
   return (
@@ -90,7 +117,7 @@ function HomePage() {
       {accountError && <p role="alert">{accountError}</p>}
       <HomeIntro
         name={accountName ?? nickname ?? (myTrips.enabled ? "" : data.userName)}
-        trip={nextTrip}
+        trip={featuredTrip}
         tripPath={tripPath}
         resumePath={myTrips.inProgress && resumeTripPath(myTrips.inProgress.id)}
       />
@@ -103,7 +130,6 @@ function HomePage() {
       {coursePending && <p role="status">추천 코스를 불러오고 있어요.</p>}
       {courseError && <p role="alert">{courseError}</p>}
       {!coursePending && !courseError && <RecommendedCourses courses={recommendedCourses} />}
-      <SharedTripsSection trips={data.sharedTrips} />
       {isCreateOpen && <CreateTripSheet onClose={() => setIsCreateOpen(false)} />}
     </>
   );

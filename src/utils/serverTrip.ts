@@ -3,7 +3,7 @@ import { mockTripCities } from "../data/mocks/tripData";
 import type { TripSummary } from "../types/home";
 import type { Companion, TripDraft } from "../types/trip";
 import { formatTripDateRange } from "./importedTrip";
-import { dateKey, dayCount, durationLabel, emptyDraft } from "./trip";
+import { durationLabel, emptyDraft, tripDateStatus } from "./trip";
 
 export const companionLabels: Record<CompanionCode, Companion> = {
   ALONE: "혼자",
@@ -26,16 +26,15 @@ export function apiTripToDraft(trip: TripResponse, draft = emptyDraft()): TripDr
 }
 
 export function apiTripToSummary(trip: TripResponse): TripSummary {
-  const today = dateKey(new Date());
-  const daysUntil = dayCount(today, trip.startDate) - 1;
-  const duration = durationLabel(trip.startDate, trip.endDate);
+  const { hasDates, status, countdownLabel } = tripDateStatus(trip.startDate, trip.endDate);
+  const duration = hasDates ? durationLabel(trip.startDate, trip.endDate) : undefined;
   return {
     id: String(trip.id),
-    title: `${trip.city} ${duration}`,
+    title: duration ? `${trip.city} ${duration}` : `${trip.city} 여행`,
     city: trip.city,
-    dateLabel: formatTripDateRange(trip.startDate, trip.endDate),
-    countdownLabel: daysUntil > 0 ? `D-${daysUntil}` : daysUntil === 0 ? "D-DAY" : "",
-    status: trip.endDate < today ? "past" : "upcoming",
+    dateLabel: hasDates ? formatTripDateRange(trip.startDate, trip.endDate) : "날짜 미정",
+    countdownLabel,
+    status,
     durationLabel: duration,
     coverImage: mockTripCities.find((city) => city.name === trip.city)?.image ?? "",
     memberAvatars: [],

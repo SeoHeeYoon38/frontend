@@ -83,13 +83,13 @@ function HomeIntro({ name, trip, tripPath = (id) => tripPlanPath("home", id), re
           <C.Cover src={trip.coverImage} alt={`${trip.city} 여행`} />
           <C.Scrim />
           <S.Badge>
-            다가오는 여행 <b>{trip.countdownLabel}</b>
+            다가오는 여행 {trip.countdownLabel && <b>{trip.countdownLabel}</b>}
           </S.Badge>
-          <S.Avatars>
+          {trip.memberAvatars.length > 0 && <S.Avatars>
             {trip.memberAvatars.slice(0, 3).map((avatar, index) => (
               <img key={`${avatar}-${index}`} src={avatar} alt="" />
             ))}
-          </S.Avatars>
+          </S.Avatars>}
           <S.Title>
             <h2>{trip.title}</h2>
             <p>

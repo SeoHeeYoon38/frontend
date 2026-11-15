@@ -4,7 +4,19 @@ import { MOCK_TRIPS_KEY, moveDayPlace, readStoredTrips, validMockTrip, writeStor
 import type { MockTrip } from "../src/types/mockTrip.ts";
 import { settingsBackPath, tripSettingsPath } from "../src/utils/navigation.ts";
 import { createServer } from "vite";
-import { emptyDraft } from "../src/utils/trip.ts";
+import { emptyDraft, tripDateStatus } from "../src/utils/trip.ts";
+
+test("여행 날짜 미정, 출발 당일, 지난 여행을 구분한다", () => {
+  const today = "2026-11-15";
+  assert.deepEqual(tripDateStatus("2026-11-15", "", today), {
+    hasDates: false, status: "upcoming", countdownLabel: "",
+  });
+  assert.equal(tripDateStatus(today, today, today).countdownLabel, "D-DAY");
+  assert.equal(tripDateStatus("2026-11-17", "2026-11-18", today).countdownLabel, "D-2");
+  assert.deepEqual(tripDateStatus("2026-11-13", "2026-11-14", today), {
+    hasDates: true, status: "past", countdownLabel: "",
+  });
+});
 
 function memoryStorage() {
   const values = new Map<string, string>();
