@@ -13,7 +13,7 @@ export interface MyProfile {
 export interface SavedPlace {
   id: string;
   name: string;
-  city: Exclude<SavedRegion, "전체">;
+  city: string;
   category: string;
   source: "Google Maps에서 가져옴" | "직접 저장" | "인기 코스에서 저장";
   image: string;

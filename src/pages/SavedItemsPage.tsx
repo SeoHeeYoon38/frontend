@@ -1,15 +1,10 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import backIcon from "../assets/course-settings/back.svg";
 import googleMapsLogo from "../assets/images/brand-google-maps.webp";
 import { routes } from "../config/routes";
-import {
-  myProfile,
-  savedCourses,
-  savedPlaces,
-  savedRegions,
-} from "../data/mocks/myData";
-import type { SavedRegion } from "../types/my";
+import { savedRegions } from "../data/mocks/myData";
+import useSavedItems from "../hooks/useSavedItems";
 import * as S from "./SavedItemsPage.styled";
 
 type SavedTab = "places" | "courses";
@@ -39,39 +34,18 @@ function BookmarkButton({ active, label, onClick }: BookmarkButtonProps) {
 function SavedItemsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const tab = (searchParams.get("tab") === "courses" ? "courses" : "places") as SavedTab;
-  const [region, setRegion] = useState<SavedRegion>("전체");
-  const [unsaved, setUnsaved] = useState<Set<string>>(() => new Set());
-
-  const filteredPlaces = useMemo(
-    () => savedPlaces.filter((place) => region === "전체" || place.city === region),
-    [region],
-  );
-  const filteredCourses = useMemo(
-    () => savedCourses.filter((course) => region === "전체" || course.city === region),
-    [region],
-  );
+  const [region, setRegion] = useState("전체");
+  const { places, courses, setPlace, setCourse, saveError } = useSavedItems();
+  const regions = new Set([...savedRegions, ...places.map((place) => place.city), ...courses.map((course) => course.city)]);
+  const filteredPlaces = places.filter((place) => region === "전체" || place.city === region);
+  const filteredCourses = courses.filter((course) => region === "전체" || course.city === region);
 
   const selectTab = (nextTab: SavedTab) => {
     setSearchParams(nextTab === "courses" ? { tab: "courses" } : { tab: "places" });
   };
 
-  const toggleBookmark = (id: string) => {
-    setUnsaved((current) => {
-      const next = new Set(current);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
   const isPlaces = tab === "places";
-  const visibleCount = isPlaces
-    ? region === "전체"
-      ? `${myProfile.savedPlaceCount}곳`
-      : `${filteredPlaces.length}곳`
-    : region === "전체"
-      ? `${myProfile.savedCourseCount}개`
-      : `${filteredCourses.length}개`;
+  const visibleCount = isPlaces ? `${filteredPlaces.length}곳` : `${filteredCourses.length}개`;
 
   return (
     <S.Page>
@@ -88,20 +62,21 @@ function SavedItemsPage() {
           aria-pressed={isPlaces}
           onClick={() => selectTab("places")}
         >
-          장소 <b>{myProfile.savedPlaceCount}</b>
+          장소 <b>{places.length}</b>
         </button>
         <button
           type="button"
           aria-pressed={!isPlaces}
           onClick={() => selectTab("courses")}
         >
-          코스 <b>{myProfile.savedCourseCount}</b>
+          코스 <b>{courses.length}</b>
         </button>
       </S.Tabs>
 
       <S.Content>
+        {saveError && <p role="alert">{saveError}</p>}
         <S.RegionFilters aria-label="지역 필터">
-          {savedRegions.map((item) => (
+          {[...regions].map((item) => (
             <button
               type="button"
               key={item}
@@ -138,9 +113,9 @@ function SavedItemsPage() {
                   </small>
                 </S.ItemText>
                 <BookmarkButton
-                  active={!unsaved.has(place.id)}
-                  label={`${place.name} 저장 ${unsaved.has(place.id) ? "추가" : "해제"}`}
-                  onClick={() => toggleBookmark(place.id)}
+                  active
+                  label={`${place.name} 저장 해제`}
+                  onClick={() => setPlace(place.id, null)}
                 />
               </S.PlaceRow>
             ))}
@@ -158,9 +133,9 @@ function SavedItemsPage() {
                   </span>
                 </S.ItemText>
                 <BookmarkButton
-                  active={!unsaved.has(course.id)}
-                  label={`${course.title} 저장 ${unsaved.has(course.id) ? "추가" : "해제"}`}
-                  onClick={() => toggleBookmark(course.id)}
+                  active
+                  label={`${course.title} 저장 해제`}
+                  onClick={() => setCourse(course.id, null)}
                 />
               </S.CourseRow>
             ))}

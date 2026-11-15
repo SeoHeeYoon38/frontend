@@ -6,6 +6,7 @@ import { sannenzakaDetail } from "../../data/mocks/travelerCourseData";
 import type { TravelerCoursePlace } from "../../types/course";
 import * as S from "./TravelerCourseOverlay.styled";
 import { PlaceGallery } from "../common/PlacePhoto";
+import useSavedItems from "../../hooks/useSavedItems";
 
 interface TravelerPlaceDetailProps {
   onBack: () => void;
@@ -15,12 +16,14 @@ interface TravelerPlaceDetailProps {
 }
 
 function TravelerPlaceDetail({ onBack, place, city, photoCourseId }: TravelerPlaceDetailProps) {
-  const [saved, setSaved] = useState(false);
+  const { places, setPlace, saveError } = useSavedItems();
   const [notice, setNotice] = useState("");
   const hero = place?.image || sannenzakaDetail.hero;
   const name = place?.name || sannenzakaDetail.name;
   const category = place?.category || sannenzakaDetail.category;
   const livePlace = photoCourseId !== undefined && place;
+  const id = place?.id ?? sannenzakaDetail.id;
+  const saved = places.some((item) => item.id === id);
 
   return (
     <S.PlaceScreen>
@@ -28,12 +31,15 @@ function TravelerPlaceDetail({ onBack, place, city, photoCourseId }: TravelerPla
         {livePlace ? <PlaceGallery courseId={photoCourseId} placeId={livePlace.id} name={name} /> : <img src={hero} alt={name} />}
         <S.PlaceNavigation>
           <button type="button" aria-label="이전 화면으로 돌아가기" onClick={onBack}><img src={backIcon} alt="" /></button>
-          <button type="button" aria-label="장소 찜" aria-pressed={saved} onClick={() => setSaved((value) => !value)}><img src={saved ? heartFilledIcon : heartIcon} alt="" /></button>
+          <button type="button" aria-label="장소 찜" aria-pressed={saved} onClick={() => setPlace(id, saved ? null : {
+            id, name, category, image: hero, city: city ?? "교토", source: "인기 코스에서 저장",
+          })}><img src={saved ? heartFilledIcon : heartIcon} alt="" /></button>
         </S.PlaceNavigation>
         {!livePlace && <S.GalleryIndicator>1 / {place ? 1 : sannenzakaDetail.gallery.length}</S.GalleryIndicator>}
       </S.PlaceHero>
 
       <S.PlaceBody>
+        {saveError && <p role="alert">{saveError}</p>}
         <S.PlaceTitle>
           <span>{category}</span>
           <h1>{name}</h1>

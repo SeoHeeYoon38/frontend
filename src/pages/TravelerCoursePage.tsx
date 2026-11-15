@@ -20,6 +20,7 @@ import { getCourse } from "../api/courses";
 import { isApiEnabled } from "../api/config";
 import type { CourseDetailResponse, PlaceCategoryCode } from "../api/types";
 import type { TravelerCourseView } from "../types/course";
+import useSavedItems from "../hooks/useSavedItems";
 
 const categoryLabels: Record<PlaceCategoryCode, string> = {
   FOOD: "맛집",
@@ -66,14 +67,6 @@ function courseView(course: CourseDetailResponse): TravelerCourseView {
   };
 }
 
-function readSavedState(courseId: string) {
-  try {
-    return localStorage.getItem(`dotlo:saved-traveler-course:${courseId}`) === "true";
-  } catch {
-    return false;
-  }
-}
-
 function TravelerCoursePage() {
   const navigate = useNavigate();
   const { courseId } = useParams();
@@ -87,9 +80,7 @@ function TravelerCoursePage() {
   const [activeDay, setActiveDay] = useState(0);
   const [mapDay, setMapDay] = useState<number>();
   const [placeOrigin, setPlaceOrigin] = useState<"course" | "map">("course");
-  const [isSaved, setIsSaved] = useState(() =>
-    readSavedState(courseId ?? travelerCourse.id),
-  );
+  const { isCourseSaved, setCourse: setSavedCourse, saveError } = useSavedItems();
   const [notice, setNotice] = useState("");
   const [screen, setScreen] = useState<"course" | "map" | "place">("course");
   const [selectedPlaceId, setSelectedPlaceId] = useState<string>();
@@ -130,14 +121,19 @@ function TravelerCoursePage() {
     .flatMap((item) => item.places)
     .find((place) => place.id === selectedPlaceId);
 
+  const isSaved = isCourseSaved(course.id);
   const toggleSaved = () => {
-    const next = !isSaved;
-    setIsSaved(next);
-    setNotice(next ? "찜한 코스에 담았어요" : "찜한 코스에서 뺐어요");
-    try {
-      localStorage.setItem(`dotlo:saved-traveler-course:${course.id}`, String(next));
-    } catch {
-      // 저장소를 사용할 수 없어도 목업 화면은 계속 동작합니다.
+    if (setSavedCourse(course.id, isSaved ? null : {
+      id: course.id,
+      title: course.title.replace(/\s+/g, " "),
+      durationLabel: course.duration,
+      city: course.city,
+      placeCount: course.placeCount,
+      image: course.hero,
+    })) {
+      setNotice(isSaved ? "찜한 코스에서 뺐어요" : "찜한 코스에 담았어요");
+    } else {
+      setNotice("");
     }
   };
 
@@ -246,6 +242,7 @@ function TravelerCoursePage() {
 
       <S.Cta><button type="button" onClick={importCourse}>내 일정으로 가져오기</button></S.Cta>
       {notice && <S.Toast role="status"><b>✓</b>{notice}</S.Toast>}
+      {saveError && <S.Toast role="alert">{saveError}</S.Toast>}
     </S.Shell>
   );
 }
