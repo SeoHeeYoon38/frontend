@@ -55,7 +55,6 @@ interface ExistingTrip {
   places: SavedPlaceResponse[];
   version: number;
   initialDay?: number;
-  openPlaceSearch?: boolean;
   onSaved: (itinerary: ItineraryVersionView) => void;
   onClose: () => void;
 }
@@ -66,7 +65,7 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
   const [live] = useState(() => Boolean(existing) || (isApiEnabled() && hasAuthSession()));
   const mockScenario = live ? undefined : readMockScenario(location.search);
   const [stage, setStage] = useState<DirectTripStage>(() => {
-    if (existing) return existing.openPlaceSearch ? "search" : "itinerary";
+    if (existing) return "itinerary";
     if (
       mockScenario === "direct-search-empty" ||
       mockScenario === "direct-google-unlinked"

@@ -24,6 +24,7 @@ import DirectTripBuilder from "../components/direct-trip/DirectTripBuilder";
 import ItineraryIssues from "../components/course-completion/ItineraryIssues";
 import CourseRouteMap from "../components/course-completion/CourseRouteMap";
 import TripTimeline from "../components/course-completion/TripTimeline";
+import AddItineraryPlaceSheet from "../components/course-completion/AddItineraryPlaceSheet";
 import TravelModeSheet from "../components/course-completion/TravelModeSheet";
 import type { TravelLeg } from "../api/types";
 import { travelModeLabels } from "../utils/trip";
@@ -56,7 +57,8 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
   const [activeDay, setActiveDay] = useState(0);
   const [mapExpanded, setMapExpanded] = useState(false);
   const [photoPlace, setPhotoPlace] = useState<{ placeId: string; name: string }>();
-  const [editing, setEditing] = useState<"itinerary" | "places">();
+  const [editing, setEditing] = useState(false);
+  const [showAddPlace, setShowAddPlace] = useState(false);
   const [showAiEdit, setShowAiEdit] = useState(false);
   const [travelModes, setTravelModes] = useState<Record<string, TravelLeg["mode"]>>({});
   const [travelSelection, setTravelSelection] = useState<{
@@ -111,7 +113,8 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
   const origin = readPlanOrigin(search);
   const backPath = origin === "generated" ? routes.myTrips : tripPlanBackPath(search);
   const placesById = new Map(data?.places.map((place) => [place.placeId, place]));
-  const placeCount = new Set(days.flatMap((item) => item.visits.map((visit) => visit.placeId))).size;
+  const scheduledPlaceIds = new Set(days.flatMap((item) => item.visits.map((visit) => visit.placeId)));
+  const placeCount = scheduledPlaceIds.size;
   const mapPlaces = (day?.visits ?? []).flatMap((visit, index) => {
     const place = placesById.get(visit.placeId);
     if (typeof place?.latitude !== "number" || typeof place.longitude !== "number" ||
@@ -198,14 +201,13 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
         places: data.places,
         version: data.itinerary.version,
         initialDay: activeDay + 1,
-        openPlaceSearch: editing === "places",
         onSaved: (itinerary) => {
           setData((current) => current ? { ...current, itinerary } : current);
           setActiveDay(0);
           setNotice("직접 편집한 일정을 저장했어요.");
           void reloadHistory();
         },
-        onClose: () => setEditing(undefined),
+        onClose: () => setEditing(false),
       }} />
     );
   }
@@ -269,7 +271,7 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
                     </p>
                   )}
                   <h2>일정</h2>
-                  <button type="button" className="course-inline-edit" onClick={() => setEditing("itinerary")}>일정 직접 편집하기</button>
+                  <button type="button" className="course-inline-edit" onClick={() => setEditing(true)}>일정 직접 편집하기</button>
                   {excludedPlaceIds.length > 0 && (
                     <section aria-label="일정에 넣지 못한 장소">
                       <p role="status">{excludedPlaceIds.length}곳은 일정에 넣지 못했어요.</p>
@@ -355,7 +357,27 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
                       }}
                     />
                   )}
-                  <button type="button" className="course-inline-edit" onClick={() => setEditing("places")}>＋ 장소 추가</button>
+                  <button type="button" className="course-inline-edit" disabled={!day || editPending} onClick={() => setShowAddPlace(true)}>＋ 장소 추가</button>
+                  {showAddPlace && (
+                    <AddItineraryPlaceSheet
+                      tripId={tripId}
+                      day={activeDay + 1}
+                      scheduledPlaceIds={scheduledPlaceIds}
+                      onClose={() => setShowAddPlace(false)}
+                      onSaved={({ itinerary, reason, placeName }, place) => {
+                        setData((current) => {
+                          if (!current) return current;
+                          const places = current.places.filter((item) => item.placeId !== place.placeId);
+                          return { ...current, itinerary, places: [...places, place] };
+                        });
+                        setEditPreview(undefined);
+                        setActionError("");
+                        setNotice(reason || `${placeName}을(를) 일정에 추가했어요.`);
+                        setShowAddPlace(false);
+                        void reloadHistory().catch(() => undefined);
+                      }}
+                    />
+                  )}
                   <button type="button" className="course-inline-edit" aria-expanded={showAiEdit} aria-controls="ai-edit-section" onClick={() => setShowAiEdit((open) => !open)}>
                     AI 수정 요청
                   </button>
