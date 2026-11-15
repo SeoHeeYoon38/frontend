@@ -69,7 +69,7 @@ export const ServiceRow = styled.div`
   align-items: center;
   gap: 12px;
 
-  > span { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 2px; }
+  > span:nth-child(2) { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 2px; }
   > span strong { font-size: 15px; line-height: 22px; }
   > span small { display: flex; align-items: center; gap: 5px; color: #8a8a8e; font-size: 12px; line-height: 17px; }
   > span small i { width: 6px; height: 6px; border-radius: 50%; background: #e4e6ec; }

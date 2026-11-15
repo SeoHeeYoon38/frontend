@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { Link, useNavigate, useOutletContext } from "react-router";
 import backIcon from "../assets/icons/nav-back.svg";
 import chevronIcon from "../assets/icons/nav-chevron-right-muted.svg";
 import blueAvatar from "../assets/images/character-blue.webp";
@@ -9,7 +9,7 @@ import { routes } from "../config/routes";
 import { policyPath, type PolicyDocumentId } from "../data/policyDocuments";
 import { readProfileSettings } from "../utils/mySettings";
 import * as S from "./AccountSettingsPage.styled";
-import { logout } from "../api/auth";
+import { logout, type UserResponse } from "../api/auth";
 import { hasAuthSession } from "../api/tokenStorage";
 
 const policies: Array<{ id: PolicyDocumentId; label: string }> = [
@@ -20,11 +20,15 @@ const policies: Array<{ id: PolicyDocumentId; label: string }> = [
 
 function AccountSettingsPage() {
   const navigate = useNavigate();
+  const account = useOutletContext<UserResponse | undefined>();
   const [profile] = useState(() => readProfileSettings(window.localStorage));
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [logoutError, setLogoutError] = useState(false);
   const signedIn = hasAuthSession();
-  const avatar = profile.avatar === "purple" ? purpleAvatar : blueAvatar;
+  const avatar = account
+    ? account.profileImageUrl || (account.characterId === 2 ? purpleAvatar : blueAvatar)
+    : profile.avatar === "purple" ? purpleAvatar : blueAvatar;
+  const joinedDate = account?.createdAt.split("T")[0].split("-").map(Number);
 
   async function signOut() {
     setIsLoggingOut(true);
@@ -50,21 +54,29 @@ function AccountSettingsPage() {
       <S.AccountCard>
         <S.Avatar><img src={avatar} alt="" /></S.Avatar>
         <span>
-          <strong>{profile.nickname}</strong>
+          <strong>{account?.email || (signedIn ? "내 계정" : profile.nickname)}</strong>
+          {signedIn && (
+            <small>
+              Google 로그인
+              {joinedDate?.length === 3 && joinedDate.every(Number.isFinite) && (
+                <b>{joinedDate[0]}년 {joinedDate[1]}월 {joinedDate[2]}일 가입</b>
+              )}
+            </small>
+          )}
           {!signedIn && <small>브라우저에 저장되는 데모 프로필</small>}
         </span>
       </S.AccountCard>
 
       <S.Band />
       <S.Section>
-        <h2>장소 가져오기</h2>
+        <h2>연결된 서비스</h2>
         <S.ServiceRow>
           <S.ServiceLogo><img src={googleMapsLogo} alt="Google Maps" /></S.ServiceLogo>
           <span>
             <strong>Google Maps</strong>
             <small>Takeout 파일 또는 공개 목록 링크</small>
           </span>
-          <Link to={routes.googleMapsSettings}>안내</Link>
+          <Link to={routes.googleMapsSettings}>관리</Link>
         </S.ServiceRow>
       </S.Section>
 
@@ -86,8 +98,7 @@ function AccountSettingsPage() {
               {isLoggingOut ? "로그아웃 중…" : "로그아웃"}
             </button>
           ) : <Link to={routes.login}>로그인</Link>}
-          <i />
-          <Link to={routes.withdrawal}>회원 탈퇴</Link>
+          {signedIn && <><i aria-hidden="true" /><Link to={routes.withdrawal}>회원 탈퇴</Link></>}
         </S.AccountActions>
         {logoutError && <p role="alert">이 기기에서 로그아웃했어요. 서버 세션 종료는 확인하지 못했어요.</p>}
       </S.Section>
