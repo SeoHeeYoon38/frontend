@@ -245,7 +245,7 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
           {inviteAccepted && summary && (
             <div className="course-toast course-toast--invite" role="status">
               <span aria-hidden="true">✓</span>
-              <p>{summary.title} 여행에 참여했어요.</p>
+              <p>{summary.title}에 참여했어요.</p>
               <button type="button" onClick={() => setInviteAccepted(false)}>닫기</button>
             </div>
           )}
