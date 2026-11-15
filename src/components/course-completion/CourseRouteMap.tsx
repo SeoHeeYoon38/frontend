@@ -8,12 +8,13 @@ interface CourseRouteMapProps {
     order?: number;
   }>;
   city: string;
-  day: number;
+  day?: number;
   schematic?: boolean;
   expanded?: boolean;
 }
 
 function CourseRouteMap({ places, city, day, schematic = false, expanded = false }: CourseRouteMapProps) {
+  const dayLabel = day === undefined ? "전체" : `${day}일차`;
   const rows = Math.max(1, Math.ceil(places.length / 3));
   const hasCoordinates = places.every((place) =>
     Number.isFinite(place.latitude) && Number.isFinite(place.longitude),
@@ -33,7 +34,7 @@ function CourseRouteMap({ places, city, day, schematic = false, expanded = false
   }));
 
   return (
-    <div className={`course-map${expanded ? " course-map--expanded" : ""}`} aria-label={`${day}일차 ${city} ${schematic ? "장소 배치도" : "샘플 경로"}`}>
+    <div className={`course-map${expanded ? " course-map--expanded" : ""}`} aria-label={`${dayLabel} ${city} ${schematic ? "장소 배치도" : "샘플 경로"}`}>
       {!schematic && city === "오사카" && <img className="course-map__base" src={routeMap} alt="오사카 샘플 지도" />}
       <svg className="course-map__route" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
         <polyline
@@ -51,7 +52,7 @@ function CourseRouteMap({ places, city, day, schematic = false, expanded = false
           {pin.order}
         </span>
       ))}
-      <small className="course-map__caption">{day}일차 · {places.length}곳 · {schematic ? "방문 순서" : "샘플 경로"}</small>
+      <small className="course-map__caption">{dayLabel} · {places.length}곳 · {schematic ? "방문 순서" : "샘플 경로"}</small>
       <ol className="course-live-region">{places.map((place) => <li key={place.id}>{place.name}</li>)}</ol>
     </div>
   );

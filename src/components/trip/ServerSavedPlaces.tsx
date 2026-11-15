@@ -11,23 +11,29 @@ import {
 } from "../../api/places";
 import type { PlaceCandidate, SavedPlaceResponse } from "../../api/types";
 import PlaceImportForm, { type PlaceImportInput } from "./PlaceImportForm";
+import ServerRecommendedCourses from "./ServerRecommendedCourses";
 import * as S from "./Trip.styled";
 import * as P from "./SavedPlacesStep.styled";
 
 interface ServerSavedPlacesProps {
   tripId: number;
+  recommendationCity?: string;
   onContinue?: (places: SavedPlaceResponse[]) => void;
   onPick?: (place: SavedPlaceResponse) => void;
+  onPickMany?: (places: SavedPlaceResponse[]) => void;
+  pickDay?: number;
   pickedPlaceIds?: Set<string>;
   pickLabel?: string;
   pickedLabel?: string;
 }
 
 function ServerSavedPlaces({
-  tripId, onContinue, onPick, pickedPlaceIds,
+  tripId, recommendationCity, onContinue, onPick, onPickMany, pickDay, pickedPlaceIds,
   pickLabel = "일정에 담기", pickedLabel = "이날 일정에 담았어요",
 }: ServerSavedPlacesProps) {
   const [places, setPlaces] = useState<SavedPlaceResponse[]>();
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [tab, setTab] = useState<"saved" | "recommended">("saved");
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<PlaceCandidate[]>();
   const [matchId, setMatchId] = useState<number>();
@@ -44,7 +50,7 @@ function ServerSavedPlaces({
       (response) => {
         if (!signal.aborted) {
           setPlaces(response.places);
-          setShowImport(response.places.length === 0);
+          setShowImport(!recommendationCity && response.places.length === 0);
         }
       },
       () => { if (!signal.aborted) setError("저장 장소를 불러오지 못했어요."); },
@@ -53,28 +59,30 @@ function ServerSavedPlaces({
       controller.abort();
       request.current?.abort();
     };
-  }, [tripId]);
+  }, [tripId, recommendationCity]);
 
   async function run(action: (signal: AbortSignal) => Promise<void>) {
-    if (request.current) return;
+    if (request.current) return false;
     const controller = new AbortController();
     request.current = controller;
     setBusy(true);
     setError("");
     try {
       await action(controller.signal);
+      return !controller.signal.aborted;
     } catch (reason) {
       if (!controller.signal.aborted) {
         setError(reason instanceof Error ? reason.message : "장소 요청을 처리하지 못했어요.");
       }
+      return false;
     } finally {
       if (request.current === controller) request.current = null;
       if (!controller.signal.aborted) setBusy(false);
     }
   }
 
-  function importPlaces(input: PlaceImportInput) {
-    return run(async (signal) => {
+  async function importPlaces(input: PlaceImportInput) {
+    await run(async (signal) => {
       setImportNotice("");
       const imported = input.method === "file"
         ? await uploadTakeout(tripId, input.file, signal)
@@ -104,6 +112,32 @@ function ServerSavedPlaces({
   }
 
   const canContinue = places?.some((place) => place.matchStatus === "MATCHED" && place.placeId);
+  const selection = (places ?? []).filter((place) =>
+    place.matchStatus === "MATCHED" && place.placeId &&
+    !pickedPlaceIds?.has(place.placeId) && selectedIds.includes(place.id),
+  );
+
+  function addRecommended(ids: string[]) {
+    if (!places) return Promise.resolve(false);
+    return run(async (signal) => {
+      let latest = places;
+      for (const id of ids) {
+        if (!latest.some((place) => place.placeId === id)) {
+          const response = await addSavedPlace(tripId, id, signal);
+          if (signal.aborted) return;
+          latest = response.places;
+          setPlaces(latest);
+        }
+        if (onPickMany && !pickedPlaceIds?.has(id)) {
+          const saved = latest.find((place) => place.placeId === id && place.matchStatus === "MATCHED");
+          if (saved) setSelectedIds((current) => current.includes(saved.id) ? current : [...current, saved.id]);
+        }
+      }
+      if (ids.some((id) => !latest.some((place) => place.placeId === id && place.matchStatus === "MATCHED"))) {
+        throw new Error("일부 장소를 일정에 담을 수 없어요. 저장 장소에서 장소 상태를 확인해 주세요.");
+      }
+    });
+  }
 
   if (showImport) {
     return (
@@ -121,6 +155,16 @@ function ServerSavedPlaces({
   return (
     <P.PlacesStep $empty={false} aria-busy={busy}>
       <P.PlacesTitle>저장 장소</P.PlacesTitle>
+      {recommendationCity && (
+        <P.PlaceTabs aria-label="장소 선택 방법">
+          <button type="button" aria-pressed={tab === "saved"} disabled={busy} onClick={() => { setError(""); setTab("saved"); }}>
+            {onPickMany ? "Google Maps 저장" : "저장 장소"}
+          </button>
+          <button type="button" aria-pressed={tab === "recommended"} disabled={busy} onClick={() => { setError(""); setTab("recommended"); }}>
+            {onPickMany ? "추천" : "추천 코스"}
+          </button>
+        </P.PlaceTabs>
+      )}
       {importNotice && <p role="status">{importNotice}</p>}
       {onContinue && <S.Subtitle>확인된 저장 장소를 바탕으로 AI 일정을 만들어요.</S.Subtitle>}
       {error && <S.ErrorText role="alert">{error}</S.ErrorText>}
@@ -131,7 +175,16 @@ function ServerSavedPlaces({
           if (!signal.aborted) setPlaces(response.places);
         })}>다시 불러오기</P.MatchButton>
       )}
-      {places && (
+      {places && tab === "recommended" && recommendationCity && (
+        <ServerRecommendedCourses
+          city={recommendationCity}
+          busy={busy}
+          saveError={error}
+          onOpen={() => setError("")}
+          onAdd={addRecommended}
+        />
+      )}
+      {places && tab === "saved" && (
         <>
           {places.length === 0 && <p>저장된 장소가 없어요. 장소를 검색하거나 Google Maps에서 가져와 보세요.</p>}
           <P.PlaceList>
@@ -153,6 +206,20 @@ function ServerSavedPlaces({
                     {pickedPlaceIds?.has(place.placeId) ? pickedLabel : pickLabel}
                   </P.MatchButton>
                 )}
+                {onPickMany && place.matchStatus === "MATCHED" && place.placeId && (
+                  <P.Checkbox
+                    type="checkbox"
+                    aria-label={`${place.name} 선택`}
+                    checked={pickedPlaceIds?.has(place.placeId) || selectedIds.includes(place.id)}
+                    disabled={busy || pickedPlaceIds?.has(place.placeId)}
+                    onChange={(event) => {
+                      const checked = event.currentTarget.checked;
+                      setSelectedIds((current) => checked
+                        ? [...current, place.id]
+                        : current.filter((id) => id !== place.id));
+                    }}
+                  />
+                )}
                 {["PENDING", "NEEDS_REVIEW", "NOT_FOUND"].includes(place.matchStatus) && (
                   <P.MatchButton type="button" disabled={busy} onClick={() => {
                     setMatchId(place.id);
@@ -165,6 +232,7 @@ function ServerSavedPlaces({
                     await deleteSavedPlace(tripId, place.id, signal);
                     if (signal.aborted) return;
                     setPlaces((current) => current?.filter((item) => item.id !== place.id));
+                    setSelectedIds((current) => current.filter((id) => id !== place.id));
                     if (matchId === place.id) {
                       setMatchId(undefined);
                       setResults(undefined);
@@ -211,8 +279,13 @@ function ServerSavedPlaces({
           <P.MatchButton type="button" disabled={busy} aria-expanded={showImport} onClick={() => setShowImport(!showImport)}>
             Google Maps에서 가져오기
           </P.MatchButton>
-          {onContinue && <S.Primary type="button" disabled={busy || !canContinue} onClick={() => onContinue(places)}>다음</S.Primary>}
         </>
+      )}
+      {onContinue && <S.Primary type="button" disabled={busy || !canContinue} onClick={() => places && onContinue(places)}>다음</S.Primary>}
+      {onPickMany && (
+        <S.Primary type="button" disabled={busy || !selection.length} onClick={() => onPickMany(selection)}>
+          {selection.length ? `${selection.length}곳을 ${pickDay}일차에 담기` : "담을 장소를 골라주세요"}
+        </S.Primary>
       )}
     </P.PlacesStep>
   );
