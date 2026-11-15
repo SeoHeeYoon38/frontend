@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { checkItinerary } from "../api/itineraries";
 import type { ItineraryDayInput, ValidationResult } from "../api/types";
 
@@ -18,7 +18,7 @@ export function useItineraryCheck(tripId: number) {
     setCheckError("");
   }
 
-  async function validate(days: ItineraryDayInput[]) {
+  const validate = useCallback(async (days: ItineraryDayInput[]) => {
     if (request.current) return;
     const controller = new AbortController();
     request.current = controller;
@@ -42,7 +42,7 @@ export function useItineraryCheck(tripId: number) {
       }
     }
     return undefined;
-  }
+  }, [tripId]);
 
   return { validation, checking, checkError, resetCheck, validate };
 }

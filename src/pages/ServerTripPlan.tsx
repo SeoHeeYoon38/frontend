@@ -24,6 +24,9 @@ import DirectTripBuilder from "../components/direct-trip/DirectTripBuilder";
 import ItineraryIssues from "../components/course-completion/ItineraryIssues";
 import CourseRouteMap from "../components/course-completion/CourseRouteMap";
 import TripTimeline from "../components/course-completion/TripTimeline";
+import TravelModeSheet from "../components/course-completion/TravelModeSheet";
+import type { TravelLeg } from "../api/types";
+import { travelModeLabels } from "../utils/trip";
 import TripSummary from "../components/course-completion/TripSummary";
 import TripSheet from "../components/common/TripSheet";
 import backIcon from "../assets/icons/nav-back.svg";
@@ -51,7 +54,15 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
   const [error, setError] = useState("");
   const [activeDay, setActiveDay] = useState(0);
   const [mapExpanded, setMapExpanded] = useState(false);
-  const [editing, setEditing] = useState(false);
+  const [editing, setEditing] = useState<"itinerary" | "places">();
+  const [showAiEdit, setShowAiEdit] = useState(false);
+  const [travelModes, setTravelModes] = useState<Record<string, TravelLeg["mode"]>>({});
+  const [travelSelection, setTravelSelection] = useState<{
+    key: string;
+    from: string;
+    to: string;
+    travel: TravelLeg;
+  }>();
   const [editMessage, setEditMessage] = useState("");
   const [editPreview, setEditPreview] = useState<ItineraryEditPreview>();
   const [editPending, setEditPending] = useState(false);
@@ -184,13 +195,15 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
         days: data.itinerary.draft.days,
         places: data.places,
         version: data.itinerary.version,
+        initialDay: activeDay + 1,
+        openPlaceSearch: editing === "places",
         onSaved: (itinerary) => {
           setData((current) => current ? { ...current, itinerary } : current);
           setActiveDay(0);
           setNotice("직접 편집한 일정을 저장했어요.");
           void reloadHistory();
         },
-        onClose: () => setEditing(false),
+        onClose: () => setEditing(undefined),
       }} />
     );
   }
@@ -254,7 +267,7 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
                     </p>
                   )}
                   <h2>일정</h2>
-                  <button type="button" className="course-inline-edit" onClick={() => setEditing(true)}>일정 직접 편집하기</button>
+                  <button type="button" className="course-inline-edit" onClick={() => setEditing("itinerary")}>일정 직접 편집하기</button>
                   {excludedPlaceIds.length > 0 && (
                     <section aria-label="일정에 넣지 못한 장소">
                       <p role="status">{excludedPlaceIds.length}곳은 일정에 넣지 못했어요.</p>
@@ -291,17 +304,54 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
                       <CourseRouteMap places={mapPlaces} city={summary.city} day={activeDay + 1} schematic expanded />
                     </TripSheet>
                   )}
-                  <TripTimeline day={activeDay + 1} visits={(day?.visits ?? []).map((visit) => {
+                  <TripTimeline day={activeDay + 1} visits={(day?.visits ?? []).map((visit, index, visits) => {
                     const place = placesById.get(visit.placeId);
-                    const estimated = ["ESTIMATED", "ROUTE_NOT_FOUND"].includes(visit.travel.source);
+                    const next = visits[index + 1];
+                    const key = next && JSON.stringify([day?.date, visit.itemId, next.itemId]);
+                    const mode = key && next ? travelModes[key] ?? next.travel.mode : undefined;
                     return {
                       id: visit.itemId,
                       name: place?.name,
                       address: place?.address,
-                      timing: `${timeLabel(visit.start)} – ${timeLabel(visit.end)} · 이동 ${visit.travel.minutes}분${estimated ? " (추정)" : ""}`,
+                      timing: `${timeLabel(visit.start)} – ${timeLabel(visit.end)}`,
+                      connection: next && key && mode && (
+                        <div className="travel-mode-connection">
+                          <button type="button" aria-haspopup="dialog" onClick={() => setTravelSelection({
+                            key,
+                            from: place?.name ?? "이전 장소",
+                            to: placesById.get(next.placeId)?.name ?? "다음 장소",
+                            travel: next.travel,
+                          })}>
+                            {travelModeLabels[mode]}{mode === next.travel.mode && ` ${next.travel.minutes}분`} <span aria-hidden="true">▾</span>
+                          </button>
+                          {mode === next.travel.mode && <small>{(next.travel.distanceMeters / 1000).toFixed(1)}km</small>}
+                        </div>
+                      ),
                     };
                   })} />
-                  <section aria-labelledby="ai-edit-title">
+                  {travelSelection && (
+                    <TravelModeSheet
+                      {...travelSelection}
+                      current={travelModes[travelSelection.key] ?? travelSelection.travel.mode}
+                      onClose={() => setTravelSelection(undefined)}
+                      onApply={(mode, all) => {
+                        setTravelModes((current) => ({
+                          ...current,
+                          ...(all ? Object.fromEntries(days.flatMap(({ date, visits }) =>
+                            visits.slice(1).map((visit, index) => [
+                              JSON.stringify([date, visits[index].itemId, visit.itemId]), mode,
+                            ]),
+                          )) : { [travelSelection.key]: mode }),
+                        }));
+                        setTravelSelection(undefined);
+                      }}
+                    />
+                  )}
+                  <button type="button" className="course-inline-edit" onClick={() => setEditing("places")}>＋ 장소 추가</button>
+                  <button type="button" className="course-inline-edit" aria-expanded={showAiEdit} aria-controls="ai-edit-section" onClick={() => setShowAiEdit((open) => !open)}>
+                    AI 수정 요청
+                  </button>
+                  <section id="ai-edit-section" hidden={!showAiEdit} aria-labelledby="ai-edit-title">
                     <h2 id="ai-edit-title">AI로 일정 수정하기</h2>
                     <textarea
                       value={editMessage}
