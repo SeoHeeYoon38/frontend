@@ -276,7 +276,6 @@ export function readDraft(value: string | null): TripDraft {
       selectedPlaceIds: d.selectedPlaceIds.filter((id) =>
         d.places.some((p) => p.id === id),
       ),
-      preferences: { ...d.preferences, text: d.preferences.text.slice(0, 200) },
     };
   } catch {
     return emptyDraft();

@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import type { TripDraft } from "../../types/trip";
-import { preferenceExamples } from "../../data/tripData";
+import promptAi from "../../assets/icons/ai-prompt-ai.svg";
+import food from "../../assets/icons/ai-prompt-food.svg";
+import camera from "../../assets/icons/ai-prompt-camera.svg";
+import shopping from "../../assets/icons/ai-prompt-shopping.svg";
+import person from "../../assets/icons/ai-prompt-person.svg";
+import add from "../../assets/icons/ai-prompt-add.svg";
 import { analyzeMockPreferences } from "../../data/mocks/tripService";
 import {
   isServerTripId,
@@ -19,6 +24,14 @@ import {
 import sparkle from "../../assets/icons/status-ai-sparkle.svg";
 import * as S from "./Trip.styled";
 import * as P from "./PreferencesStep.styled";
+
+const promptLimit = 200;
+const examples = [
+  { text: "현지 맛집 위주로 먹방 여행", icon: food },
+  { text: "유명한 곳은 꼭, 일정은 여유롭게", icon: camera },
+  { text: "쇼핑하고 카페에서 쉬는 여행", icon: shopping },
+  { text: "부모님과 함께, 많이 안 걷게", icon: person },
+];
 
 interface PreferencesStepProps {
   draft: TripDraft;
@@ -47,6 +60,7 @@ function PreferencesStep({
     [],
   );
   const preferences = draft.preferences;
+  const excess = Math.max(0, preferences.text.length - promptLimit);
 
   useEffect(() => {
     const hasLocalPreferences = Boolean(
@@ -120,6 +134,7 @@ function PreferencesStep({
     });
   }
   async function submit() {
+    if (excess > 0) return;
     if (preferences.analyzed) {
       if (submitting) return;
       setSubmitting(true);
@@ -242,20 +257,27 @@ function PreferencesStep({
     <>
       <P.Preferences>
         <div>
+          <P.AiBadge><img src={promptAi} alt="" />도틀로 AI</P.AiBadge>
           <S.Title>어떤 여행을 원하세요?</S.Title>
-          <S.Subtitle>편하게 말해주면 AI가 코스에 맞게 정리해요</S.Subtitle>
+          <S.Subtitle>하고 싶은 여행을 편하게 말해주세요</S.Subtitle>
         </div>
-        <P.Prompt $active={!!preferences.text} $analyzed={preferences.analyzed}>
+        <P.Prompt $active={!!preferences.text} $exceeded={excess > 0}>
           <textarea
             aria-label="원하는 여행"
-            maxLength={200}
+            aria-invalid={excess > 0}
+            aria-describedby={excess > 0 ? "ai-prompt-error" : undefined}
             placeholder="예) 맛집 위주로 먹고 싶고, 밤에는 야경도 보고 싶어요"
             value={preferences.text}
             onChange={(event) => changeText(event.target.value)}
           />
-          <span>{preferences.text.length} / 200</span>
+          <span><b>{preferences.text.length}</b> / {promptLimit}</span>
         </P.Prompt>
-        {preferences.analyzed ? (
+        {excess > 0 && (
+          <P.PromptError id="ai-prompt-error" role="status">
+            {promptLimit}자까지 입력할 수 있어요. {excess}자를 줄여주세요
+          </P.PromptError>
+        )}
+        {excess === 0 && (preferences.analyzed ? (
           <P.Analysis>
             <header>
               <img src={sparkle} alt="" />
@@ -279,20 +301,22 @@ function PreferencesStep({
           </P.Analysis>
         ) : (
           <div>
-            <P.ExampleTitle>이렇게 시작해 보세요</P.ExampleTitle>
-            <S.Chips>
-              {preferenceExamples.map((example) => (
-                <S.Chip
+            <P.ExampleTitle>이런 여행은 어때요</P.ExampleTitle>
+            <P.Examples>
+              {examples.map(({ text, icon }) => (
+                <P.Example
                   type="button"
-                  key={example}
-                  onClick={() => changeText(example)}
+                  key={text}
+                  onClick={() => changeText(text)}
                 >
-                  {example}
-                </S.Chip>
+                  <span><img src={icon} alt="" /></span>
+                  {text}
+                  <img src={add} alt="" />
+                </P.Example>
               ))}
-            </S.Chips>
+            </P.Examples>
           </div>
-        )}
+        ))}
       </P.Preferences>
       <S.Footer>
         {(error || analysisError) && (
@@ -300,7 +324,7 @@ function PreferencesStep({
         )}
         <S.Primary
           type="button"
-          disabled={loadingPreferences || submitting || !hasConditions}
+          disabled={loadingPreferences || submitting || !hasConditions || excess > 0}
           onClick={submit}
         >
           {loadingPreferences
