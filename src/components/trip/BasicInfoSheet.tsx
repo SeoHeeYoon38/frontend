@@ -1,14 +1,20 @@
 import { useState } from "react";
 import type { Companion, TripDraft } from "../../types/trip";
 import { changeDates, companions, validDate } from "../../utils/trip";
-import yellow from "../../assets/images/character-yellow.webp";
-import blue from "../../assets/images/character-blue.webp";
-import purple from "../../assets/images/character-purple.webp";
-import minus from "../../assets/icons/counter-minus.svg";
-import plus from "../../assets/icons/counter-plus.svg";
+import solo from "../../assets/images/companion-solo.png";
+import friends from "../../assets/images/companion-friends.png";
+import couple from "../../assets/images/companion-couple.png";
+import family from "../../assets/images/companion-family.png";
 import TripSheet from "../common/TripSheet";
 import DateRangePicker from "./DateRangePicker";
 import * as S from "./Trip.styled";
+
+const companionGuides = {
+  혼자: { image: solo, title: "혼자 떠나요" },
+  친구: { image: friends, title: "친구와 함께 떠나요" },
+  연인: { image: couple, title: "연인과 함께 떠나요" },
+  가족: { image: family, title: "가족과 함께 떠나요" },
+} satisfies Record<Companion, { image: string; title: string }>;
 interface BasicInfoSheetProps {
   mode: "dates" | "people";
   draft: TripDraft;
@@ -21,19 +27,16 @@ function BasicInfoSheet({ mode, draft, onClose, onSave }: BasicInfoSheetProps) {
   const [companion, setCompanion] = useState<Companion>(
     draft.companion ?? "친구",
   );
-  const [people, setPeople] = useState(draft.companion ? draft.people : 2);
-  function chooseCompanion(value: Companion) {
-    setCompanion(value);
-    setPeople(
-      value === "혼자" ? 1 : value === "연인" ? 2 : Math.max(2, people),
-    );
-  }
   const datesValid = validDate(start) && validDate(end) && end >= start;
-  const fixedPeople = companion === "혼자" || companion === "연인";
-  const min = companion === "혼자" ? 1 : 2;
+  const guide = companionGuides[companion];
   function save() {
     if (mode === "dates" && datesValid) onSave(changeDates(draft, start, end));
-    else if (mode === "people") onSave({ ...draft, companion, people });
+    else if (mode === "people") {
+      const people = companion === "혼자" ? 1
+        : companion === "연인" ? 2
+          : companion === draft.companion ? draft.people : 2;
+      onSave({ ...draft, companion, people });
+    }
   }
   return (
     <TripSheet
@@ -41,7 +44,7 @@ function BasicInfoSheet({ mode, draft, onClose, onSave }: BasicInfoSheetProps) {
       variant={mode}
       contentGap={mode === "people" ? 16 : undefined}
       compactHeader={mode === "dates"}
-      minHeight={mode === "people" ? (fixedPeople ? 444 : 490) : 0}
+      minHeight={mode === "people" ? (companion === "혼자" ? 474 : 490) : 0}
       onClose={onClose}
       footer={
         <S.Primary
@@ -75,68 +78,18 @@ function BasicInfoSheet({ mode, draft, onClose, onSave }: BasicInfoSheetProps) {
                 key={item}
                 type="button"
                 $active={companion === item}
-                onClick={() => chooseCompanion(item)}
+                aria-pressed={companion === item}
+                onClick={() => setCompanion(item)}
               >
                 {item}
               </S.Chip>
             ))}
           </S.CompanionChoices>
-          <S.PeopleBox $fixed={fixedPeople}>
-            <p>
-              {companion === "혼자"
-                ? "혼자 떠나요"
-                : companion === "연인"
-                  ? "둘이 떠나요"
-                  : "나를 포함해서"}
-            </p>
-            <S.Avatars>
-              {(companion === "혼자"
-                ? [yellow]
-                : companion === "연인"
-                  ? [yellow, blue]
-                  : [yellow, blue, purple].slice(0, people)
-              ).map((image, i) => (
-                <span key={i}>
-                  <img src={image} alt="" />
-                </span>
-              ))}
-              {people > 3 && (
-                <S.ExtraPeople aria-label={`추가 ${people - 3}명`}>
-                  +{people - 3}
-                </S.ExtraPeople>
-              )}
-            </S.Avatars>
-            <S.Counter $fixed={fixedPeople}>
-              {!fixedPeople && (
-                <button
-                  type="button"
-                  aria-label="인원 줄이기"
-                  disabled={people <= min}
-                  onClick={() => setPeople((n) => Math.max(min, n - 1))}
-                >
-                  <img src={minus} alt="" />
-                </button>
-              )}
-              <strong>
-                {people}
-                <small>명</small>
-              </strong>
-              {!fixedPeople && (
-                <button
-                  type="button"
-                  aria-label="인원 늘리기"
-                  disabled={people >= 10}
-                  onClick={() => setPeople((n) => Math.min(10, n + 1))}
-                >
-                  <img src={plus} alt="" />
-                </button>
-              )}
-            </S.Counter>
-            {companion !== "혼자" && companion !== "연인" && people < 10 && (
-              <S.Help>2명부터 10명까지 선택할 수 있어요</S.Help>
-            )}
-            {people === 10 && (
-              <S.PeopleLimit>최대 10명까지 함께할 수 있어요</S.PeopleLimit>
+          <S.PeopleBox>
+            <S.CompanionIllustration src={guide.image} alt="" />
+            <strong>{guide.title}</strong>
+            {companion !== "혼자" && (
+              <S.Help>코스를 만든 뒤 함께 갈 사람을 초대할 수 있어요</S.Help>
             )}
           </S.PeopleBox>
         </>

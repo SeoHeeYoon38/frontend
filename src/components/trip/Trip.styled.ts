@@ -229,14 +229,14 @@ export const DateSummary = styled.div`
     color: #7669db;
   }
 `;
-export const PeopleBox = styled.div<{ $fixed: boolean }>`
+export const PeopleBox = styled.div`
   display: flex;
   align-items: center;
   flex-direction: column;
   gap: 12px;
-  background: #f6f6f9;
+  background: #f2f3f8;
   border-radius: 20px;
-  padding: ${({ $fixed }) => ($fixed ? "17px 24px" : "24px")};
+  padding: 24px;
   > p:last-child:not(:first-child) {
     font-size: 12px;
     line-height: 17px;
@@ -509,6 +509,12 @@ export const CompanionChoices = styled(Chips)`
     font-size: 14px;
     font-weight: 700;
   }
+`;
+
+export const CompanionIllustration = styled.img`
+  width: min(100%, 178px);
+  height: 112px;
+  object-fit: contain;
 `;
 export const FlightField = styled(BookingCard)<{ $found: boolean }>`
   align-items: center;
