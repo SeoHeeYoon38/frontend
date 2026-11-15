@@ -5,29 +5,32 @@ import heartFilledIcon from "../../assets/figma/traveler-heart-filled.svg";
 import { sannenzakaDetail } from "../../data/mocks/travelerCourseData";
 import type { TravelerCoursePlace } from "../../types/course";
 import * as S from "./TravelerCourseOverlay.styled";
+import { PlaceGallery } from "../common/PlacePhoto";
 
 interface TravelerPlaceDetailProps {
   onBack: () => void;
   place?: TravelerCoursePlace;
   city?: string;
+  photoCourseId?: number;
 }
 
-function TravelerPlaceDetail({ onBack, place, city }: TravelerPlaceDetailProps) {
+function TravelerPlaceDetail({ onBack, place, city, photoCourseId }: TravelerPlaceDetailProps) {
   const [saved, setSaved] = useState(true);
   const [notice, setNotice] = useState("");
   const hero = place?.image || sannenzakaDetail.hero;
   const name = place?.name || sannenzakaDetail.name;
   const category = place?.category || sannenzakaDetail.category;
+  const livePlace = photoCourseId !== undefined && place;
 
   return (
     <S.PlaceScreen>
       <S.PlaceHero>
-        <img src={hero} alt={name} />
+        {livePlace ? <PlaceGallery courseId={photoCourseId} placeId={livePlace.id} name={name} /> : <img src={hero} alt={name} />}
         <S.PlaceNavigation>
           <button type="button" aria-label="지도 화면으로 돌아가기" onClick={onBack}><img src={backIcon} alt="" /></button>
           <button type="button" aria-label={saved ? "장소 저장 해제" : "장소 저장"} onClick={() => setSaved((value) => !value)}><img src={saved ? heartFilledIcon : heartIcon} alt="" /></button>
         </S.PlaceNavigation>
-        <S.GalleryIndicator>1 / {place ? 1 : sannenzakaDetail.gallery.length}</S.GalleryIndicator>
+        {!livePlace && <S.GalleryIndicator>1 / {place ? 1 : sannenzakaDetail.gallery.length}</S.GalleryIndicator>}
       </S.PlaceHero>
 
       <S.PlaceBody>

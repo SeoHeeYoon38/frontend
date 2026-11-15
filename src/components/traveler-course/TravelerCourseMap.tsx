@@ -1,9 +1,11 @@
 import backIcon from "../../assets/figma/map-back.svg";
 import type { TravelerCourseView } from "../../types/course";
 import * as S from "./TravelerCourseOverlay.styled";
+import { PlaceThumbnail } from "../common/PlacePhoto";
 
 interface TravelerCourseMapProps {
   course: TravelerCourseView;
+  photoCourseId?: number;
   activeDay: number;
   onBack: () => void;
   onDayChange: (day: number) => void;
@@ -17,7 +19,7 @@ const pinPositions = [
   { x: 22, y: 8 },
 ];
 
-function TravelerCourseMap({ course, activeDay, onBack, onDayChange, onOpenPlace }: TravelerCourseMapProps) {
+function TravelerCourseMap({ course, photoCourseId, activeDay, onBack, onDayChange, onOpenPlace }: TravelerCourseMapProps) {
   const day = course.days[activeDay];
 
   return (
@@ -44,7 +46,9 @@ function TravelerCourseMap({ course, activeDay, onBack, onDayChange, onOpenPlace
         <p>장소 {day.places.length}곳　|　도보 {activeDay === 0 ? "2.4km" : "1.8km"}</p>
         {day.places.map((place, index) => (
           <S.MapPlaceRow key={place.id} type="button" onClick={() => onOpenPlace(place.id)}>
-            <b>{index + 1}</b><img src={place.image} alt="" /><span><strong>{place.name}</strong><small>{place.category}</small></span>
+            <b>{index + 1}</b>
+            {photoCourseId ? <PlaceThumbnail courseId={photoCourseId} placeId={place.id} name={place.name} /> : <img src={place.image} alt="" />}
+            <span><strong>{place.name}</strong><small>{place.category}</small></span>
           </S.MapPlaceRow>
         ))}
       </S.DaySheet>

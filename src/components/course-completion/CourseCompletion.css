@@ -335,6 +335,18 @@
   font-weight: 700;
 }
 
+.server-course-timeline__place {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
 .course-map__line,
 .course-map__pin {
   position: absolute;

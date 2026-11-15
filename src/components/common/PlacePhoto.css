@@ -1,0 +1,78 @@
+.place-gallery {
+  position: relative;
+  height: 100%;
+}
+
+.place-photo {
+  position: relative;
+  display: grid;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  background: #f2f2f6;
+  color: #4a4959;
+}
+
+.place-photo--thumbnail {
+  width: 56px;
+  height: 56px;
+  flex: none;
+  border-radius: 8px;
+}
+
+.place-photo > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  object-fit: cover;
+  border-radius: inherit;
+}
+
+.place-photo__placeholder {
+  place-self: center;
+  text-align: center;
+  font-size: 12px;
+}
+
+.place-photo__credit {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  padding: 3px;
+  overflow-wrap: anywhere;
+  background: rgb(0 0 0 / 74%);
+  color: white;
+  text-align: center;
+  font-size: 11px;
+}
+
+.place-photo--thumbnail .place-photo__credit {
+  max-height: 100%;
+  overflow: auto;
+  font-size: 9px;
+}
+
+.place-gallery__navigation {
+  position: absolute;
+  z-index: 2;
+  right: 12px;
+  bottom: 40px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px;
+  border-radius: 12px;
+  background: rgb(0 0 0 / 74%);
+  color: white;
+}
+
+.place-gallery__navigation button {
+  min-width: 32px;
+  min-height: 32px;
+}
+
+.server-place-gallery {
+  height: 280px;
+}
