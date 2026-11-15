@@ -122,6 +122,7 @@ export const LoginNotice = styled.p`
 `;
 
 export const ProviderButton = styled.button`
+  position: relative;
   width: 100%;
   height: 54px;
   display: flex;
@@ -140,6 +141,18 @@ export const ProviderButton = styled.button`
     width: 20px;
     height: 20px;
   }
+`;
+
+export const RecentLogin = styled.span`
+  position: absolute;
+  top: -10px;
+  right: 14px;
+  padding: 2px 8px;
+  border-radius: 14px;
+  color: #fff;
+  background: ${navy};
+  font-size: 11px;
+  line-height: 17px;
 `;
 
 export const GuestButton = styled.button`
@@ -458,6 +471,45 @@ export const BottomButton = styled.button`
 export const CompleteScreen = styled.main`
   ${screenBase}
   background: linear-gradient(180deg, #efedff 0%, #e6faff 55%, #ffffff 100%);
+`;
+
+export const FeatureScreen = styled.main`
+  ${screenBase}
+  display: grid;
+  grid-template-rows: auto minmax(160px, 1fr) auto;
+  gap: 24px;
+  padding: max(44px, env(safe-area-inset-top)) 20px 164px;
+`;
+
+export const FeatureSkip = styled.button`
+  justify-self: end;
+  min-height: 32px;
+  color: ${tertiary} !important;
+  font-size: 14px !important;
+`;
+
+export const FeatureIllustration = styled.div<{ $last: boolean }>`
+  display: grid;
+  place-items: center;
+  img {
+    width: min(100%, ${({ $last }) => ($last ? "328px" : "241px")});
+    max-height: min(27dvh, 241px);
+    object-fit: contain;
+  }
+`;
+
+export const FeatureDescription = styled.section`
+  text-align: center;
+  h1 { margin: 28px 0 0; font-size: 24px; line-height: 32px; white-space: pre-line; }
+  p { margin: 12px 0 0; color: #5c5c63; font-size: 14px; line-height: 20px; }
+`;
+
+export const FeatureDots = styled.div`
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  span { width: 6px; height: 6px; border-radius: 6px; background: #caccd2; }
+  [data-active="true"] { width: 18px; background: ${navy}; }
 `;
 
 export const CompleteContent = styled.section`

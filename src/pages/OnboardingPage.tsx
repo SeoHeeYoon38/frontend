@@ -6,6 +6,7 @@ import {
   checkNickname,
   completeSignup,
   googleAuthorizationUrl,
+  hasRecentGoogleLogin,
 } from "../api/auth";
 import { apiMode, isApiEnabled } from "../api/config";
 import { saveUserPreferences } from "../api/preferences";
@@ -17,6 +18,12 @@ import clearIcon from "../assets/onboarding/clear.svg";
 import googleIcon from "../assets/onboarding/google.svg";
 import profileAvatar from "../assets/onboarding/profile-avatar.png";
 import profileRing from "../assets/onboarding/profile-ring.svg";
+import camera from "../assets/onboarding/camera.svg";
+import purpleAvatar from "../assets/images/character-purple.webp";
+import introOne from "../assets/onboarding/intro-1.png";
+import introTwo from "../assets/onboarding/intro-2.png";
+import introThree from "../assets/onboarding/intro-3.png";
+import ProfileCharacterSheet from "../components/common/ProfileCharacterSheet";
 import validCheckIcon from "../assets/onboarding/valid-check.svg";
 import welcomeCharacter from "../assets/onboarding/welcome-character.png";
 import { routes } from "../config/routes";
@@ -25,6 +32,7 @@ import { parseProfileSettings, PROFILE_STORAGE_KEY, saveProfileSettings, validat
 import { allowDemoAuthentication } from "../utils/authNavigation";
 import { takePendingInvitePath } from "../utils/navigation";
 import * as S from "./OnboardingPage.styled";
+import type { ProfileAvatar } from "../utils/mySettings";
 
 type AgreementKey = "service" | "privacy" | "age" | "location" | "marketing";
 type AgreementState = Record<AgreementKey, boolean>;
@@ -35,7 +43,14 @@ interface OnboardingState {
   preferences?: string[];
   email?: string;
   introduction?: string;
+  avatar?: ProfileAvatar;
 }
+
+const featureIntroductions = [
+  { image: introOne, title: "구글맵에 저장해 둔 장소를\n한 번에 불러와요", description: "가고 싶던 곳을 다시 찾을 필요 없어요" },
+  { image: introTwo, title: "AI가 동선에 맞춰\n여행 코스를 짜드려요", description: "누구와, 며칠 가는지만 알려주세요" },
+  { image: introThree, title: "다른 여행자의 코스도\n내 일정으로 가져올 수 있어요", description: "그대로 따라가도 되고, 내 취향대로 고쳐도 돼요" },
+] as const;
 
 const ONBOARDING_NICKNAME_STORAGE_KEY = "dotlo:onboarding:nickname";
 const ONBOARDING_AGREEMENTS_STORAGE_KEY = "dotlo:onboarding:agreements";
@@ -129,9 +144,13 @@ function OnboardingPage() {
     () =>
       onboarding?.nickname ??
       sessionStorage.getItem(ONBOARDING_NICKNAME_STORAGE_KEY) ??
-      "하늘",
+      "",
   );
   const [preferences, setPreferences] = useState<string[]>([]);
+  const [avatar, setAvatar] = useState<ProfileAvatar>(onboarding?.avatar ?? "blue");
+  const [showCharacterSheet, setShowCharacterSheet] = useState(false);
+  const [featureIndex, setFeatureIndex] = useState<number>();
+  const [recentGoogleLogin] = useState(hasRecentGoogleLogin);
   const [savingPreferences, setSavingPreferences] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileError, setProfileError] = useState("");
@@ -199,6 +218,8 @@ function OnboardingPage() {
     const validation = liveSession
       ? validateNicknameFormat(nickname)
       : validateNickname(nickname);
+    const nicknameEmpty = nickname.trim().length === 0;
+    const nicknameInvalid = !nicknameEmpty && !validation.valid;
     const changeNickname = (value: string) => {
       setNickname(value);
       setProfileError("");
@@ -230,7 +251,7 @@ function OnboardingPage() {
               location: agreementsState.location,
             },
             nickname: value,
-            characterId: 1,
+            characterId: avatar === "purple" ? 2 : 1,
           });
         } catch (reason) {
           setProfileError(
@@ -249,6 +270,7 @@ function OnboardingPage() {
         state: {
           agreements: agreementsState,
           nickname: value,
+          avatar,
           email,
           introduction,
         },
@@ -261,15 +283,18 @@ function OnboardingPage() {
           <h1>어떻게 불러드릴까요?</h1>
           <S.Avatar>
             <img className="ring" src={profileRing} alt="" />
-            <img className="photo" src={profileAvatar} alt="프로필 캐릭터" />
+            <img className="photo" src={avatar === "purple" ? purpleAvatar : profileAvatar} alt="프로필 캐릭터" />
+            <button type="button" aria-label="프로필 캐릭터 선택" disabled={savingProfile} onClick={() => setShowCharacterSheet(true)}>
+              <img src={camera} alt="" />
+            </button>
           </S.Avatar>
           <S.FieldLabel htmlFor="onboarding-nickname">닉네임</S.FieldLabel>
-          <S.NicknameField $valid={validation.valid}>
+          <S.NicknameField $valid={!nicknameInvalid}>
             <input
               id="onboarding-nickname"
               maxLength={12}
               value={nickname}
-              aria-invalid={!validation.valid}
+              aria-invalid={nicknameInvalid}
               readOnly={savingProfile}
               onChange={(event) => changeNickname(event.target.value)}
             />
@@ -285,7 +310,7 @@ function OnboardingPage() {
               </button>
             )}
           </S.NicknameField>
-          <S.ValidText $error={!validation.valid || Boolean(profileError)} role="status">
+          {(!nicknameEmpty || profileError) && <S.ValidText $error={nicknameInvalid || Boolean(profileError)} role="status">
             {validation.valid && !savingProfile && !profileError && <img src={validCheckIcon} alt="" />}
             {profileError ||
               (savingProfile
@@ -295,7 +320,7 @@ function OnboardingPage() {
                     ? "사용할 수 있는 형식의 닉네임이에요"
                     : "데모에서 사용할 수 있는 닉네임이에요"
                   : validation.message)}
-          </S.ValidText>
+          </S.ValidText>}
         </S.FlowBody>
         <S.BottomButton
           type="button"
@@ -305,6 +330,10 @@ function OnboardingPage() {
           {savingProfile ? "저장하고 있어요" : "다음"}
         </S.BottomButton>
         <HomeIndicator />
+        {showCharacterSheet && (
+          <ProfileCharacterSheet current={avatar} title="프로필 사진" onClose={() => setShowCharacterSheet(false)}
+            onApply={(value) => { setAvatar(value); setShowCharacterSheet(false); }} />
+        )}
       </S.FlowScreen>
     );
   }
@@ -346,6 +375,7 @@ function OnboardingPage() {
         state: {
           nickname: displayNickname,
           preferences: chosenPreferences,
+          avatar: onboarding?.avatar ?? avatar,
           email,
           introduction,
         },
@@ -403,7 +433,7 @@ function OnboardingPage() {
           nickname: displayNickname,
           email: onboarding?.email ?? profile?.email ?? "",
           introduction: onboarding?.introduction ?? profile?.introduction ?? "",
-          avatar: profile?.avatar ?? "blue",
+          avatar: onboarding?.avatar ?? avatar,
           travelPreferences: onboarding?.preferences ?? [],
         });
         sessionStorage.removeItem(ONBOARDING_NICKNAME_STORAGE_KEY);
@@ -412,8 +442,30 @@ function OnboardingPage() {
         setError("브라우저에 데모 프로필을 저장하지 못했어요. 다시 시도해 주세요.");
         return;
       }
-      navigate(takePendingInvitePath(sessionStorage) ?? routes.home, { replace: true });
+      setFeatureIndex(0);
     };
+    if (featureIndex !== undefined) {
+      const feature = featureIntroductions[featureIndex];
+      const last = featureIndex === featureIntroductions.length - 1;
+      const finishIntroduction = () => navigate(takePendingInvitePath(sessionStorage) ?? routes.home, { replace: true });
+      return (
+        <S.FeatureScreen>
+          <S.FeatureSkip type="button" onClick={finishIntroduction}>건너뛰기</S.FeatureSkip>
+          <S.FeatureIllustration $last={last}><img src={feature.image} alt="" /></S.FeatureIllustration>
+          <S.FeatureDescription aria-live="polite">
+            <S.FeatureDots aria-label={`기능 소개 ${featureIndex + 1}/3`}>
+              {featureIntroductions.map((item, index) => <span key={item.title} data-active={index === featureIndex} />)}
+            </S.FeatureDots>
+            <h1>{feature.title}</h1>
+            <p>{feature.description}</p>
+          </S.FeatureDescription>
+          <S.BottomButton type="button" onClick={last ? finishIntroduction : () => setFeatureIndex(featureIndex + 1)}>
+            {last ? "시작하기" : "다음"}
+          </S.BottomButton>
+          <HomeIndicator />
+        </S.FeatureScreen>
+      );
+    }
     return (
       <S.CompleteScreen>
         <S.CompleteContent>
@@ -445,6 +497,7 @@ function OnboardingPage() {
             disabled={!liveGoogleLogin && !demoAuthentication}
             onClick={startGoogleLogin}
           >
+            {liveGoogleLogin && recentGoogleLogin && <S.RecentLogin>최근 로그인</S.RecentLogin>}
             <img src={googleIcon} alt="" />
             {liveGoogleLogin
               ? "Google로 시작하기"
