@@ -59,6 +59,8 @@ function courseView(course: CourseDetailResponse): TravelerCourseView {
         name: stop.name,
         category: categoryLabels[stop.category],
         image: stop.imageUrl || hero,
+        latitude: stop.latitude,
+        longitude: stop.longitude,
       })),
     })),
   };
@@ -83,6 +85,8 @@ function TravelerCoursePage() {
   );
   const [loadError, setLoadError] = useState("");
   const [activeDay, setActiveDay] = useState(0);
+  const [mapDay, setMapDay] = useState<number>();
+  const [placeOrigin, setPlaceOrigin] = useState<"course" | "map">("course");
   const [isSaved, setIsSaved] = useState(() =>
     readSavedState(courseId ?? travelerCourse.id),
   );
@@ -155,11 +159,12 @@ function TravelerCoursePage() {
       <TravelerCourseMap
         course={course}
         photoCourseId={liveCourseId ?? undefined}
-        activeDay={activeDay}
+        activeDay={mapDay}
         onBack={() => setScreen("course")}
-        onDayChange={setActiveDay}
+        onDayChange={setMapDay}
         onOpenPlace={(placeId) => {
           setSelectedPlaceId(placeId);
+          setPlaceOrigin("map");
           setScreen("place");
         }}
       />
@@ -167,7 +172,7 @@ function TravelerCoursePage() {
   }
 
   if (screen === "place") {
-    return <TravelerPlaceDetail key={selectedPlaceId} place={selectedPlace} city={course.city} photoCourseId={liveCourseId ?? undefined} onBack={() => setScreen("map")} />;
+    return <TravelerPlaceDetail key={selectedPlaceId} place={selectedPlace} city={course.city} photoCourseId={liveCourseId ?? undefined} onBack={() => setScreen(placeOrigin)} />;
   }
 
   return (
@@ -218,7 +223,7 @@ function TravelerCoursePage() {
               </button>
             ))}
           </S.DayTabs>
-          <S.MapPreview type="button" aria-label={`${day.label} 지도 전체 보기`} onClick={() => setScreen("map")}>
+          <S.MapPreview type="button" aria-label={`${day.label} 지도 전체 보기`} onClick={() => { setMapDay(activeDay); setScreen("map"); }}>
             <img src={course.routePreview} alt={`${course.city} 여행 경로 지도`} />
             <span>지도 크게 보기</span>
           </S.MapPreview>
@@ -227,7 +232,7 @@ function TravelerCoursePage() {
               <S.PlaceRow key={place.id}>
                 <S.Rail><b>{index + 1}</b>{index < day.places.length - 1 && <i />}</S.Rail>
                 <S.PlaceContent>
-                  <S.PlaceCard type="button" onClick={() => { setSelectedPlaceId(place.id); setScreen("place"); }}>
+                  <S.PlaceCard type="button" onClick={() => { setSelectedPlaceId(place.id); setPlaceOrigin("course"); setScreen("place"); }}>
                     {liveCourseId ? <PlaceThumbnail courseId={liveCourseId} placeId={place.id} name={place.name} /> : <img src={place.image} alt="" />}
                     <span><strong>{place.name}</strong><small>{place.category}</small></span>
                   </S.PlaceCard>

@@ -32,6 +32,8 @@ export interface TravelerCoursePlace {
   name: string;
   category: string;
   image: string;
+  latitude?: number;
+  longitude?: number;
   travelTime?: string;
   distance?: string;
 }

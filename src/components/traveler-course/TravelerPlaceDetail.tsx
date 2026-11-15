@@ -15,7 +15,7 @@ interface TravelerPlaceDetailProps {
 }
 
 function TravelerPlaceDetail({ onBack, place, city, photoCourseId }: TravelerPlaceDetailProps) {
-  const [saved, setSaved] = useState(true);
+  const [saved, setSaved] = useState(false);
   const [notice, setNotice] = useState("");
   const hero = place?.image || sannenzakaDetail.hero;
   const name = place?.name || sannenzakaDetail.name;
@@ -27,8 +27,8 @@ function TravelerPlaceDetail({ onBack, place, city, photoCourseId }: TravelerPla
       <S.PlaceHero>
         {livePlace ? <PlaceGallery courseId={photoCourseId} placeId={livePlace.id} name={name} /> : <img src={hero} alt={name} />}
         <S.PlaceNavigation>
-          <button type="button" aria-label="지도 화면으로 돌아가기" onClick={onBack}><img src={backIcon} alt="" /></button>
-          <button type="button" aria-label={saved ? "장소 저장 해제" : "장소 저장"} onClick={() => setSaved((value) => !value)}><img src={saved ? heartFilledIcon : heartIcon} alt="" /></button>
+          <button type="button" aria-label="이전 화면으로 돌아가기" onClick={onBack}><img src={backIcon} alt="" /></button>
+          <button type="button" aria-label="장소 찜" aria-pressed={saved} onClick={() => setSaved((value) => !value)}><img src={saved ? heartFilledIcon : heartIcon} alt="" /></button>
         </S.PlaceNavigation>
         {!livePlace && <S.GalleryIndicator>1 / {place ? 1 : sannenzakaDetail.gallery.length}</S.GalleryIndicator>}
       </S.PlaceHero>
