@@ -5,7 +5,8 @@ import { useState } from "react";
 import type { TripSummary } from "../../types/home";
 import calendar from "../../assets/icons/calendar-outline.svg";
 import pin from "../../assets/course-settings/pin.svg";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
+import { routes } from "../../config/routes";
 import { tripPlanPath } from "../../utils/navigation";
 
 interface MyTripsSectionProps {
@@ -15,6 +16,7 @@ interface MyTripsSectionProps {
 }
 
 function MyTripsSection({ trips, tripPath = (id) => tripPlanPath("home", id), onCreateTrip }: MyTripsSectionProps) {
+  const navigate = useNavigate();
   const [selectedTab, setSelectedTab] = useState<"upcoming" | "past">(
     "upcoming",
   );
@@ -26,7 +28,7 @@ function MyTripsSection({ trips, tripPath = (id) => tripPlanPath("home", id), on
       <C.Heading>
         <h2>내 여행</h2>
         {visibleTrips.length > 0 && (
-          <button type="button">
+          <button type="button" onClick={() => navigate(isUpcoming ? routes.myTrips : `${routes.myTrips}?tab=past`)}>
             더보기
             <img src={chevron} alt="" />
           </button>
@@ -66,7 +68,7 @@ function MyTripsSection({ trips, tripPath = (id) => tripPlanPath("home", id), on
               <div>
                 <S.Meta>
                   <span>{trip.city}</span>
-                  <b>{trip.countdownLabel}</b>
+                  {trip.countdownLabel && <b>{trip.countdownLabel}</b>}
                 </S.Meta>
                 <h3>{trip.title}</h3>
                 <p>

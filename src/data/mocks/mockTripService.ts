@@ -1,7 +1,7 @@
 import type { MockTrip } from "../../types/mockTrip";
 import type { TripDraft } from "../../types/trip";
 import type { CoursePlace } from "../../types/courseCompletion";
-import { dateKey, durationLabel, rangeDates, selectedPlaces } from "../../utils/trip";
+import { durationLabel, rangeDates, selectedPlaces, tripDateStatus } from "../../utils/trip";
 import { formatTripDateRange, parseImportedTripRegistration } from "../../utils/importedTrip";
 import { readStoredTrips, writeStoredTrip } from "../../utils/mockTrips";
 import { initialCoursePlaces } from "./courseCompletionData";
@@ -193,16 +193,18 @@ export function saveMockTrip(trip: MockTrip): boolean {
 }
 
 export function mockTripStatus(trip: MockTrip): "upcoming" | "past" {
-  return trip.sampleStatus ?? (trip.endDate && trip.endDate < dateKey(new Date()) ? "past" : "upcoming");
+  return trip.sampleStatus ?? tripDateStatus(trip.startDate, trip.endDate).status;
 }
 
 export function mockTripSummary(trip: MockTrip) {
+  const dates = tripDateStatus(trip.startDate, trip.endDate);
+  const status = trip.sampleStatus ?? dates.status;
   return {
     id: trip.id, title: trip.title, city: trip.city,
-    dateLabel: trip.startDate ? formatTripDateRange(trip.startDate, trip.endDate) : "날짜 미정",
-    countdownLabel: "", coverImage: trip.coverImage,
-    status: mockTripStatus(trip), memberAvatars: [],
-    durationLabel: trip.startDate ? durationLabel(trip.startDate, trip.endDate) : `${trip.days.length - 1}박 ${trip.days.length}일`,
+    dateLabel: dates.hasDates ? formatTripDateRange(trip.startDate, trip.endDate) : "날짜 미정",
+    countdownLabel: status === "upcoming" ? dates.countdownLabel : "", coverImage: trip.coverImage,
+    status, memberAvatars: [],
+    durationLabel: dates.hasDates ? durationLabel(trip.startDate, trip.endDate) : undefined,
   };
 }
 

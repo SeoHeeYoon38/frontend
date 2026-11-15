@@ -71,6 +71,14 @@ export function durationLabel(start: string, end: string): string {
   const days = dayCount(start, end);
   return days === 1 ? "당일치기" : `${days - 1}박 ${days}일`;
 }
+
+export function tripDateStatus(start: string, end: string, today = dateKey(new Date())) {
+  const hasDates = validDate(start) && validDate(end) && end >= start;
+  const status = hasDates && end < today ? "past" : "upcoming";
+  const daysUntil = hasDates && status === "upcoming" ? dayCount(today, start) - 1 : -1;
+  const countdownLabel = daysUntil > 0 ? `D-${daysUntil}` : daysUntil === 0 ? "D-DAY" : "";
+  return { hasDates, status, countdownLabel } as const;
+}
 export function basicError(draft: TripDraft): string {
   if (!draft.city) return "도시 하나를 골라주세요.";
   if (!validDate(draft.startDate) || !validDate(draft.endDate))
