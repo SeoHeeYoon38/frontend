@@ -241,13 +241,23 @@ export const MapPreview = styled.button`
   background: #eef2f5;
   cursor: pointer;
 
+  .course-map {
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
+  }
+
+  .course-map__caption {
+    display: none;
+  }
+
   img {
     width: 100%;
     height: 100%;
     object-fit: cover;
   }
 
-  span {
+  > span {
     position: absolute;
     right: 12px;
     bottom: 12px;
@@ -407,6 +417,25 @@ export const Toast = styled.div`
   b img {
     width: 18px;
     height: 18px;
+  }
+
+  button {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    margin-left: auto;
+    border: 0;
+    padding: 0;
+    color: #fff;
+    background: none;
+    font: inherit;
+    cursor: pointer;
+  }
+
+  button img {
+    width: 12px;
+    height: 12px;
+    filter: brightness(0) invert(1);
   }
 `;
 

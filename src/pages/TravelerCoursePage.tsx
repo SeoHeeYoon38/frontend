@@ -23,6 +23,8 @@ import type { CourseDetailResponse, PlaceCategoryCode } from "../api/types";
 import type { TravelerCourseView } from "../types/course";
 import useSavedItems from "../hooks/useSavedItems";
 import checkIcon from "../assets/icons/status-selected-check.svg";
+import chevronIcon from "../assets/icons/nav-chevron-right.svg";
+import CourseRouteMap from "../components/course-completion/CourseRouteMap";
 
 const categoryLabels: Record<PlaceCategoryCode, string> = {
   FOOD: "맛집",
@@ -39,11 +41,12 @@ const categoryLabels: Record<PlaceCategoryCode, string> = {
 function courseView(course: CourseDetailResponse): TravelerCourseView {
   const cityImage = mockTripCities.find((item) => item.name === course.city)?.image;
   const hero = course.coverImageUrl || cityImage || travelerCourse.hero;
+  const duration = `${course.nightCount}박 ${course.dayCount}일`;
   return {
     id: String(course.id),
     city: course.city,
-    duration: `${course.nightCount}박 ${course.dayCount}일`,
-    tags: course.tags,
+    duration,
+    tags: [...new Set([course.city, duration, ...course.tags])],
     title: course.title,
     author: course.author.name,
     authorNote: course.author.sourceLabel,
@@ -222,7 +225,18 @@ function TravelerCoursePage() {
             ))}
           </S.DayTabs>
           <S.MapPreview type="button" aria-label={`${day.label} 지도 전체 보기`} onClick={() => { setMapDay(activeDay); setScreen("map"); }}>
-            <img src={course.routePreview} alt={`${course.city} 여행 경로 지도`} />
+            {liveCourseId ? <CourseRouteMap
+              places={day.places.map((place, index) => ({
+                id: place.id,
+                name: place.name,
+                latitude: place.latitude,
+                longitude: place.longitude,
+                order: index + 1,
+              }))}
+              city={course.city}
+              day={activeDay + 1}
+              schematic
+            /> : <img src={course.routePreview} alt={`${course.city} 여행 경로 지도`} />}
             <span>지도 크게 보기</span>
           </S.MapPreview>
           <S.PlaceList>
@@ -243,7 +257,12 @@ function TravelerCoursePage() {
       </S.Content>
 
       <S.Cta><button type="button" onClick={importCourse}>내 일정으로 가져오기</button></S.Cta>
-      {notice && <S.Toast role="status"><b><img src={checkIcon} alt="" /></b>{notice}</S.Toast>}
+      {notice && <S.Toast role="status">
+        <b><img src={checkIcon} alt="" /></b>{notice}
+        {notice === "찜한 코스에 담았어요" && <button type="button" onClick={() => navigate(`${routes.savedItems}?tab=courses`)}>
+          찜 목록 보기<img src={chevronIcon} alt="" />
+        </button>}
+      </S.Toast>}
       {saveError && <S.Toast role="alert">{saveError}</S.Toast>}
       {coursesLoadError && <S.Toast role="alert">{coursesLoadError}</S.Toast>}
     </S.Shell>
