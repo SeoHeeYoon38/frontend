@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import backIcon from "../assets/figma/traveler-back.svg";
 import calendarIcon from "../assets/figma/traveler-calendar.svg";
@@ -15,9 +15,9 @@ import TravelerPlaceDetail from "../components/traveler-course/TravelerPlaceDeta
 import TravelerAiChat from "../components/traveler-course/TravelerAiChat";
 import { PlaceThumbnail } from "../components/common/PlacePhoto";
 import * as S from "./TravelerCoursePage.styled";
-import { importedTripPath } from "../utils/navigation";
+import { importedTripPath, serverTripPlanPath } from "../utils/navigation";
 import { createImportedTrip, saveMockTrip, tripStorageNotice } from "../data/mocks/mockTripService";
-import { getCourse } from "../api/courses";
+import { getCourse, importCourse as importApiCourse } from "../api/courses";
 import { isApiEnabled } from "../api/config";
 import type { CourseDetailResponse, PlaceCategoryCode } from "../api/types";
 import type { TravelerCourseView } from "../types/course";
@@ -25,6 +25,10 @@ import useSavedItems from "../hooks/useSavedItems";
 import checkIcon from "../assets/icons/status-selected-check.svg";
 import chevronIcon from "../assets/icons/nav-chevron-right.svg";
 import CourseRouteMap from "../components/course-completion/CourseRouteMap";
+import DateRangePicker from "../components/trip/DateRangePicker";
+import * as ImportedSheet from "./ImportedTripPage.styled";
+import closeIcon from "../assets/icons/action-close.svg";
+import { addDays } from "../utils/trip";
 
 const categoryLabels: Record<PlaceCategoryCode, string> = {
   FOOD: "맛집",
@@ -75,13 +79,14 @@ function courseView(course: CourseDetailResponse): TravelerCourseView {
 function TravelerCoursePage() {
   const navigate = useNavigate();
   const { courseId } = useParams();
-  const liveCourseId = courseId && /^\d+$/.test(courseId) && isApiEnabled()
+  const apiEnabled = isApiEnabled();
+  const liveCourseId = courseId && /^\d+$/.test(courseId) && apiEnabled
     ? Number(courseId)
     : null;
   const [course, setCourse] = useState<TravelerCourseView | undefined>(() =>
-    liveCourseId ? undefined : travelerCourse,
+    apiEnabled ? undefined : travelerCourse,
   );
-  const [loadError, setLoadError] = useState("");
+  const [loadError, setLoadError] = useState(() => apiEnabled && !liveCourseId ? "코스 주소를 확인해 주세요." : "");
   const [activeDay, setActiveDay] = useState(0);
   const [mapDay, setMapDay] = useState<number>();
   const [placeOrigin, setPlaceOrigin] = useState<"course" | "map">("course");
@@ -89,6 +94,11 @@ function TravelerCoursePage() {
   const [notice, setNotice] = useState("");
   const [screen, setScreen] = useState<"course" | "map" | "place" | "ai">("course");
   const [selectedPlaceId, setSelectedPlaceId] = useState<string>();
+  const [dateSheetOpen, setDateSheetOpen] = useState(false);
+  const [importStartDate, setImportStartDate] = useState("");
+  const [importPending, setImportPending] = useState(false);
+  const [importError, setImportError] = useState("");
+  const importing = useRef(false);
 
   useEffect(() => {
     if (!liveCourseId) return;
@@ -143,12 +153,37 @@ function TravelerCoursePage() {
   };
 
   const importCourse = () => {
-    const trip = createImportedTrip(crypto.randomUUID());
-    if (!saveMockTrip(trip)) {
-      setNotice(tripStorageNotice);
-      return;
+    if (liveCourseId) {
+      setImportStartDate("");
+      setImportError("");
+      setDateSheetOpen(true);
+    } else {
+      const trip = createImportedTrip(crypto.randomUUID());
+      if (!saveMockTrip(trip)) {
+        setNotice(tripStorageNotice);
+        return;
+      }
+      navigate(`${importedTripPath(trip.id)}?toast=course-imported`);
     }
-    navigate(`${importedTripPath(trip.id)}?toast=course-imported`);
+  };
+
+  const submitImport = async () => {
+    if (!liveCourseId || !importStartDate || importing.current) return;
+    importing.current = true;
+    setImportPending(true);
+    setImportError("");
+    try {
+      const result = await importApiCourse(liveCourseId, importStartDate);
+      navigate(serverTripPlanPath("my-trips", String(result.tripId)), {
+        replace: true,
+        state: { courseImported: true },
+      });
+    } catch (reason) {
+      setImportError(reason instanceof Error ? reason.message : "코스를 가져오지 못했어요. 다시 시도해 주세요.");
+    } finally {
+      importing.current = false;
+      setImportPending(false);
+    }
   };
 
   if (screen === "map") {
@@ -265,6 +300,24 @@ function TravelerCoursePage() {
       </S.Toast>}
       {saveError && <S.Toast role="alert">{saveError}</S.Toast>}
       {coursesLoadError && <S.Toast role="alert">{coursesLoadError}</S.Toast>}
+      {dateSheetOpen && <ImportedSheet.Overlay role="presentation" onMouseDown={() => { if (!importPending) setDateSheetOpen(false); }}>
+        <ImportedSheet.Sheet role="dialog" aria-modal="true" aria-labelledby="course-import-date-title" onMouseDown={(event) => event.stopPropagation()}>
+          <ImportedSheet.Handle />
+          <ImportedSheet.SheetHeader><div>
+            <h2 id="course-import-date-title">언제 떠나세요?</h2>
+            <p>코스 기간({course.duration})에 맞춰 날짜를 골라주세요</p>
+          </div><button type="button" aria-label="닫기" disabled={importPending} onClick={() => setDateSheetOpen(false)}><img src={closeIcon} alt="" /></button></ImportedSheet.SheetHeader>
+          <DateRangePicker
+            start={importStartDate}
+            end={importStartDate ? addDays(importStartDate, course.days.length - 1) : ""}
+            onChange={(startDate) => { setImportStartDate(startDate); setImportError(""); }}
+          />
+          {importError && <p role="alert">{importError}</p>}
+          <ImportedSheet.PrimaryButton type="button" disabled={!importStartDate || importPending} onClick={() => void submitImport()}>
+            {importPending ? "코스를 가져오고 있어요" : "선택 완료"}
+          </ImportedSheet.PrimaryButton>
+        </ImportedSheet.Sheet>
+      </ImportedSheet.Overlay>}
     </S.Shell>
   );
 }

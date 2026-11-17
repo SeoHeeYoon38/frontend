@@ -33,3 +33,11 @@ export function unbookmarkCourse(courseId: number, signal?: AbortSignal) {
   });
 }
 
+export function importCourse(courseId: number, startDate: string) {
+  return apiRequest<{ tripId: number }>(`/api/courses/${courseId}/import`, {
+    method: "POST",
+    json: { startDate },
+    timeoutMs: 180_000,
+  });
+}
+
