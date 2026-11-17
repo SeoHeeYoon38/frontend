@@ -341,7 +341,7 @@
 .community-poll > div > button {
   display: grid;
   min-height: 52px;
-  grid-template-columns: 20px 1fr 24px;
+  grid-template-columns: 20px minmax(0, 1fr) auto;
   gap: 8px;
   align-items: center;
   padding: 8px 10px;
@@ -392,7 +392,28 @@
   line-height: 15px;
 }
 
-.community-poll button > b {
+.community-poll__voters {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 28px;
+}
+
+.community-poll__voters img {
+  width: 20px;
+  height: 20px;
+  margin-left: -5px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.community-poll__voters img:first-child {
+  margin-left: 0;
+}
+
+.community-poll__voters b {
+  margin-left: 5px;
   color: #0079c2;
   font-size: 14px;
   text-align: center;
@@ -407,6 +428,11 @@
   background: #090738;
   font-size: 14px;
   font-weight: 700;
+}
+
+.community-poll__apply:disabled {
+  background: #e4e6ec;
+  cursor: default;
 }
 
 .community-chat__result-card {
