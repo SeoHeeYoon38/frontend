@@ -12,6 +12,7 @@ import { travelerCourse } from "../data/mocks/travelerCourseData";
 import { mockTripCities } from "../data/mocks/tripData";
 import TravelerCourseMap from "../components/traveler-course/TravelerCourseMap";
 import TravelerPlaceDetail from "../components/traveler-course/TravelerPlaceDetail";
+import TravelerAiChat from "../components/traveler-course/TravelerAiChat";
 import { PlaceThumbnail } from "../components/common/PlacePhoto";
 import * as S from "./TravelerCoursePage.styled";
 import { importedTripPath } from "../utils/navigation";
@@ -21,6 +22,7 @@ import { isApiEnabled } from "../api/config";
 import type { CourseDetailResponse, PlaceCategoryCode } from "../api/types";
 import type { TravelerCourseView } from "../types/course";
 import useSavedItems from "../hooks/useSavedItems";
+import checkIcon from "../assets/icons/status-selected-check.svg";
 
 const categoryLabels: Record<PlaceCategoryCode, string> = {
   FOOD: "맛집",
@@ -82,7 +84,7 @@ function TravelerCoursePage() {
   const [placeOrigin, setPlaceOrigin] = useState<"course" | "map">("course");
   const { isCourseSaved, setCourse: setSavedCourse, saveError } = useSavedItems();
   const [notice, setNotice] = useState("");
-  const [screen, setScreen] = useState<"course" | "map" | "place">("course");
+  const [screen, setScreen] = useState<"course" | "map" | "place" | "ai">("course");
   const [selectedPlaceId, setSelectedPlaceId] = useState<string>();
 
   useEffect(() => {
@@ -138,10 +140,6 @@ function TravelerCoursePage() {
   };
 
   const importCourse = () => {
-    if (liveCourseId) {
-      setNotice("코스 담기 API가 준비되면 연결할 예정이에요.");
-      return;
-    }
     const trip = createImportedTrip(crypto.randomUUID());
     if (!saveMockTrip(trip)) {
       setNotice(tripStorageNotice);
@@ -168,7 +166,11 @@ function TravelerCoursePage() {
   }
 
   if (screen === "place") {
-    return <TravelerPlaceDetail key={selectedPlaceId} place={selectedPlace} city={course.city} photoCourseId={liveCourseId ?? undefined} onBack={() => setScreen(placeOrigin)} />;
+    return <TravelerPlaceDetail key={selectedPlaceId} place={selectedPlace} city={course.city} photoCourseId={liveCourseId ?? undefined} onBack={() => setScreen(placeOrigin)} onAskAi={() => setScreen("ai")} />;
+  }
+
+  if (screen === "ai") {
+    return <TravelerAiChat place={selectedPlace} onBack={() => setScreen("place")} />;
   }
 
   return (
@@ -241,7 +243,7 @@ function TravelerCoursePage() {
       </S.Content>
 
       <S.Cta><button type="button" onClick={importCourse}>내 일정으로 가져오기</button></S.Cta>
-      {notice && <S.Toast role="status"><b>✓</b>{notice}</S.Toast>}
+      {notice && <S.Toast role="status"><b><img src={checkIcon} alt="" /></b>{notice}</S.Toast>}
       {saveError && <S.Toast role="alert">{saveError}</S.Toast>}
     </S.Shell>
   );

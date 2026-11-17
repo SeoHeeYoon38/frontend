@@ -3,6 +3,7 @@ import type { TravelLeg } from "../../api/types";
 import walk from "../../assets/figma/traveler-walk.svg";
 import train from "../../assets/course-completion/icon-train.svg";
 import car from "../../assets/icons/transport-car.svg";
+import selectedCheck from "../../assets/icons/status-selected-check.svg";
 import TripSheet from "../common/TripSheet";
 import { Primary } from "../trip/Trip.styled";
 
@@ -36,7 +37,7 @@ export default function TravelModeSheet({ from, to, travel, current, onClose, on
               <strong>{travelModeLabels[mode]}</strong>
               {mode === travel.mode && <small>{travel.minutes}분 · {(travel.distanceMeters / 1000).toFixed(1)}km</small>}
             </span>
-            <span className="travel-mode-indicator" aria-hidden="true">{selected === mode && "✓"}</span>
+            <span className="travel-mode-indicator" aria-hidden="true">{selected === mode && <img src={selectedCheck} alt="" />}</span>
           </label>
         ))}
       </fieldset>

@@ -38,6 +38,11 @@ export const Toast = styled.div`
     font-weight: 700;
   }
 
+  > span img {
+    width: 18px;
+    height: 18px;
+  }
+
   strong {
     font-size: 12px;
     line-height: 18px;
@@ -48,6 +53,13 @@ export const Toast = styled.div`
     font-size: 20px !important;
     text-align: center !important;
     opacity: 0.72;
+  }
+
+
+  button img {
+    width: 20px;
+    height: 20px;
+    filter: brightness(0) invert(1);
   }
 `;
 

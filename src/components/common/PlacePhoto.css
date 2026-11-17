@@ -73,6 +73,16 @@
   min-height: 32px;
 }
 
+.place-gallery__navigation button img {
+  width: 16px;
+  height: 16px;
+  filter: brightness(0) invert(1);
+}
+
+.place-gallery__previous {
+  transform: rotate(180deg);
+}
+
 .server-place-gallery {
   height: 280px;
 }

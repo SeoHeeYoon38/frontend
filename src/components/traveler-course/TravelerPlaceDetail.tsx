@@ -1,7 +1,7 @@
-import { useState } from "react";
 import backIcon from "../../assets/figma/traveler-back.svg";
 import heartIcon from "../../assets/figma/traveler-heart.svg";
 import heartFilledIcon from "../../assets/figma/traveler-heart-filled.svg";
+import aiSparkleIcon from "../../assets/icons/status-ai-sparkle.svg";
 import { sannenzakaDetail } from "../../data/mocks/travelerCourseData";
 import type { TravelerCoursePlace } from "../../types/course";
 import * as S from "./TravelerCourseOverlay.styled";
@@ -10,14 +10,14 @@ import useSavedItems from "../../hooks/useSavedItems";
 
 interface TravelerPlaceDetailProps {
   onBack: () => void;
+  onAskAi: () => void;
   place?: TravelerCoursePlace;
   city?: string;
   photoCourseId?: number;
 }
 
-function TravelerPlaceDetail({ onBack, place, city, photoCourseId }: TravelerPlaceDetailProps) {
+function TravelerPlaceDetail({ onBack, onAskAi, place, city, photoCourseId }: TravelerPlaceDetailProps) {
   const { places, setPlace, saveError } = useSavedItems();
-  const [notice, setNotice] = useState("");
   const hero = place?.image || sannenzakaDetail.hero;
   const name = place?.name || sannenzakaDetail.name;
   const category = place?.category || sannenzakaDetail.category;
@@ -56,8 +56,7 @@ function TravelerPlaceDetail({ onBack, place, city, photoCourseId }: TravelerPla
         </section>
         {!place && <section><h2>위치</h2><S.LocationMap src={sannenzakaDetail.map} alt="산넨자카 골목 위치 지도" /></section>}
       </S.PlaceBody>
-      <S.AiButton type="button" onClick={() => setNotice("도틀로 AI 질문 화면은 다음 흐름에서 이어져요")}>✦　도틀로 AI에게 물어보기</S.AiButton>
-      {notice && <div role="status" hidden>{notice}</div>}
+      <S.AiButton type="button" onClick={onAskAi}><img src={aiSparkleIcon} alt="" />도틀로 AI에게 물어보기</S.AiButton>
     </S.PlaceScreen>
   );
 }

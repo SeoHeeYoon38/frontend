@@ -33,7 +33,7 @@ export const Prompt = styled.div<{ $active: boolean; $exceeded: boolean }>`
   position: relative;
   margin-top: 35px;
   min-height: ${({ $exceeded }) => ($exceeded ? "236px" : "132px")};
-  border: 1.5px solid ${({ $active, $exceeded }) => ($exceeded ? "#ef4444" : $active ? "#090738" : "#e4e6ec")};
+  border: 1.5px solid ${({ $active, $exceeded }) => ($exceeded ? "#ef4444" : $active ? "#090738" : "#d1d1d6")};
   border-radius: 20px;
   background: white;
   box-shadow: 0 8px 20px rgb(9 7 56 / 5%);
@@ -52,6 +52,11 @@ export const Prompt = styled.div<{ $active: boolean; $exceeded: boolean }>`
   }
   textarea::placeholder {
     color: #a8a8ae;
+  }
+
+  &:focus-within {
+    border-color: #090738;
+    box-shadow: 0 0 0 1px #090738;
   }
   span {
     position: absolute;

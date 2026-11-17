@@ -21,7 +21,7 @@ export const Sheet = styled.dialog<{ $minHeight: number; $course: boolean }>`
   }
   background: white;
   color: #1a1a1a;
-  font-family: "Noto Sans KR", Arial, sans-serif;
+  font-family: "Pretendard", "Apple SD Gothic Neo", system-ui, sans-serif;
   overflow: hidden;
   &::backdrop {
     background: rgba(10, 10, 26, 0.45);

@@ -8,7 +8,7 @@ export const Page = styled.div`
   overflow-x: clip;
   color: #1a1a1a;
   background: #ffffff;
-  font-family: "Noto Sans KR", Arial, sans-serif;
+  font-family: "Pretendard", "Apple SD Gothic Neo", system-ui, sans-serif;
 
   a {
     color: inherit;
@@ -152,10 +152,18 @@ export const ListHeader = styled.div`
   }
 
   span {
+    display: flex;
+    align-items: center;
+    gap: 2px;
     color: #8a8a8e;
     font-size: 12px;
     line-height: 17px;
     font-weight: 500;
+  }
+
+  span img {
+    width: 14px;
+    height: 14px;
   }
 `;
 
@@ -265,7 +273,7 @@ export const BookmarkButton = styled.button`
   display: grid;
   place-items: center;
 
-  svg {
+  img {
     width: 22px;
     height: 22px;
   }

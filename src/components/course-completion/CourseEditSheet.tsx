@@ -1,5 +1,8 @@
 import { useRef } from "react";
 import dragHandle from "../../assets/course-completion/drag-handle.svg";
+import closeIcon from "../../assets/icons/action-close.svg";
+import addIcon from "../../assets/icons/action-add.svg";
+import removeIcon from "../../assets/course-completion/remove.svg";
 import type { CoursePlace } from "../../types/courseCompletion";
 import type { MockTripDay } from "../../types/mockTrip";
 import { dateLabel } from "../../utils/trip";
@@ -24,7 +27,7 @@ function CourseEditSheet({ days, activeDay, places, onDayChange, onReorder, onAd
     <div className="course-overlay" role="presentation">
       <section className="course-sheet schedule-edit-sheet" aria-label="일정 편집">
         <div className="course-sheet__handle" />
-        <header><h2>일정 편집</h2><button type="button" onClick={onClose} aria-label="닫기">×</button></header>
+        <header><h2>일정 편집</h2><button type="button" onClick={onClose} aria-label="닫기"><img src={closeIcon} alt="" /></button></header>
         <div className="schedule-edit-sheet__days">
           {days.map((day, index) => (
             <button className={index === activeDay ? "is-active" : ""} type="button" key={index} onClick={() => onDayChange(index)}>
@@ -32,7 +35,7 @@ function CourseEditSheet({ days, activeDay, places, onDayChange, onReorder, onAd
             </button>
           ))}
         </div>
-        <div className="schedule-edit-sheet__caption"><strong>장소 {places.length}곳</strong><span>손잡이를 끌거나 화살표로 순서를 바꿔요</span></div>
+        <div className="schedule-edit-sheet__caption"><strong>장소 {places.length}곳</strong><span>손잡이를 끌어 순서를 바꿔요</span></div>
         <div className="schedule-edit-sheet__list">
           {places.map((place, index) => (
             <article
@@ -67,16 +70,12 @@ function CourseEditSheet({ days, activeDay, places, onDayChange, onReorder, onAd
               ><img className="schedule-edit-sheet__handle" src={dragHandle} alt="" /></button>
               <span className="schedule-edit-sheet__order">{index + 1}</span>
               <div><strong>{place.name}</strong><p>{place.description ?? place.detail}</p></div>
-              <span className="schedule-edit-sheet__move">
-                <button type="button" disabled={index === 0} aria-label={`${place.name} 위로 이동`} onClick={() => onReorder(place.id, places[index - 1].id)}>↑</button>
-                <button type="button" disabled={index === places.length - 1} aria-label={`${place.name} 아래로 이동`} onClick={() => onReorder(place.id, places[index + 1].id)}>↓</button>
-              </span>
               {place.fixed ? <small>고정</small> : <button type="button" onClick={() => onReplace(place.id)}>교체</button>}
-              {!place.fixed && <button className="schedule-edit-sheet__remove" type="button" onClick={() => onRemove(place.id)} aria-label={`${place.name} 삭제`}>×</button>}
+              {!place.fixed && <button className="schedule-edit-sheet__remove" type="button" onClick={() => onRemove(place.id)} aria-label={`${place.name} 삭제`}><img src={removeIcon} alt="" /></button>}
             </article>
           ))}
         </div>
-        <button className="schedule-edit-sheet__add" type="button" onClick={onAdd}>＋ {activeDay + 1}일차에 장소 추가</button>
+        <button className="schedule-edit-sheet__add" type="button" onClick={onAdd}><img src={addIcon} alt="" /> {activeDay + 1}일차에 장소 추가</button>
         <button className="course-sheet__primary" type="button" onClick={onSave}>{activeDay + 1}일차 수정 저장</button>
       </section>
     </div>

@@ -1,13 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
-import heroPhoto from "../../assets/course-completion/hero-photo.png";
-import emptyCharacter from "../../assets/images/character-empty-places.webp";
-import googleMapsLogo from "../../assets/images/brand-google-maps.webp";
+import directHeroPhoto from "../../assets/direct-trip/hero.png";
 import CourseRouteMap from "../course-completion/CourseRouteMap";
 import TripInfoStep from "../trip/TripInfoStep";
 import PlaceImportForm from "../trip/PlaceImportForm";
 import ServerSavedPlaces from "../trip/ServerSavedPlaces";
-import ItineraryIssues from "../course-completion/ItineraryIssues";
 import { isServerTripId, savedPlaceToTripPlace, tripDraftToApiInput } from "../../api/adapters";
 import { isApiEnabled } from "../../api/config";
 import { hasAuthSession } from "../../api/tokenStorage";
@@ -19,16 +16,20 @@ import { createGeneratedTrip, mockTripStatus, placeIcon, saveMockTrip, tripStora
 import { dateLabel, durationLabel, emptyDraft, rangeDates } from "../../utils/trip";
 import type { TripDraft } from "../../types/trip";
 import { mockTripPlaces } from "../../data/mocks/tripData";
-import searchIcon from "../../assets/course-completion/search.svg";
+import searchIcon from "../../assets/direct-trip/search.svg";
 import settingsIcon from "../../assets/course-completion/settings.svg";
 import backIcon from "../../assets/icons/nav-back.svg";
 import heroBackIcon from "../../assets/course-completion/back.svg";
 import closeIcon from "../../assets/icons/action-close.svg";
+import addIcon from "../../assets/direct-trip/add.svg";
+import cityPinIcon from "../../assets/direct-trip/city-pin.svg";
+import emptyPinIcon from "../../assets/direct-trip/empty-pin.svg";
+import dragHandleIcon from "../../assets/course-completion/drag-handle.svg";
+import selectedCheckIcon from "../../assets/icons/status-selected-check.svg";
 import { routes } from "../../config/routes";
-import { serverTripPlanPath } from "../../utils/navigation";
+import { serverTripPlanPath, tripSettingsPath } from "../../utils/navigation";
 import {
   directTripPlaces as osakaPlaces,
-  directTripRecentSearches,
 } from "../../data/mocks/directTripData";
 import type {
   DirectTripPlace,
@@ -144,9 +145,14 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
 
   const filteredPlaces = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
-    return directTripPlaces.filter((place) => {
-      const sourceMatches =
-        searchTab === "recommend" || place.source === "google" || draft.city !== "오사카";
+    const matches = directTripPlaces.filter((place) => {
+      const category = place.category.toLowerCase();
+      const sourceMatches = searchTab === "recommend" ||
+        (searchTab === "google" && place.source === "google") ||
+        (searchTab === "sightseeing" && /관광|명소|역사/.test(category)) ||
+        (searchTab === "food" && /맛집|라멘|시장/.test(category)) ||
+        (searchTab === "cafe" && /카페|디저트/.test(category)) ||
+        (searchTab === "shopping" && /쇼핑/.test(category));
       const queryMatches =
         !normalizedQuery ||
         `${place.name} ${place.category} ${place.detail}`
@@ -154,6 +160,9 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
           .includes(normalizedQuery);
       return sourceMatches && queryMatches;
     });
+    return searchTab === "recommend" && !normalizedQuery && draft.city === "오사카"
+      ? matches.slice(0, 5)
+      : matches;
   }, [query, searchTab, directTripPlaces, draft.city]);
 
   const placeCount = Object.values(dayPlaces).reduce(
@@ -225,17 +234,6 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
       ...current,
       [selectedDay]: current[selectedDay].filter((id) => id !== placeId),
     }));
-  };
-
-  const reorderPlace = (index: number, direction: number) => {
-    resetCheck();
-    setChanged(true);
-    setDayPlaces((current) => {
-      const places = [...(current[selectedDay] ?? [])];
-      const [place] = places.splice(index, 1);
-      places.splice(index + direction, 0, place);
-      return { ...current, [selectedDay]: places };
-    });
   };
 
   async function startItinerary() {
@@ -312,6 +310,7 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
             setDraft(next);
           }}
           onNext={startItinerary}
+          nextLabel="일정 만들기"
           submitting={preparingTrip}
           submitError={notice}
         />
@@ -384,18 +383,27 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
   const renderItinerary = () => (
     <S.PlanScreen>
       <S.Hero>
-        <img src={createGeneratedTrip(draft).coverImage || heroPhoto} alt={`${draft.city} 여행`} />
+        <img src={directHeroPhoto} alt={`${draft.city} 여행`} />
         <S.HeroScrim />
         <S.HeroHeader>
           <S.BackButton type="button" onClick={goBack} aria-label="뒤로 가기">
             <img src={heroBackIcon} alt="" />
           </S.BackButton>
           <small>내 일정</small>
-          <button type="button" aria-label="일정 설정">
+          <button
+            type="button"
+            aria-label="일정 설정"
+            onClick={() => {
+              if (isServerTripId(draft.tripId)) {
+                navigate(tripSettingsPath("generated", undefined, Number(draft.tripId)));
+              }
+            }}
+          >
             <img src={settingsIcon} alt="" />
           </button>
         </S.HeroHeader>
         <S.HeroTitle>
+          <span><img src={cityPinIcon} alt="" />{draft.city}</span>
           <div>
             <h1>{draft.city} {durationLabel(draft.startDate, draft.endDate)}</h1>
             <p>{dateLabel(draft.startDate)} – {dateLabel(draft.endDate)}</p>
@@ -404,23 +412,6 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
       </S.Hero>
 
       <S.PlanScroll>
-        <S.TripSummary>
-          <div>
-            <span>여행지</span>
-            <strong>{draft.city}</strong>
-          </div>
-          <i />
-          <div>
-            <span>기간</span>
-            <strong>{durationLabel(draft.startDate, draft.endDate)}</strong>
-          </div>
-          <i />
-          <div>
-            <span>동행</span>
-            <strong>{draft.companion} {draft.people}명</strong>
-          </div>
-        </S.TripSummary>
-
         <S.DayTabs aria-label="일정 일자">
           {directTripDays.map((day) => (
             <button
@@ -430,23 +421,28 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
               onClick={() => setSelectedDay(day.day)}
             >
               <strong>{day.day}일차</strong>
-              <span>
-                {day.date} {day.weekday}
-              </span>
-              {(dayPlaces[day.day] ?? []).length > 0 && <i />}
+              <span>{day.date}</span>
             </button>
           ))}
         </S.DayTabs>
 
+        <S.ScheduleHeader>
+          <div>
+            <strong>{selectedDay}일차 일정</strong>
+            {placesForDay.length > 0 && <span>{placesForDay.length}곳</span>}
+          </div>
+          {placesForDay.length > 0 && (
+            <button type="button" onClick={() => setStage("search")}>
+              <img src={addIcon} alt="" />장소 추가
+            </button>
+          )}
+        </S.ScheduleHeader>
+
         {placesForDay.length === 0 ? (
           <S.EmptyPlan>
-            <img src={emptyCharacter} alt="" />
+            <span><img src={emptyPinIcon} alt="" /></span>
             <h2>아직 담긴 장소가 없어요</h2>
-            <p>
-              가고 싶은 장소를 검색하고
-              <br />
-              {selectedDay}일차 일정을 채워 보세요.
-            </p>
+            <p>가고 싶은 곳을 검색해서 하나씩 담아보세요</p>
             <button type="button" onClick={() => setStage("search")}>
               <img src={searchIcon} alt="" />
               장소 검색해서 담기
@@ -462,15 +458,6 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
                 detail: place.detail, image: place.image, icon: placeIcon(place.category),
               }))}
             />}
-            <S.ScheduleHeader>
-              <div>
-                <strong>{selectedDay}일차 일정</strong>
-                <span>{placesForDay.length}곳</span>
-              </div>
-              <button type="button" onClick={() => setStage("search")}>
-                + 장소 추가
-              </button>
-            </S.ScheduleHeader>
             <S.Timeline>
               {placesForDay.map((place, index) => {
                 const visit = scheduled?.visits.find((item) => item.itemId === place.id);
@@ -499,21 +486,16 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
                           ))}
                         </select>
                       </label>
-                      <div>
-                        <button type="button" disabled={index === 0} aria-label={`${place.name} 위로 이동`} onClick={() => reorderPlace(index, -1)}>↑</button>
-                        <button type="button" disabled={index === placesForDay.length - 1} aria-label={`${place.name} 아래로 이동`} onClick={() => reorderPlace(index, 1)}>↓</button>
-                      </div>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => removePlace(place.id)}
-                      aria-label={`${place.name} 삭제`}
-                    >
-                      <img src={closeIcon} alt="" />
-                    </button>
+                    <div>
+                      <img src={dragHandleIcon} alt="순서 변경" />
+                      <button type="button" onClick={() => removePlace(place.id)} aria-label={`${place.name} 삭제`}>
+                        <img src={closeIcon} alt="" />
+                      </button>
+                    </div>
                   </S.TimelineCard>
                   {!live && index < placesForDay.length - 1 && (
-                    <S.TravelRow>↳ {place.travelTime ?? "도보 8분"}</S.TravelRow>
+                    <S.TravelRow>{place.travelTime ?? "도보 8분"}</S.TravelRow>
                   )}
                 </li>
                 );
@@ -527,12 +509,6 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
             <button type="button" onClick={() => void validate(liveDays)}>다시 시도</button>
           </div>
         )}
-        {validation && (
-          <>
-            <p role="status">일정을 검증했어요. 변경한 일정은 이 화면에서 확인할 수 있어요.</p>
-            <ItineraryIssues validation={validation} />
-          </>
-        )}
       </S.PlanScroll>
 
       {notice && <p role="alert">{notice}</p>}
@@ -542,9 +518,7 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
           disabled={!hasAnyPlace || checking || savingItinerary || (live && !validation?.summary.valid)}
           onClick={() => void saveTrip()}
         >
-          {checking
-            ? "일정 검증 중…"
-            : savingItinerary
+          {savingItinerary
               ? "일정 저장 중…"
               : "저장하기"}
         </button>
@@ -553,20 +527,22 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
   );
 
   const renderSearch = () => {
-    const showImportForm = searchTab === "google" && !samplePlacesReady;
+    const showImportForm = mockScenario === "direct-google-unlinked" && searchTab === "google" && !samplePlacesReady;
     return (
-      <S.SearchScreen>
+      <S.SearchOverlay>
+        <S.SearchBackdrop onClick={goBack} aria-label="장소 추가 닫기" />
+        <S.SearchSheet $compact={Boolean(query) && filteredPlaces.length <= 3} role="dialog" aria-modal="true" aria-label={`${selectedDay}일차에 장소 추가`}>
+        <S.SearchHandle />
         <S.SearchHeader>
-          <S.BackButton type="button" onClick={goBack} aria-label="뒤로 가기">
-            <BackIcon />
-          </S.BackButton>
-          <label data-active={Boolean(query)}>
+          <h2>{selectedDay}일차에 장소 추가</h2>
+          <button type="button" onClick={goBack} aria-label="닫기"><img src={closeIcon} alt="" /></button>
+        </S.SearchHeader>
+        <S.SheetSearchField data-active={Boolean(query)}>
             <img src={searchIcon} alt="" />
             <input
-              autoFocus
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="장소 이름을 검색해 보세요"
+              placeholder="장소, 맛집, 숙소 검색"
               aria-label="장소 검색어"
             />
             {query && (
@@ -574,30 +550,18 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
                 <img src={closeIcon} alt="" />
               </button>
             )}
-          </label>
-        </S.SearchHeader>
-
-        <S.SearchContext>
-          <span>{selectedDay}일차 {directTripDays[selectedDay - 1].date}</span>
-          <strong>에 담아요</strong>
-        </S.SearchContext>
+        </S.SheetSearchField>
 
         <S.SearchTabs>
-          <button
-            type="button"
-            aria-pressed={searchTab === "recommend"}
-            onClick={() => { setSearchTab("recommend"); setSelectedPlaceIds([]); }}
-          >
-            추천
-          </button>
-          <button
-            type="button"
-            aria-pressed={searchTab === "google"}
-            onClick={() => { setSearchTab("google"); setSelectedPlaceIds([]); }}
-          >
-            <img src={googleMapsLogo} alt="" />
-            Google Maps 가져오기
-          </button>
+          {([
+            ["recommend", "추천"], ["google", "저장한 곳"], ["sightseeing", "관광"],
+            ["food", "맛집"], ["cafe", "카페"], ["shopping", "쇼핑"],
+          ] as const).map(([value, label]) => (
+            <button key={value} type="button" aria-pressed={searchTab === value}
+              onClick={() => { setSearchTab(value); setSelectedPlaceIds([]); }}>
+              {label}
+            </button>
+          ))}
         </S.SearchTabs>
 
         <S.SearchScroll>
@@ -617,20 +581,8 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
             </S.NoResults>
           ) : (
             <>
-              {!query && searchTab === "recommend" && (
-                <S.RecentSearches>
-                  <h2>최근 검색</h2>
-                  <div>
-                    {directTripRecentSearches.map((keyword) => (
-                      <button type="button" key={keyword} onClick={() => setQuery(keyword)}>
-                        {keyword}
-                      </button>
-                    ))}
-                  </div>
-                </S.RecentSearches>
-              )}
               <S.ResultHeading>
-                {query ? `‘${query}’ 검색 결과` : searchTab === "google" ? "가져온 샘플 장소" : `${draft.city} 추천 장소`}
+                {query ? `검색 결과 ${filteredPlaces.length}곳` : "지금 동선에서 가까운 순"}
               </S.ResultHeading>
               <S.PlaceList>
                 {filteredPlaces.map((place) => {
@@ -646,11 +598,12 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
                       >
                         <img src={place.image} alt="" />
                         <span>
-                          <small>{place.category}</small>
                           <strong>{place.name}</strong>
-                          <em>{place.detail}</em>
+                          <em>{place.category}  |  {place.detail}</em>
                         </span>
-                        <i aria-hidden="true">{alreadyAdded ? "완료" : selected ? "✓" : ""}</i>
+                        <i aria-hidden="true">
+                          {alreadyAdded ? "완료" : selected ? <img src={selectedCheckIcon} alt="" /> : null}
+                        </i>
                       </button>
                     </li>
                   );
@@ -671,24 +624,28 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
             onClick={addSelectedPlaces}
           >
             {selectedPlaceIds.length > 0
-              ? `${selectedPlaceIds.length}곳을 ${selectedDay}일차에 담기`
-              : "담을 장소를 골라주세요"}
+              ? `${selectedPlaceIds.length}곳을 ${selectedDay}일차에 추가`
+              : "추가할 장소를 골라주세요"}
           </button>
         </S.BottomAction>
-      </S.SearchScreen>
+        </S.SearchSheet>
+      </S.SearchOverlay>
     );
   };
 
   return (
     <S.Shell>
       {stage === "info" && renderInfo()}
-      {stage === "itinerary" && renderItinerary()}
+      {(stage === "itinerary" || stage === "search") && renderItinerary()}
       {stage === "search" && (live ? (
-        <S.SearchScreen>
-          <S.PlainHeader>
-            <S.BackButton type="button" onClick={goBack} aria-label="뒤로 가기"><BackIcon /></S.BackButton>
-            <h1>{selectedDay}일차 장소 담기</h1>
-          </S.PlainHeader>
+        <S.SearchOverlay>
+          <S.SearchBackdrop onClick={goBack} aria-label="장소 추가 닫기" />
+          <S.SearchSheet role="dialog" aria-modal="true" aria-label={`${selectedDay}일차에 장소 추가`}>
+          <S.SearchHandle />
+          <S.SearchHeader>
+            <h2>{selectedDay}일차에 장소 추가</h2>
+            <button type="button" onClick={goBack} aria-label="닫기"><img src={closeIcon} alt="" /></button>
+          </S.SearchHeader>
           <S.SearchScroll>
             <ServerSavedPlaces
               tripId={Number(draft.tripId)}
@@ -698,7 +655,8 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
               pickedPlaceIds={new Set((dayPlaces[selectedDay] ?? []).map((id) => livePlaces[id].visit.placeId))}
             />
           </S.SearchScroll>
-        </S.SearchScreen>
+          </S.SearchSheet>
+        </S.SearchOverlay>
       ) : renderSearch())}
       {showExitConfirm && (
         <S.ConfirmOverlay role="presentation" onMouseDown={() => setShowExitConfirm(false)}>

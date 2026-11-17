@@ -13,7 +13,7 @@ import { importMockPlaces } from "../../data/mocks/tripService";
 import { mergePlaces, placesError, toggleId } from "../../utils/trip";
 import TripSheet from "../common/TripSheet";
 import PlaceImportForm from "./PlaceImportForm";
-import type { PlaceImportInput } from "./PlaceImportForm";
+import type { PlaceImportInput, PlaceImportView } from "./PlaceImportForm";
 import { isServerTripId, savedPlaceToTripPlace } from "../../api/adapters";
 import { shouldUseMockFallback } from "../../api/client";
 import { isApiEnabled } from "../../api/config";
@@ -34,6 +34,7 @@ import cafe from "../../assets/icons/category-cafe.svg";
 import camera from "../../assets/icons/category-sightseeing.svg";
 import shopping from "../../assets/icons/category-shopping.svg";
 import searchIcon from "../../assets/icons/search-default.svg";
+import googleMapsLogo from "../../assets/images/brand-google-maps.webp";
 import chevronIcon from "../../assets/icons/nav-chevron-right.svg";
 import * as S from "./Trip.styled";
 import * as P from "./SavedPlacesStep.styled";
@@ -42,6 +43,8 @@ interface SavedPlacesStepProps {
   onChange: (draft: TripDraft) => void;
   onNext: () => void;
   onLoadingChange: (loading: boolean) => void;
+  importView?: PlaceImportView;
+  onImportViewChange?: (view: PlaceImportView) => void;
 }
 const categories: ("전체" | PlaceCategory)[] = [
   "전체",
@@ -62,10 +65,11 @@ function SavedPlacesStep({
   onChange,
   onNext,
   onLoadingChange,
+  importView,
+  onImportViewChange,
 }: SavedPlacesStepProps) {
   const [tab, setTab] = useState<"saved" | "courses">("saved");
   const [category, setCategory] = useState<"전체" | PlaceCategory>("전체");
-  const [query, setQuery] = useState("");
   const [placeToMatch, setPlaceToMatch] = useState<TripPlace | null>(null);
   const [matchQuery, setMatchQuery] = useState("");
   const [remoteMatchResults, setRemoteMatchResults] = useState<PlaceCandidate[]>([]);
@@ -131,10 +135,7 @@ function SavedPlacesStep({
   const ready = draft.source !== "none";
   const emptySaved = ready && tab === "saved" && !draft.places.length;
   const list = draft.places.filter(
-    (place) =>
-      (category === "전체" || place.category === category) &&
-      (!query.trim() ||
-        place.title.toLowerCase().includes(query.trim().toLowerCase())),
+    (place) => category === "전체" || place.category === category,
   );
   const selected = draft.places.filter((place) => selectedIds.has(place.id));
   const selectable = list.filter((place) => !place.needsMatch && !place.closed);
@@ -173,12 +174,14 @@ function SavedPlacesStep({
       } else {
         places = await importMockPlaces(draft.city, controller.signal);
       }
-      if (!controller.signal.aborted)
+      if (!controller.signal.aborted) {
+        onImportViewChange?.("method");
         onChange({
           ...draft,
           source,
           places: mergePlaces(draft.places, places),
         });
+      }
     } catch (cause) {
       if (!controller.signal.aborted)
         setError(
@@ -297,7 +300,10 @@ function SavedPlacesStep({
             onImport={importSamplePlaces}
             busy={busy}
             importError={error}
+            view={importView}
+            onViewChange={onImportViewChange}
             onSkip={() => {
+              onImportViewChange?.("method");
               onChange({
                 ...draft,
                 source: "manual",
@@ -309,29 +315,17 @@ function SavedPlacesStep({
         </P.ConnectStep>
       ) : (
         <P.PlacesStep $empty={emptySaved}>
-          <header>
-            <P.PlacesTitle>여행에 담을 장소를 골라주세요</P.PlacesTitle>
-            <S.Subtitle>
-              {tab === "courses"
-                ? "코스에 포함된 장소를 확인하고 선택해 보세요"
-                : draft.source === "manual"
-                  ? `${draft.city} 인기 장소나 추천 코스에서 바로 담을 수 있어요`
-                  : draft.source === "file"
-                    ? "Google Maps에서 가져온 저장 장소예요"
-                    : "데모에서 가져온 샘플 장소예요"}
-            </S.Subtitle>
-          </header>
+          <P.PlacesLead>
+            <h1>여행에 담을 장소를 골라주세요</h1>
+            <p><img src={googleMapsLogo} alt="" />Google Maps에 저장한 장소를 불러왔어요</p>
+          </P.PlacesLead>
           <P.PlaceTabs>
             <button
               type="button"
               aria-pressed={tab === "saved"}
               onClick={() => setTab("saved")}
             >
-              {draft.source === "manual"
-                ? "인기 장소"
-                : draft.source === "file"
-                  ? "저장 장소"
-                  : "샘플 장소"}
+              저장 장소
             </button>
             <button
               type="button"
@@ -345,14 +339,9 @@ function SavedPlacesStep({
           {tab === "saved" ? (
             draft.places.length ? (
               <>
-                <S.PlaceControls>
+                <P.PlacesSummary>
                   <span>
-                    {draft.city}
-                    {draft.source === "manual"
-                      ? " 추천 장소"
-                      : draft.source === "file"
-                        ? " 저장 장소"
-                        : " 샘플 장소"}{" "}
+                    {draft.city}에 저장한 장소{" "}
                     <b>
                       {draft.places.length}
                       곳
@@ -378,18 +367,7 @@ function SavedPlacesStep({
                     />
                     전체 선택
                   </label>
-                </S.PlaceControls>
-                {draft.source === "manual" && (
-                  <S.Search>
-                    <img src={searchIcon} alt="" />
-                    <input
-                      aria-label="장소 검색"
-                      placeholder="가고 싶은 곳을 검색해 보세요"
-                      value={query}
-                      onChange={(event) => setQuery(event.target.value)}
-                    />
-                  </S.Search>
-                )}
+                </P.PlacesSummary>
                 <P.Categories>
                   {categories.map((item) => (
                     <button

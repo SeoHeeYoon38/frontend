@@ -1,29 +1,11 @@
 import { createGlobalStyle } from "styled-components";
-import NotoSansRegular from "../assets/fonts/NotoSansKR-Regular.woff2";
-import NotoSansMedium from "../assets/fonts/NotoSansKR-Medium.woff2";
-import NotoSansBold from "../assets/fonts/NotoSansKR-Bold.woff2";
+import PretendardVariable from "../assets/fonts/PretendardVariable.woff2";
 
 export const GlobalStyle = createGlobalStyle`
   @font-face {
-    font-family: "Noto Sans KR";
-    src: url(${NotoSansRegular}) format("woff2");
-    font-weight: 400;
-    font-style: normal;
-    font-display: swap;
-  }
-
-  @font-face {
-    font-family: "Noto Sans KR";
-    src: url(${NotoSansMedium}) format("woff2");
-    font-weight: 500;
-    font-style: normal;
-    font-display: swap;
-  }
-
-  @font-face {
-    font-family: "Noto Sans KR";
-    src: url(${NotoSansBold}) format("woff2");
-    font-weight: 700;
+    font-family: "Pretendard";
+    src: url(${PretendardVariable}) format("woff2-variations");
+    font-weight: 100 900;
     font-style: normal;
     font-display: swap;
   }
@@ -34,7 +16,10 @@ export const GlobalStyle = createGlobalStyle`
 
 body {
   margin: 0;
-  font-family: "Noto Sans KR", Arial, sans-serif;
+  color: #1a1a1a;
+  background: #ffffff;
+  font-family: "Pretendard", "Apple SD Gothic Neo", system-ui, sans-serif;
+  font-synthesis: none;
 }
 
 html,

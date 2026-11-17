@@ -217,7 +217,7 @@ export const Toast = styled.div`
   color: #fff;
   background: rgb(24 24 26 / 94%);
   font-size: 14px;
-  b { color: #00e1ff; }
+  b img { width: 18px; height: 18px; }
 `;
 
 export const Overlay = styled.div`
@@ -256,7 +256,8 @@ export const SheetHeader = styled.header`
 
   h2 { margin: 0; font-size: 22px; line-height: 31px; }
   p { margin: 5px 0 0; color: #8a8a8e; font-size: 13px; line-height: 19px; }
-  > button { width: 32px; height: 32px; padding: 0; color: #5c5c63; background: transparent; font-size: 28px; line-height: 1; }
+  > button { width: 32px; height: 32px; padding: 0; color: #5c5c63; background: transparent; }
+  > button img { width: 22px; height: 22px; }
 `;
 
 export const InfoList = styled.div`

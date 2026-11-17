@@ -35,9 +35,11 @@ export function readPlanOrigin(search: string): PlanOrigin {
 export function tripPlanPath(
   origin: PlanOrigin,
   courseId?: string,
+  day?: number,
 ): string {
   const params = new URLSearchParams({ from: origin });
   if (courseId) params.set("course", courseId);
+  if (day && day > 1) params.set("day", String(day));
   return `${routes.tripPlan}?${params.toString()}`;
 }
 
@@ -45,8 +47,16 @@ export function travelerCoursePath(courseId: string): string {
   return `/courses/${encodeURIComponent(courseId)}`;
 }
 
-export function serverTripPlanPath(origin: PlanOrigin, tripId: string): string {
-  return `${routes.tripPlan}?${new URLSearchParams({ from: origin, tripId })}`;
+export function serverTripPlanPath(origin: PlanOrigin, tripId: string, day?: number): string {
+  const params = new URLSearchParams({ from: origin, tripId });
+  if (day && day > 1) params.set("day", String(day));
+  return `${routes.tripPlan}?${params}`;
+}
+
+export function readPlanDay(search: string): number {
+  const value = new URLSearchParams(search).get("day");
+  const day = Number(value);
+  return value && Number.isSafeInteger(day) && day > 0 ? day : 1;
 }
 
 export function resumeTripPath(tripId: string | number): string {
@@ -64,10 +74,11 @@ export function tripSettingsPath(origin: PlanOrigin, courseId?: string, returnTr
   return `${routes.tripSettings}?${params.toString()}`;
 }
 
-export function tripCommunityPath(origin: PlanOrigin, courseId?: string, returnTripId?: number): string {
+export function tripCommunityPath(origin: PlanOrigin, courseId?: string, returnTripId?: number, day?: number): string {
   const params = new URLSearchParams({ from: origin });
   if (courseId) params.set("course", courseId);
   if (returnTripId !== undefined) params.set("returnTripId", String(returnTripId));
+  if (day && day > 1) params.set("day", String(day));
   return `${routes.tripCommunity}?${params.toString()}`;
 }
 
@@ -81,10 +92,11 @@ export function tripPlanBackPath(search: string): string {
 export function settingsBackPath(search: string): string {
   const params = new URLSearchParams(search);
   const returnTripId = params.get("returnTripId");
+  const day = readPlanDay(search);
   if (returnTripId && /^\d+$/.test(returnTripId)) {
-    return serverTripPlanPath(readPlanOrigin(search), returnTripId);
+    return serverTripPlanPath(readPlanOrigin(search), returnTripId, day);
   }
-  return tripPlanPath(readPlanOrigin(search), params.get("course") ?? undefined);
+  return tripPlanPath(readPlanOrigin(search), params.get("course") ?? undefined, day);
 }
 
 export function isDirectTripMode(search: string): boolean {

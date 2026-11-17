@@ -1,5 +1,7 @@
 import { useSearchParams } from "react-router";
 import pinIcon from "../assets/course-settings/pin.svg";
+import checkIcon from "../assets/icons/status-selected-check.svg";
+import closeIcon from "../assets/icons/action-close.svg";
 import CreateTripSheet from "../components/common/CreateTripSheet";
 import { mockTripStatus, mockTripSummary, readMockTrips, readTripStorageNotice } from "../data/mocks/mockTripService";
 import type { MyTripSummary } from "../types/myTrips";
@@ -91,7 +93,7 @@ function MyTripsPage() {
     <S.Page>
       {toastMessage && (
         <S.Toast role="status" aria-live="polite">
-          <span>✓</span>
+          <span><img src={checkIcon} alt="" /></span>
           <strong>{toastMessage}</strong>
           <button
             type="button"
@@ -102,7 +104,7 @@ function MyTripsPage() {
             }}
             aria-label="알림 닫기"
           >
-            ×
+            <img src={closeIcon} alt="" />
           </button>
         </S.Toast>
       )}

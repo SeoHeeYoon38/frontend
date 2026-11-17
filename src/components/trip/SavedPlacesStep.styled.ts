@@ -1,5 +1,6 @@
 import { Step, Title } from "./Trip.styled";
 import styled from "styled-components";
+import selectedCheck from "../../assets/icons/status-selected-check.svg";
 export const ConnectVisual = styled.div`
   position: relative;
   width: calc(100% + 40px);
@@ -198,12 +199,131 @@ export const Checkbox = styled.input`
   &:checked {
     background: #090738;
     border-color: #090738;
+    background-image: url(${selectedCheck});
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 20px 20px;
   }
-  &:checked::after {
-    content: "✓";
-    color: white;
-    font-size: 14px;
-    line-height: 1;
+`;
+
+export const PlacesLead = styled.header`
+  display: grid;
+  gap: 8px;
+
+  h1 {
+    margin: 0;
+    color: #1a1a1a;
+    font-size: 22px;
+    line-height: 30px;
+    letter-spacing: -0.11px;
+  }
+
+  p {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin: 0;
+    color: #8a8a8e;
+    font-size: 13px;
+    line-height: 18px;
+    font-weight: 500;
+  }
+
+  img {
+    width: 14px;
+    height: 14px;
+    object-fit: contain;
+  }
+`;
+
+export const PlacesSummary = styled.div`
+  display: flex;
+  min-height: 24px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: #8a8a8e;
+  font-size: 13px;
+  line-height: 18px;
+
+  b {
+    color: #090738;
+  }
+
+  label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #5c5c63;
+    font-weight: 700;
+    cursor: pointer;
+  }
+`;
+
+export const PlaceCopy = styled.div`
+  flex: 1;
+  min-width: 0;
+
+  > div {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+`;
+
+export const PlaceThumb = styled.div`
+  width: 60px;
+  height: 60px;
+  flex: 0 0 60px;
+  overflow: hidden;
+  border-radius: 14px;
+  background: #f3f5fa;
+
+  img {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+  }
+`;
+
+export const PlaceStatus = styled.span`
+  padding: 1px 6px;
+  border-radius: 6px;
+  color: #8a8a8e;
+  background: #f3f5fa;
+  font-size: 11px;
+  line-height: 15px;
+  font-weight: 500;
+  white-space: nowrap;
+`;
+
+export const InlineActions = styled.div`
+  display: flex;
+  flex-basis: 100%;
+  gap: 8px;
+  padding-left: 72px;
+
+  button {
+    width: auto;
+    padding: 7px 10px;
+    font-size: 12px;
+    text-align: center;
+  }
+`;
+
+export const SearchSection = styled.section`
+  display: grid;
+  gap: 10px;
+
+  form {
+    display: flex;
+    gap: 8px;
   }
 `;
 export const CourseCard = styled.div`

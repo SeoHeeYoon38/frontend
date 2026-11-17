@@ -25,100 +25,108 @@ export const Generation = styled.div`
   flex-direction: column;
   align-items: center;
   text-align: center;
-  padding: 80px 16px 48px;
-  gap: 24px;
+  padding: 70px 0 48px;
   @media (max-height: 600px) {
     padding-top: 24px;
-    gap: 20px;
   }
 `;
 
 export const GenerationCopy = styled.div`
-  display: grid;
-  gap: 8px;
+  margin-top: 32px;
   max-width: 100%;
   overflow-wrap: anywhere;
   word-break: keep-all;
 
   h1 {
-    font-size: 24px;
-    line-height: 1.4;
+    font-size: 22px;
+    line-height: 30px;
+    letter-spacing: -0.11px;
     margin: 0;
-  }
-  p {
-    color: #8a8a8e;
-    margin: 0;
-    font-size: 14px;
-    line-height: 1.5;
   }
 `;
-export const SymbolBox = styled.div`
+export const GenerationIllustration = styled.img`
   flex-shrink: 0;
-  position: relative;
-  width: 92px;
-  height: 92px;
-  margin-bottom: 90px;
-  border-radius: 28px;
-  background: white;
-  box-shadow: 0 10px 28px #0a08381f;
-  overflow: hidden;
-  > div {
-    position: absolute;
-    left: 17px;
-    top: 21px;
-    width: 58px;
-    height: 50px;
-    overflow: hidden;
-  }
-  img {
-    position: absolute;
-    height: 100%;
-    width: 464.81%;
-    max-width: none;
-    left: 0;
-    top: 0;
-  }
-  @media (max-height: 600px) {
-    margin-bottom: 24px;
-  }
+  width: 160px;
+  height: 160px;
+  object-fit: contain;
 `;
 export const GenerationSteps = styled.ol`
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 0;
   list-style: none;
   padding: 0;
-  margin: 12px 0 0;
-  max-width: 100%;
+  margin: 32px 0 0;
+  width: 263px;
   text-align: left;
-  li[data-pending="true"] {
-    color: #a8a8ae;
-  }
+
   li {
+    position: relative;
     display: flex;
-    align-items: flex-start;
-    min-height: 47px;
-    gap: 16px;
+    align-items: center;
+    min-height: 46px;
+    gap: 18px;
+    color: #090738;
     font-size: 14px;
+    line-height: 20px;
+    font-weight: 500;
+  }
+
+  li[data-status="current"] {
     font-weight: 700;
   }
-  img {
+
+  li[data-status="waiting"] {
+    color: #b4b5bd;
+    font-weight: 400;
+  }
+
+  li:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    left: 10px;
+    top: 27px;
+    width: 2px;
+    height: 38px;
+    background: #00e1ff;
+  }
+
+  li[data-status="current"]::after,
+  li[data-status="waiting"]::after {
+    left: 9px;
+    width: 0;
+    border-left: 2px dashed #c9ccd6;
+    background: transparent;
+  }
+
+  li > span {
+    position: relative;
     flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    display: grid;
+    place-items: center;
+  }
+
+  li > span > img:not(.halo) {
+    position: relative;
+    z-index: 1;
+  }
+
+  .halo {
+    position: absolute;
+    inset: -1px;
   }
 `;
 
-export const GenerationGlow = styled.img<{ $tone: "purple" | "cyan" }>`
+export const GenerationGlow = styled.img`
   position: absolute;
   z-index: -1;
   pointer-events: none;
-  left: ${({ $tone }) => ($tone === "purple" ? "calc(50% - 176px)" : "calc(50% - 70px)")};
-  top: ${({ $tone }) => ($tone === "purple" ? "-19px" : "35px")};
-`;
-
-export const GenerationNotice = styled.p`
-  && {
-    color: #5c5c63;
-    font-size: 12px;
-    line-height: 17px;
-  }
+  left: calc(50% - 130px);
+  top: 50px;
+  width: 260px;
+  height: 260px;
 `;

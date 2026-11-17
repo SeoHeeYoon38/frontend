@@ -8,7 +8,7 @@ export const Shell = styled.main`
   overflow-x: hidden;
   background: #fff;
   color: #1a1a1a;
-  font-family: "Noto Sans KR", Arial, sans-serif;
+  font-family: "Pretendard", "Apple SD Gothic Neo", system-ui, sans-serif;
 `;
 
 export const Hero = styled.header`
@@ -400,7 +400,13 @@ export const Toast = styled.div`
   font-size: 14px;
 
   b {
-    color: #00e1ff;
+    display: grid;
+    place-items: center;
+  }
+
+  b img {
+    width: 18px;
+    height: 18px;
   }
 `;
 

@@ -9,7 +9,7 @@ export const Page = styled.main`
   overflow: hidden;
   color: #1a1a1a;
   background: #f3f5fa;
-  font-family: "Noto Sans KR", Arial, sans-serif;
+  font-family: "Pretendard", "Apple SD Gothic Neo", system-ui, sans-serif;
 
   button {
     margin: 0;

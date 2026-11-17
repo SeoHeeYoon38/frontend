@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { getPlacePhoto, type PlacePhoto } from "../../api/placePhotos";
+import chevronIcon from "../../assets/icons/nav-chevron-right.svg";
 import "./PlacePhoto.css";
 
 interface PhotoSource {
@@ -75,9 +76,9 @@ export function PlaceGallery(props: PhotoSource) {
       <Photo key={index} {...props} index={index} onCount={setCount} />
       {count > 1 && (
         <div className="place-gallery__navigation">
-          <button type="button" disabled={index === 0} onClick={() => setIndex(index - 1)} aria-label="이전 사진">‹</button>
+          <button type="button" disabled={index === 0} onClick={() => setIndex(index - 1)} aria-label="이전 사진"><img className="place-gallery__previous" src={chevronIcon} alt="" /></button>
           <span>{index + 1} / {count}</span>
-          <button type="button" disabled={index >= count - 1} onClick={() => setIndex(index + 1)} aria-label="다음 사진">›</button>
+          <button type="button" disabled={index >= count - 1} onClick={() => setIndex(index + 1)} aria-label="다음 사진"><img src={chevronIcon} alt="" /></button>
         </div>
       )}
     </div>

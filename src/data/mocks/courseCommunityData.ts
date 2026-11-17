@@ -1,4 +1,3 @@
-import aiAvatar from "../../assets/course-completion/ai-avatar.png";
 import avatarBlue from "../../assets/course-settings/avatar-blue.png";
 import avatarPurple from "../../assets/course-settings/avatar-purple.png";
 import avatarYellow from "../../assets/course-settings/avatar-yellow.png";
@@ -7,8 +6,6 @@ import type {
   CommunityPollOption,
   CompanionComment,
 } from "../../types/courseCommunity";
-
-export { aiAvatar };
 
 export const communityMembers: CommunityMember[] = [
   { id: "yebin", name: "우예빈", avatar: avatarBlue, tone: "blue" },

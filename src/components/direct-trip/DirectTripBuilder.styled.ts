@@ -1,8 +1,8 @@
 import styled from "styled-components";
 
-const navy = "#12103f";
-const muted = "#8b8d98";
-const border = "#e7e8ee";
+const navy = "#090738";
+const muted = "#8a8a8e";
+const border = "#e4e6ec";
 
 export const Shell = styled.div`
   position: relative;
@@ -14,7 +14,7 @@ export const Shell = styled.div`
   overflow: hidden;
   color: #171722;
   background: #ffffff;
-  font-family: "Noto Sans KR", Arial, sans-serif;
+  font-family: "Pretendard", "Apple SD Gothic Neo", system-ui, sans-serif;
 
   :where(&) :where(button) {
     margin: 0;
@@ -47,10 +47,50 @@ export const PlainScreen = styled.div`
 `;
 
 export const PlanScreen = styled(PlainScreen)`
-  background: #f6f6fa;
+  background: #ffffff;
 `;
 
 export const SearchScreen = styled(PlainScreen)``;
+
+export const SearchOverlay = styled.div`
+  position: absolute;
+  z-index: 30;
+  inset: 0;
+`;
+
+export const SearchBackdrop = styled.button`
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  background: rgb(5 5 15 / 48%) !important;
+`;
+
+export const SearchSheet = styled.section<{ $compact?: boolean }>`
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: ${({ $compact }) => $compact ? "min(502px, calc(100% - 110px))" : "min(716px, calc(100% - 110px))"};
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 24px 24px 0 0;
+  background: #ffffff;
+
+  > div:last-child button:disabled {
+    color: #ffffff;
+    background: #e4e6ec;
+  }
+`;
+
+export const SearchHandle = styled.div`
+  width: 36px;
+  height: 5px;
+  flex: 0 0 auto;
+  margin: 9px auto 0;
+  border-radius: 99px;
+  background: #d1d1d6;
+`;
 
 export const PlainHeader = styled.header`
   position: relative;
@@ -212,17 +252,16 @@ export const BottomAction = styled.div<{ $floating?: boolean }>`
   bottom: ${({ $floating }) => ($floating ? "0" : "auto")};
   left: ${({ $floating }) => ($floating ? "0" : "auto")};
   flex: 0 0 auto;
-  padding: 12px 20px max(22px, env(safe-area-inset-bottom));
-  border-top: 1px solid #ededf2;
-  background: rgb(255 255 255 / 96%);
-  backdrop-filter: blur(10px);
+  padding: 16px 20px 34px;
+  border-top: 1px solid ${border};
+  background: #ffffff;
 
   button {
     width: 100%;
-    height: 54px;
+    height: 56px;
     display: grid;
     place-items: center;
-    border-radius: 14px;
+    border-radius: 16px;
     color: #ffffff;
     background: ${navy};
     font-size: 16px;
@@ -239,7 +278,7 @@ export const BottomAction = styled.div<{ $floating?: boolean }>`
 
 export const Hero = styled.section`
   position: relative;
-  height: 232px;
+  height: 358px;
   flex: 0 0 auto;
   overflow: hidden;
 
@@ -253,26 +292,28 @@ export const Hero = styled.section`
 export const HeroScrim = styled.div`
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgb(5 5 31 / 60%) 0%, rgb(5 5 31 / 12%) 46%, rgb(5 5 31 / 72%) 100%);
+  background:
+    linear-gradient(180deg, rgb(5 5 15 / 55%) 0%, rgb(5 5 15 / 40%) 40%, transparent 60%),
+    linear-gradient(180deg, transparent 36%, rgb(5 5 15 / 30%) 57%, rgb(5 5 15 / 82%) 100%);
 `;
 
 export const HeroHeader = styled.header`
   position: absolute;
   z-index: 5;
-  top: env(safe-area-inset-top, 0px);
+  top: 0;
   right: 0;
   left: 0;
   display: grid;
-  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  grid-template-columns: 22px minmax(0, 1fr) 24px;
   align-items: center;
   gap: 6px;
-  padding: 4px 14px;
+  height: 46px;
+  padding: 0 20px;
   color: #ffffff;
 
   > ${BackButton} {
-    width: 44px;
-    height: 44px;
-    background: rgb(5 5 31 / 45%);
+    width: 22px;
+    height: 22px;
   }
 
   small {
@@ -281,17 +322,17 @@ export const HeroHeader = styled.header`
   }
 
   > button:last-child {
-    width: 38px;
-    height: 38px;
+    width: 24px;
+    height: 24px;
     display: grid;
     place-items: center;
     justify-self: end;
-    border-radius: 50%;
-    background: rgb(255 255 255 / 20%);
+    border-radius: 0;
+    background: transparent;
   }
 
   > button:last-child img {
-    width: 20px;
+    width: 24px;
     filter: brightness(0) invert(1);
   }
 `;
@@ -299,19 +340,44 @@ export const HeroHeader = styled.header`
 export const HeroTitle = styled.div`
   position: absolute;
   right: 20px;
-  bottom: 22px;
+  top: 241px;
   left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   color: #ffffff;
+
+  > span {
+    width: fit-content;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px 4px 8px;
+    border-radius: 99px;
+    background: rgb(255 255 255 / 22%);
+    backdrop-filter: blur(6px);
+    font-size: 11px;
+    line-height: 15px;
+    font-weight: 700;
+  }
+
+  > span img {
+    width: 12px;
+    height: 12px;
+    filter: brightness(0) invert(1);
+  }
 
   h1 {
     margin: 0;
-    font-size: 22px;
-    line-height: 30px;
+    font-size: 26px;
+    line-height: 35px;
+    letter-spacing: -0.26px;
   }
 
   p {
-    margin: 3px 0 0;
-    font-size: 12px;
+    margin: 4px 0 0;
+    font-size: 14px;
+    line-height: 20px;
   }
 `;
 
@@ -319,7 +385,10 @@ export const PlanScroll = styled.main`
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding-bottom: 100px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 24px 20px 130px;
   scrollbar-width: none;
 
   &::-webkit-scrollbar {
@@ -362,104 +431,108 @@ export const TripSummary = styled.section`
 `;
 
 export const DayTabs = styled.nav`
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  margin: 0 16px;
-  padding: 4px;
-  border-radius: 15px;
+  display: flex;
+  gap: 24px;
+  margin: 0;
+  padding: 0;
+  border-bottom: 1px solid ${border};
   background: #ffffff;
 
   button {
     position: relative;
-    min-height: 56px;
+    min-height: 40px;
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 1px;
-    border-radius: 12px;
+    flex-direction: row;
+    align-items: baseline;
+    gap: 5px;
+    padding: 6px 0 11px;
+    border-radius: 0;
     color: ${muted};
   }
 
   button[aria-pressed="true"] {
-    color: #ffffff;
-    background: ${navy};
+    color: #1a1a1a;
+    border-bottom: 2px solid #1a1a1a;
+    font-weight: 700;
   }
 
   strong {
-    font-size: 12px;
+    font-size: 15px;
+    line-height: 22px;
   }
 
   span {
-    font-size: 10px;
-  }
-
-  i {
-    position: absolute;
-    right: 10px;
-    top: 8px;
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-    background: #62d8ea;
+    color: #8a8a8e;
+    font-size: 12px;
+    line-height: 17px;
   }
 `;
 
 export const EmptyPlan = styled.section`
-  min-height: 345px;
+  min-height: 238px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  margin: 12px 16px 0;
-  padding: 30px 24px;
+  margin: 0;
+  padding: 36px 24px;
   border-radius: 20px;
   background: #ffffff;
   text-align: center;
 
-  > img {
-    width: 100px;
-    height: 100px;
-    object-fit: contain;
+  > span {
+    width: 56px;
+    height: 56px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: #ffffff;
+  }
+
+  > span img {
+    width: 28px;
+    height: 28px;
   }
 
   h2 {
-    margin: 13px 0 5px;
-    color: ${navy};
-    font-size: 17px;
+    margin: 14px 0 0;
+    color: #1a1a1a;
+    font-size: 16px;
+    line-height: 22px;
   }
 
   p {
     margin: 0;
     color: ${muted};
-    font-size: 12px;
-    line-height: 19px;
+    margin-top: 6px;
+    font-size: 13px;
+    line-height: 18px;
   }
 
   button {
-    height: 46px;
+    height: 44px;
     display: flex;
     align-items: center;
     gap: 8px;
-    margin-top: 22px;
-    padding: 0 18px;
-    border: 1px solid #d9d9e3;
+    margin-top: 20px;
+    padding: 0 20px;
+    border: 0;
     border-radius: 12px;
-    color: ${navy};
-    background: #ffffff;
-    font-size: 13px;
+    color: #ffffff;
+    background: ${navy};
+    font-size: 14px;
     font-weight: 700;
   }
 
   button img {
-    width: 17px;
-    filter: brightness(0) saturate(100%) invert(9%) sepia(31%) saturate(2463%) hue-rotate(213deg) brightness(80%);
+    width: 16px;
+    filter: brightness(0) invert(1);
   }
 `;
 
 export const FilledPlan = styled.section`
-  margin-top: 12px;
-  padding-top: 12px;
+  margin: 0;
+  padding: 0;
   background: #ffffff;
 `;
 
@@ -501,7 +574,7 @@ export const ScheduleHeader = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 24px 18px 14px;
+  padding: 0;
 
   > div {
     display: flex;
@@ -510,8 +583,9 @@ export const ScheduleHeader = styled.div`
   }
 
   strong {
-    color: ${navy};
-    font-size: 17px;
+    color: #1a1a1a;
+    font-size: 16px;
+    line-height: 22px;
   }
 
   span {
@@ -520,19 +594,25 @@ export const ScheduleHeader = styled.div`
   }
 
   button {
-    padding: 7px 10px;
-    border-radius: 9px;
-    color: ${navy};
-    background: #f1f0ff;
-    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #1a1a1a;
+    background: transparent;
+    font-size: 13px;
     font-weight: 700;
+  }
+
+  button img {
+    width: 28px;
+    height: 28px;
   }
 `;
 
 export const Timeline = styled.ol`
   list-style: none;
   margin: 0;
-  padding: 0 16px 18px;
+  padding: 0;
 
   > li {
     position: relative;
@@ -627,7 +707,19 @@ export const TimelineCard = styled.article<{ $hasImage: boolean }>`
     font-size: 9px;
   }
 
-  > button {
+  > div:last-child {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
+  > div:last-child > img {
+    width: 14px;
+    height: 14px;
+  }
+
+  > div:last-child > button {
     align-self: start;
     color: #a5a5af;
     font-size: 21px;
@@ -650,33 +742,53 @@ export const TravelRow = styled.div`
 `;
 
 export const SearchHeader = styled.header`
-  min-height: 56px;
+  min-height: 72px;
   flex: 0 0 auto;
-  display: grid;
-  grid-template-columns: 22px 1fr;
+  display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 5px 20px;
+  justify-content: space-between;
+  padding: 9px 20px 0;
+
+  h2 {
+    margin: 0;
+    color: #1a1a1a;
+    font-size: 22px;
+    line-height: 30px;
+    font-weight: 700;
+  }
 
   > button {
-    width: 22px;
-    height: 22px;
+    width: 32px;
+    height: 32px;
+    display: grid;
+    place-items: center;
   }
 
-  > label {
-    height: 46px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 0 12px 0 14px;
-    border: 1.5px solid ${navy};
-    border-radius: 12px;
-    background: #f7f7fa;
+  > button img {
+    width: 24px;
+    height: 24px;
+  }
+`;
+
+export const SheetSearchField = styled.label`
+  height: 48px;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 20px 18px;
+  padding: 0 14px;
+  border: 1.5px solid transparent;
+  border-radius: 14px;
+  background: #f3f5fa;
+
+  &[data-active="true"] {
+    border-color: ${navy};
   }
 
-  label > img {
-    width: 18px;
-    opacity: 0.65;
+  > img {
+    width: 20px;
+    height: 20px;
   }
 
   input {
@@ -684,19 +796,19 @@ export const SearchHeader = styled.header`
     flex: 1;
     border: 0;
     outline: 0;
-    color: ${navy};
+    color: #1a1a1a;
     background: transparent;
     font-size: 15px;
     line-height: 22px;
   }
 
   input::placeholder {
-    color: #a4a5ae;
+    color: #8a8a8e;
   }
 
-  label button {
-    width: 22px;
-    height: 22px;
+  button {
+    width: 20px;
+    height: 20px;
     border-radius: 50%;
     color: #ffffff;
     background: #b8b9c1;
@@ -704,8 +816,8 @@ export const SearchHeader = styled.header`
     text-align: center;
 
     img {
-      width: 12px;
-      height: 12px;
+      width: 11px;
+      height: 11px;
       filter: brightness(0) invert(1);
     }
   }
@@ -741,15 +853,20 @@ export const SearchTabs = styled.nav`
   height: 47px;
   flex: 0 0 auto;
   display: flex;
-  gap: 22px;
+  gap: 23px;
+  overflow-x: auto;
+  overflow-y: hidden;
   padding: 0 20px;
   border-bottom: 1px solid ${border};
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar { display: none; }
 
   button {
     position: relative;
     display: flex;
     align-items: center;
-    gap: 5px;
+    flex: 0 0 auto;
     color: ${muted};
     font-size: 15px;
     line-height: 22px;
@@ -785,7 +902,7 @@ export const SearchScroll = styled.main`
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: 18px 20px 116px;
+  padding: 14px 20px 116px;
   scrollbar-width: none;
 
   &::-webkit-scrollbar {
@@ -796,9 +913,21 @@ export const SearchScroll = styled.main`
 export const RecentSearches = styled.section`
   margin-bottom: 24px;
 
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+
   h2 {
-    margin: 0 0 12px;
+    margin: 0;
     font-size: 13px;
+  }
+
+  header button {
+    color: ${muted};
+    font-size: 12px;
   }
 
   > div {
@@ -819,9 +948,11 @@ export const RecentSearches = styled.section`
 `;
 
 export const ResultHeading = styled.h2`
-  margin: 0 0 12px;
-  color: ${navy};
-  font-size: 15px;
+  margin: 0 0 5px;
+  color: ${muted};
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 700;
 `;
 
 export const PlaceList = styled.ul`
@@ -830,18 +961,25 @@ export const PlaceList = styled.ul`
   padding: 0;
 
   li + li {
-    border-top: 1px solid #f0f0f3;
+    margin-top: 8px;
   }
 
   button {
     width: 100%;
-    min-height: 91px;
+    min-height: 74px;
     display: grid;
-    grid-template-columns: 72px 1fr 26px;
+    grid-template-columns: 52px 1fr 24px;
     align-items: center;
     gap: 12px;
-    padding: 10px 0;
+    padding: 10px;
+    border: 1px solid ${border} !important;
+    border-radius: 14px;
     text-align: left;
+  }
+
+  button[aria-pressed="true"] {
+    border-color: ${navy} !important;
+    background: #f3f5fa;
   }
 
   button:disabled {
@@ -849,9 +987,9 @@ export const PlaceList = styled.ul`
   }
 
   button > img {
-    width: 72px;
-    height: 72px;
-    border-radius: 11px;
+    width: 52px;
+    height: 52px;
+    border-radius: 10px;
     object-fit: cover;
   }
 
@@ -869,8 +1007,8 @@ export const PlaceList = styled.ul`
   strong {
     max-width: 100%;
     overflow: hidden;
-    color: ${navy};
-    font-size: 13px;
+    color: #1a1a1a;
+    font-size: 14px;
     line-height: 21px;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -880,7 +1018,7 @@ export const PlaceList = styled.ul`
     max-width: 100%;
     overflow: hidden;
     color: ${muted};
-    font-size: 10px;
+    font-size: 12px;
     line-height: 17px;
     font-style: normal;
     text-overflow: ellipsis;
@@ -888,11 +1026,11 @@ export const PlaceList = styled.ul`
   }
 
   i {
-    width: 23px;
-    height: 23px;
+    width: 22px;
+    height: 22px;
     display: grid;
     place-items: center;
-    border: 1.5px solid #cfd0d8;
+    border: 1.5px solid #e4e6ec;
     border-radius: 50%;
     color: #ffffff;
     font-size: 10px;
@@ -902,6 +1040,11 @@ export const PlaceList = styled.ul`
   button[aria-pressed="true"] i {
     border-color: ${navy};
     background: ${navy};
+  }
+
+  i img {
+    width: 23px;
+    height: 23px;
   }
 
   button:disabled i {

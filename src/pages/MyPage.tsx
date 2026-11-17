@@ -12,6 +12,7 @@ import feedbackIcon from "../assets/figma/my-pen.svg";
 import blueAvatar from "../assets/images/character-blue.webp";
 import purpleAvatar from "../assets/images/character-purple.webp";
 import googleMapsLogo from "../assets/images/brand-google-maps.webp";
+import checkIcon from "../assets/icons/status-selected-check.svg";
 import { getMe, getMyStats } from "../api/auth";
 import { isApiEnabled } from "../api/config";
 import { hasAuthSession } from "../api/tokenStorage";
@@ -172,7 +173,7 @@ function MyPage() {
         </S.MenuLink>
       </S.MenuSection>
 
-      {showSavedToast && <S.Toast role="status">✓ 프로필을 저장했어요</S.Toast>}
+      {showSavedToast && <S.Toast role="status"><img src={checkIcon} alt="" />프로필을 저장했어요</S.Toast>}
     </S.Page>
   );
 }

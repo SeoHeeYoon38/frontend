@@ -2,6 +2,9 @@ import { useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import backIcon from "../assets/course-settings/back.svg";
 import googleMapsLogo from "../assets/images/brand-google-maps.webp";
+import bookmarkOn from "../assets/my/bookmark-on.svg";
+import bookmarkOff from "../assets/icons/nav-bookmark.svg";
+import sortChevron from "../assets/my/sort-chevron.svg";
 import { routes } from "../config/routes";
 import { savedRegions } from "../data/mocks/myData";
 import useSavedItems from "../hooks/useSavedItems";
@@ -18,15 +21,7 @@ interface BookmarkButtonProps {
 function BookmarkButton({ active, label, onClick }: BookmarkButtonProps) {
   return (
     <S.BookmarkButton type="button" aria-label={label} onClick={onClick}>
-      <svg viewBox="0 0 22 22" aria-hidden="true">
-        <path
-          d="M5.2 3.1c0-.8.7-1.5 1.5-1.5h8.6c.8 0 1.5.7 1.5 1.5v16.1L11 15.4l-5.8 3.8V3.1Z"
-          fill={active ? "#090738" : "none"}
-          stroke="#090738"
-          strokeWidth="1.7"
-          strokeLinejoin="round"
-        />
-      </svg>
+      <img src={active ? bookmarkOn : bookmarkOff} alt="" />
     </S.BookmarkButton>
   );
 }
@@ -92,7 +87,7 @@ function SavedItemsPage() {
           <strong>
             {region} {visibleCount}
           </strong>
-          <span>최근 저장순 {isPlaces && "⌄"}</span>
+          <span>최근 저장순 {isPlaces && <img src={sortChevron} alt="" />}</span>
         </S.ListHeader>
 
         {isPlaces ? (

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useOutletContext } from "react-router";
 import backIcon from "../assets/icons/nav-back.svg";
 import chevronIcon from "../assets/icons/nav-chevron-right-muted.svg";
@@ -9,8 +9,9 @@ import { routes } from "../config/routes";
 import { policyPath, type PolicyDocumentId } from "../data/policyDocuments";
 import { readProfileSettings } from "../utils/mySettings";
 import * as S from "./AccountSettingsPage.styled";
-import { logout, type UserResponse } from "../api/auth";
+import { getMyStats, logout, type UserResponse } from "../api/auth";
 import { hasAuthSession } from "../api/tokenStorage";
+import { myProfile } from "../data/mocks/myData";
 
 const policies: Array<{ id: PolicyDocumentId; label: string }> = [
   { id: "service", label: "서비스 이용약관" },
@@ -25,10 +26,21 @@ function AccountSettingsPage() {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [logoutError, setLogoutError] = useState(false);
   const signedIn = hasAuthSession();
+  const [googlePlaceCount, setGooglePlaceCount] = useState(myProfile.googlePlaceCount);
   const avatar = account
     ? account.profileImageUrl || (account.characterId === 2 ? purpleAvatar : blueAvatar)
     : profile.avatar === "purple" ? purpleAvatar : blueAvatar;
   const joinedDate = account?.createdAt.split("T")[0].split("-").map(Number);
+
+  useEffect(() => {
+    if (!signedIn) return;
+    const controller = new AbortController();
+    void getMyStats(controller.signal).then(
+      (stats) => setGooglePlaceCount(stats.savedPlaceCount),
+      () => undefined,
+    );
+    return () => controller.abort();
+  }, [signedIn]);
 
   async function signOut() {
     setIsLoggingOut(true);
@@ -74,7 +86,7 @@ function AccountSettingsPage() {
           <S.ServiceLogo><img src={googleMapsLogo} alt="Google Maps" /></S.ServiceLogo>
           <span>
             <strong>Google Maps</strong>
-            <small>Takeout 파일 또는 공개 목록 링크</small>
+            <small><i data-linked="true" />연동됨, 저장 장소 {googlePlaceCount}곳</small>
           </span>
           <Link to={routes.googleMapsSettings}>관리</Link>
         </S.ServiceRow>

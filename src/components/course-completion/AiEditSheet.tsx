@@ -1,4 +1,5 @@
 import aiSparkle from "../../assets/course-completion/ai-sparkle.svg";
+import closeIcon from "../../assets/icons/action-close.svg";
 
 interface AiEditSheetProps {
   value: string;
@@ -22,7 +23,7 @@ function AiEditSheet({ value, onChange, onClose, onSubmit, error = "" }: AiEditS
     <div className="course-overlay" role="presentation">
       <section className="course-sheet ai-edit-sheet" aria-label="AI 일정 수정 요청">
         <div className="course-sheet__handle" />
-        <button className="course-sheet__close" type="button" onClick={onClose} aria-label="닫기">×</button>
+        <button className="course-sheet__close" type="button" onClick={onClose} aria-label="닫기"><img src={closeIcon} alt="" /></button>
         <div className="ai-edit-sheet__title">
           <img src={aiSparkle} alt="" />
           <div>

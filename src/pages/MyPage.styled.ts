@@ -263,4 +263,13 @@ export const Toast = styled.div`
   line-height: 20px;
   font-weight: 700;
   box-shadow: 0 8px 24px rgba(9, 7, 56, 0.2);
+
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  img {
+    width: 18px;
+    height: 18px;
+  }
 `;

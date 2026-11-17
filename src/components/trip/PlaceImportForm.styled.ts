@@ -6,7 +6,7 @@ export const Flow = styled.section`
 `;
 
 export const Heading = styled.header`
-  h1 { margin: 0; font-size: 24px; line-height: 34px; letter-spacing: -0.4px; }
+  h1 { margin: 0; font-size: 22px; line-height: 30px; letter-spacing: -0.4px; }
   p { display: flex; align-items: center; gap: 6px; margin: 7px 0 0; color: #8a8a8e; font-size: 13px; line-height: 20px; }
   p img { width: 14px; height: 18px; object-fit: contain; }
 `;
@@ -20,7 +20,7 @@ export const MethodCard = styled.button`
 `;
 
 export const MethodIcon = styled.span<{ $tone: "blue" | "purple" }>`
-  width: 52px; height: 52px; display: grid; place-items: center; flex: 0 0 auto; border-radius: 50%;
+  width: 44px; height: 44px; display: grid; place-items: center; flex: 0 0 auto; border-radius: 50%;
   background: ${({ $tone }) => $tone === "blue" ? "#e8f7ff" : "#f0eeff"};
   img { width: 24px; height: 24px; }
 `;
@@ -45,6 +45,11 @@ export const InfoBox = styled.div`
 
 export const SkipButton = styled.button`
   min-height: 40px; margin-top: auto; color: #8a8a8e; font-size: 14px; text-align: center;
+`;
+
+export const MethodSkipButton = styled.button`
+  width: 100%; min-height: 54px; margin-top: auto; border-radius: 14px;
+  color: #8a8a8e; background: #f3f5fa; font-size: 15px; font-weight: 700;
 `;
 
 export const GuideList = styled.ol`
@@ -73,7 +78,7 @@ export const ExternalLink = styled.a`
 `;
 
 export const DropZone = styled.label`
-  min-height: 164px; display: flex; align-items: center; justify-content: center; flex-direction: column;
+  min-height: 234px; display: flex; align-items: center; justify-content: center; flex-direction: column;
   border: 1.5px dashed #d9d9df; border-radius: 18px; cursor: pointer;
   strong { margin-top: 12px; font-size: 15px; } span { margin-top: 4px; color: #a0a0a5; font-size: 11px; }
   > b { display: flex; align-items: center; gap: 5px; margin-top: 13px; padding: 7px 12px; border: 1px solid #dedee5; border-radius: 8px; font-size: 11px; }
@@ -81,8 +86,8 @@ export const DropZone = styled.label`
 `;
 
 export const EmptyIcon = styled.span`
-  width: 62px; height: 62px; display: grid; place-items: center; border-radius: 50%; background: #f4f4f7;
-  img { width: 52px; height: 52px; }
+  width: 80px; height: 80px; display: grid; place-items: center; border-radius: 50%; background: #f4f4f7;
+  img { width: 68px; height: 68px; }
 `;
 
 export const SelectedFile = styled.div<{ $error: boolean }>`
