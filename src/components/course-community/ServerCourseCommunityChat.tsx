@@ -45,6 +45,7 @@ export default function ServerCourseCommunityChat({ tripId, initialDay, onBack, 
   const [selectedDay, setSelectedDay] = useState(initialDay);
   const cursor = useRef(0);
   const fetching = useRef(false);
+  const actionInFlight = useRef(false);
   const composer = useRef<HTMLInputElement>(null);
   const bottom = useRef<HTMLDivElement>(null);
 
@@ -91,7 +92,8 @@ export default function ServerCourseCommunityChat({ tripId, initialDay, onBack, 
   };
 
   const run = async (action: () => Promise<unknown>) => {
-    if (pending) return;
+    if (actionInFlight.current) return;
+    actionInFlight.current = true;
     setPending(true);
     setError("");
     try {
@@ -100,6 +102,7 @@ export default function ServerCourseCommunityChat({ tripId, initialDay, onBack, 
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "요청을 처리하지 못했어요.");
     } finally {
+      actionInFlight.current = false;
       setPending(false);
     }
   };
@@ -113,6 +116,12 @@ export default function ServerCourseCommunityChat({ tripId, initialDay, onBack, 
     await sendChatMessage(tripId, label);
     if (!isTalkMore) await createChatPoll(tripId, label, messages);
   });
+
+  const makePoll = () => {
+    const direction = [...messages].reverse().find((item) => item.type === "USER")?.text.trim().slice(0, 100);
+    if (!direction) return;
+    void run(() => createChatPoll(tripId, direction, messages));
+  };
 
   const me = members.find((member) => member.me);
   const title = trip ? apiTripToSummary(trip).title : "함께하는 여행";
@@ -157,12 +166,19 @@ export default function ServerCourseCommunityChat({ tripId, initialDay, onBack, 
         const poll = polls.find((current) => current.pollId === pollId);
         return <article className="community-chat__ai-message" key={item.id}>
           <img className="community-chat__ai-avatar" src={aiAvatar} alt="" />
-          <div><strong>도틀로 AI</strong><div className="community-chat__ai-bubble"><p>{item.text}</p></div>
-            {item.payload?.card?.kind === "OPINION_SUMMARY" && <section className="community-poll">
-              <h2>일행 의견</h2>
-              {item.payload.card.summaries?.map((summary) =>
-                <p key={summary.userId}><b>{members.find((member) => member.userId === summary.userId)?.name ?? "일행"}</b> {summary.point}</p>)}
-            </section>}
+          <div><strong>도틀로 AI</strong>
+            <div className={`community-chat__ai-bubble${item.payload?.card?.kind === "OPINION_SUMMARY" ? " community-chat__ai-bubble--summary" : ""}`}>
+              {poll ? <><p>투표할 장소를 골랐어요.</p><p>마음에 드는 곳에 투표해 주세요!</p></> : <p>{item.text}</p>}
+              {item.payload?.card?.kind === "OPINION_SUMMARY" && <ul>
+                {item.payload.card.summaries?.map((summary) => {
+                  const member = members.find((current) => current.userId === summary.userId);
+                  return <li key={summary.userId}>
+                    <img src={member?.profileImageUrl || avatarFor(member?.characterId ?? null)} alt="" />
+                    <span><b>{member?.name ?? "일행"}</b>{summary.point}</span>
+                  </li>;
+                })}
+              </ul>}
+            </div>
             {item.payload?.options && <><p className="community-chat__prompt">{item.payload.options.title}</p>
               <div className="community-chat__options">{item.payload.options.items.map((option) =>
                 <button type="button" key={option.id} disabled={pending}
@@ -176,10 +192,17 @@ export default function ServerCourseCommunityChat({ tripId, initialDay, onBack, 
                 onClick={() => void run(() => voteChatPoll(tripId, poll.pollId, candidate.id))}>
                 <span className="community-poll__check" aria-hidden="true">
                   {candidate.voterUserIds.includes(me?.userId ?? -1) && <img src={selectedCheckIcon} alt="" />}
-                </span><span><strong>{candidate.name}</strong><small>{candidate.tagline}</small></span><b>{candidate.votes}</b>
+                </span><span><strong>{candidate.name}</strong><small>{candidate.tagline}</small></span>
+                <span className="community-poll__voters">
+                  {candidate.voterUserIds.slice(0, 3).map((userId) => {
+                    const voter = members.find((member) => member.userId === userId);
+                    return voter ? <img key={userId} src={voter.profileImageUrl || avatarFor(voter.characterId)} alt={voter.name} /> : null;
+                  })}
+                  <b>{candidate.votes}</b>
+                </span>
               </button>)}</div>
-              {poll.status === "CLOSED" && <button className="community-poll__apply" type="button"
-                onClick={() => setSelectedPoll(poll)}>1위 장소 일정에 넣기</button>}
+              <button className="community-poll__apply" type="button" disabled={pending || poll.votedCount === 0}
+                onClick={() => setSelectedPoll(poll)}>1위 장소 일정에 넣기</button>
             </section>}
           </div>
         </article>;
@@ -193,7 +216,7 @@ export default function ServerCourseCommunityChat({ tripId, initialDay, onBack, 
         <button type="button" disabled={pending || !messages.some((item) => item.type === "USER")}
           onClick={() => void run(() => coordinateChat(tripId))}><b>@도틀로</b> 의견 조율</button>
         <button type="button" disabled={pending || !messages.some((item) => item.type === "USER")}
-          onClick={() => void run(() => coordinateChat(tripId))}><b>@도틀로</b> 투표 만들기</button>
+          onClick={makePoll}><b>@도틀로</b> 투표 만들기</button>
       </div>
       <form onSubmit={(event) => { event.preventDefault(); const value = message.trim(); if (value) void run(() => send(value)); }}>
         <label><span className="course-community__sr-only">채팅 메시지</span>
