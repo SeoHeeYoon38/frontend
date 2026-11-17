@@ -101,7 +101,7 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
   const [editPreview, setEditPreview] = useState<ItineraryEditPreview>();
   const [editPending, setEditPending] = useState(false);
   const [actionError, setActionError] = useState("");
-  const [notice, setNotice] = useState("");
+  const [notice, setNotice] = useState(state?.courseImported === true ? "내 일정으로 가져왔어요" : "");
   const [inviteAccepted, setInviteAccepted] = useState(state?.inviteAccepted === true);
   const [confirmation, setConfirmation] = useState<Awaited<ReturnType<typeof confirmTrip>> | null | undefined>(
     state?.confirmation,
