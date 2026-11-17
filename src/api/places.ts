@@ -2,8 +2,13 @@ import { apiRequest, queryString } from "./client";
 import type {
   PlaceCandidate,
   PlaceImportResponse,
+  MySavedPlaceResponse,
   SavedPlaceListResponse,
 } from "./types";
+
+export function getMySavedPlaces(signal?: AbortSignal) {
+  return apiRequest<MySavedPlaceResponse[]>("/api/users/me/places", { signal });
+}
 
 export function searchPlaces(
   tripId: number,

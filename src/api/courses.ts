@@ -15,3 +15,21 @@ export function getCourse(courseId: number, signal?: AbortSignal) {
   });
 }
 
+export function getCourseBookmarks(signal?: AbortSignal) {
+  return apiRequest<CourseSummaryResponse[]>("/api/courses/bookmarks", { signal });
+}
+
+export function bookmarkCourse(courseId: number, signal?: AbortSignal) {
+  return apiRequest<void>(`/api/courses/${courseId}/bookmark`, {
+    method: "POST",
+    signal,
+  });
+}
+
+export function unbookmarkCourse(courseId: number, signal?: AbortSignal) {
+  return apiRequest<void>(`/api/courses/${courseId}/bookmark`, {
+    method: "DELETE",
+    signal,
+  });
+}
+

@@ -15,8 +15,11 @@ export interface SavedPlace {
   name: string;
   city: string;
   category: string;
-  source: "Google Maps에서 가져옴" | "직접 저장" | "인기 코스에서 저장";
+  source: "Google Maps에서 가져옴" | "직접 저장" | "인기 코스에서 저장" | "AI 추천에서 저장";
   image: string;
+  tripId?: number;
+  savedPlaceId?: number;
+  placeId?: string | null;
 }
 
 export interface SavedCourse {
