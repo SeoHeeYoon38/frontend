@@ -397,9 +397,7 @@ function OnboardingPage() {
           <S.Progress $complete aria-label="온보딩 2단계"><i /><i /></S.Progress>
           <h1>어떤 여행을 좋아하세요?</h1>
           <S.Description>
-            {liveSession
-              ? "고른 취향은 앞으로 만들 여행의 기본값으로 사용해요."
-              : "고른 취향은 이 브라우저의 데모 프로필에 저장해요."}
+            골라주시면 취향에 맞는 코스를 먼저 보여드려요
           </S.Description>
           <S.Chips>
             {preferenceOptions.map((preference) => (
