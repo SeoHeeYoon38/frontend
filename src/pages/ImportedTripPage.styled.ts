@@ -256,7 +256,7 @@ export const SheetHeader = styled.header`
 
   h2 { margin: 0; font-size: 22px; line-height: 31px; }
   p { margin: 5px 0 0; color: #8a8a8e; font-size: 13px; line-height: 19px; }
-  > button { width: 32px; height: 32px; padding: 0; color: #5c5c63; background: transparent; }
+  > button { width: 32px; height: 32px; border: 0; padding: 0; color: #5c5c63; background: transparent; cursor: pointer; }
   > button img { width: 22px; height: 22px; }
 `;
 
@@ -279,11 +279,13 @@ export const PrimaryButton = styled.button`
   width: 100%;
   min-height: 56px;
   margin-top: 24px;
+  border: 0;
   border-radius: 16px;
   color: #fff;
   background: #090738;
   font-size: 16px;
   font-weight: 700;
+  cursor: pointer;
   &:disabled { color: #a8a8ae; background: #ececf1; cursor: default; }
 `;
 

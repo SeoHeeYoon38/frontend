@@ -166,6 +166,10 @@ export const MonthArrows = styled.div`
     height: 24px;
     position: relative;
     z-index: 1;
+    border: 0;
+    padding: 0;
+    background: transparent;
+    cursor: pointer;
   }
   img {
     position: absolute;
@@ -197,6 +201,9 @@ export const CalendarDay = styled.button<{
   min-height: 40px;
   display: grid;
   place-items: center;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
   font-size: 14px;
   color: ${({ $edge, $sunday }) => ($edge ? "white" : $sunday ? "#f04452" : "#1a1a1a")};
   background: ${({ $range, $startEdge, $endEdge }) => ($range ? "#efefff" : $startEdge ? "linear-gradient(to right,transparent 50%,#efefff 50%)" : $endEdge ? "linear-gradient(to right,#efefff 50%,transparent 50%)" : "transparent")};
@@ -226,7 +233,7 @@ export const DateSummary = styled.div`
   font-size: 14px;
   font-weight: 700;
   b {
-    color: #7669db;
+    color: #0079c2;
   }
 `;
 export const PeopleBox = styled.div`
