@@ -2,7 +2,7 @@ import styled from "styled-components";
 
 export const Page = styled.div`
   width: 100%; max-width: 402px; min-height: 100dvh; margin: 0 auto; padding-bottom: 34px;
-  color: #1a1a1a; background: #ffffff; font-family: "Noto Sans KR", Arial, sans-serif;
+  color: #1a1a1a; background: #ffffff; font-family: "Pretendard", "Apple SD Gothic Neo", system-ui, sans-serif;
   a { color: inherit; text-decoration: none; }
   button { padding: 0; border: 0; color: inherit; background: transparent; font: inherit; cursor: pointer; }
 `;

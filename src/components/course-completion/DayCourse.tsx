@@ -1,5 +1,6 @@
 import unplacedArrow from "../../assets/course-completion/unplaced-arrow.svg";
 import unplacedInfo from "../../assets/course-completion/unplaced-info.svg";
+import addIcon from "../../assets/icons/action-add.svg";
 import type { CoursePlace } from "../../types/courseCompletion";
 import PlaceTimeline from "./PlaceTimeline";
 
@@ -33,7 +34,7 @@ function DayCourse({
         <p>
           <span>{places.length}곳</span>
           <i />
-          <span>샘플 일정</span>
+          <span>방문 일정</span>
         </p>
       </div>
       {unplacedCount > 0 && (
@@ -46,7 +47,7 @@ function DayCourse({
       {!places.length && <p>아직 담긴 장소가 없어요. 장소를 추가해 일정을 채워 보세요.</p>}
       <PlaceTimeline places={places} onOpen={onOpenPlace} onRemove={variant === "result" ? undefined : onRemovePlace} />
       <button className="add-place-button" type="button" onClick={onAddPlace}>
-        <span aria-hidden="true">＋</span> 장소 추가
+        <img src={addIcon} alt="" /> 장소 추가
       </button>
       {onEditPlace && <button className="course-inline-edit" type="button" onClick={onEditPlace}>일정 직접 편집하기</button>}
     </section>

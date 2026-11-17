@@ -9,7 +9,7 @@ export const Page = styled.main`
   padding-bottom: 36px;
   color: #1a1a1a;
   background: #ffffff;
-  font-family: "Noto Sans KR", Arial, sans-serif;
+  font-family: "Pretendard", "Apple SD Gothic Neo", system-ui, sans-serif;
 
   a { color: inherit; text-decoration: none; }
   button { margin: 0; padding: 0; border: 0; color: inherit; background: transparent; font: inherit; cursor: pointer; }

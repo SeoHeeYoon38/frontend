@@ -1,7 +1,7 @@
 import styled from "styled-components";
 
 export const Page = styled.div`
-  width: 100%; max-width: 402px; min-height: 100dvh; margin: 0 auto; color: #1a1a1a; background: #ffffff; font-family: "Noto Sans KR", Arial, sans-serif;
+  width: 100%; max-width: 402px; min-height: 100dvh; margin: 0 auto; color: #1a1a1a; background: #ffffff; font-family: "Pretendard", "Apple SD Gothic Neo", system-ui, sans-serif;
   button, textarea { font: inherit; }
   :where(&) :where(button) { padding: 0; border: 0; color: inherit; background: transparent; cursor: pointer; }
 `;
@@ -36,6 +36,7 @@ export const Agree = styled.div`
   display: flex; align-items: center; gap: 10px; margin-top: 24px;
   button { width: 22px; height: 22px; display: grid; place-items: center; border: 1.5px solid #e4e6ec; border-radius: 6px; color: #ffffff; font-weight: 700; }
   button[aria-checked="true"] { border-color: #090738; background: #090738; }
+  button img { width: 18px; height: 18px; }
   span { font-size: 14px; line-height: 20px; }
 `;
 export const Reasons = styled.div`

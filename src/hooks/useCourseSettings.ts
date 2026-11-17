@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { demoInvitePath } from "../utils/navigation";
 import type { CourseSettingsSheet } from "../types/courseSettings";
 
@@ -26,6 +26,12 @@ function useCourseSettings(options: UseCourseSettingsOptions = {}) {
   const inviteLink = new URL(demoInvitePath, window.location.origin).href;
   const [notice, setNotice] = useState("");
   const nameInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (activeSheet || isEditingName) return;
+    setTripName(initialTripName);
+    setDraftName(initialTripName);
+  }, [activeSheet, initialTripName, isEditingName]);
 
   const openSheet = (sheet: CourseSettingsSheet) => {
     setActiveSheet(sheet);

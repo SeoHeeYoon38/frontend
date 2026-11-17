@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router";
 import { onboardingPreferencesToInput } from "../api/adapters";
 import {
@@ -154,6 +154,7 @@ function OnboardingPage() {
   const [savingPreferences, setSavingPreferences] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileError, setProfileError] = useState("");
+  const profileRequestPending = useRef(false);
   const [error, setError] = useState("");
   const liveGoogleLogin = isApiEnabled() && canStartGoogleLogin();
   const demoAuthentication = allowDemoAuthentication(import.meta.env.DEV, apiMode);
@@ -225,13 +226,14 @@ function OnboardingPage() {
       setProfileError("");
     };
     const continueProfile = async () => {
-      if (!validation.valid || savingProfile) return;
+      if (!validation.valid || savingProfile || profileRequestPending.current) return;
       const value = nickname.trim();
       setProfileError("");
       let email = onboarding?.email;
       let introduction = onboarding?.introduction;
 
       if (liveSession) {
+        profileRequestPending.current = true;
         setSavingProfile(true);
         try {
           const nicknameCheck = await checkNickname(value);
@@ -261,6 +263,7 @@ function OnboardingPage() {
           );
           return;
         } finally {
+          profileRequestPending.current = false;
           setSavingProfile(false);
         }
       }

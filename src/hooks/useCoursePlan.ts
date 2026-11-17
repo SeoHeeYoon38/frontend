@@ -8,9 +8,9 @@ import type { MockTrip } from "../types/mockTrip";
 import { requestMockAiEdit } from "../data/mocks/tripService";
 import { createRequestLock } from "../utils/requestLock";
 
-function useCoursePlan(tripId: string) {
+function useCoursePlan(tripId: string, initialDay = 1) {
   const [trip, setTrip] = useState(() => readMockTrip(tripId));
-  const [activeDay, setActiveDay] = useState(0);
+  const [activeDay, setActiveDay] = useState(() => Math.min(Math.max(initialDay - 1, 0), (trip?.days.length ?? 1) - 1));
   const [screen, setScreen] = useState<CourseScreen>("plan");
   const [planVariant, setPlanVariant] = useState<CoursePlanVariant>("default");
   const [notice, setNotice] = useState(readTripStorageNotice);

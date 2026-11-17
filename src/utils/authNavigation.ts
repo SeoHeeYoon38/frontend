@@ -23,8 +23,8 @@ export function isPublicRoute(pathname: string, allowOnboarding = false) {
   );
 }
 
-export function authRedirectPath(pathname: string, allowOnboarding = false) {
-  if (isPublicRoute(pathname, allowOnboarding)) return null;
+export function authRedirectPath(pathname: string, allowDemo = false) {
+  if (allowDemo || isPublicRoute(pathname)) return null;
   return routes.login;
 }
 

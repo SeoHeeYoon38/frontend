@@ -8,10 +8,11 @@ import pinIcon from "../assets/course-settings-details/menu-pin.svg";
 import cameraIcon from "../assets/course-settings-details/menu-camera.svg";
 import daysIcon from "../assets/course-settings-details/menu-days.svg";
 import deleteIcon from "../assets/course-settings-details/menu-delete.svg";
+import notificationIcon from "../assets/course-settings-details/menu-bell.svg";
 import chevronIcon from "../assets/figma/settings-chevron.svg";
 import { isServerTripId } from "../api/adapters";
 import { getTripMembers, leaveTrip } from "../api/members";
-import { deleteTrip, getTrip } from "../api/trips";
+import { deleteTrip, getTrip, updateTrip } from "../api/trips";
 import type { MemberResponse, TripResponse } from "../api/types";
 import { apiTripToSummary } from "../utils/serverTrip";
 import CourseSettingsMenu from "../components/course-settings/CourseSettingsMenu";
@@ -46,11 +47,14 @@ function ServerCourseSettings({ tripId }: { tripId: number }) {
   const [attempt, setAttempt] = useState(0);
   const [memberAttempt, setMemberAttempt] = useState(0);
   const [showMembers, setShowMembers] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [dialog, setDialog] = useState<"delete" | "leave">();
   const [actionError, setActionError] = useState("");
   const [pending, setPending] = useState(false);
+  const [selectedCover, setSelectedCover] = useState(0);
+  const [tripDays, setTripDays] = useState(1);
   const actionPending = useRef(false);
 
   useEffect(() => {
@@ -84,6 +88,34 @@ function ServerCourseSettings({ tripId }: { tripId: number }) {
   const currentMember = members?.find((member) => member.me);
   const owner = currentMember?.role === "OWNER";
   const summary = trip && apiTripToSummary(trip);
+  const {
+    activeSheet,
+    tripName,
+    draftName,
+    isDirty,
+    isEditingName,
+    copied,
+    copyError,
+    inviteLink,
+    notice,
+    nameInputRef,
+    setDraftName,
+    setNotice,
+    openSheet,
+    closeSheet,
+    startEditingName,
+    saveTripName,
+    saveAndCloseTripSheet,
+    cancelNameEdit,
+    copyInviteLink,
+  } = useCourseSettings({ initialTripName: summary?.title ?? "여행" });
+
+  useEffect(() => {
+    if (!trip) return;
+    const start = new Date(`${trip.startDate}T00:00:00`);
+    const end = new Date(`${trip.endDate}T00:00:00`);
+    setTripDays(Math.max(1, Math.round((end.getTime() - start.getTime()) / 86_400_000) + 1));
+  }, [trip]);
   const leaveMessage = owner
     ? members?.length === 1
       ? "혼자 참여한 여행이라 나가면 여행이 삭제돼요."
@@ -115,8 +147,16 @@ function ServerCourseSettings({ tripId }: { tripId: number }) {
   return (
     <S.PageShell>
       <S.Page>
-        {showMembers && members ? (
-          <CourseSettingsDetailView view="members" members={members} onBack={() => setShowMembers(false)} onInvite={() => setShowInvite(true)} />
+        {(showMembers || showNotifications) && (showNotifications || members) ? (
+          <CourseSettingsDetailView
+            view={showNotifications ? "notifications" : "members"}
+            members={members}
+            onBack={() => {
+              setShowMembers(false);
+              setShowNotifications(false);
+            }}
+            onInvite={() => setShowInvite(true)}
+          />
         ) : (
           <>
             <S.Navigation aria-label="코스 설정 탐색">
@@ -140,16 +180,17 @@ function ServerCourseSettings({ tripId }: { tripId: number }) {
                   <S.SettingsSection aria-label="여행 정보">
                     <h2>여행 정보</h2>
                     <S.MenuList>
-                      <S.MenuValue>
+                      <S.MenuButton type="button" onClick={() => openSheet("trip")}>
                         <img src={pinIcon} alt="" />
-                        <span>{summary.title}</span>
+                        <span>여행 정보 수정</span>
                         <S.MenuMeta>{summary.dateLabel}, {trip.companionCount}명</S.MenuMeta>
-                      </S.MenuValue>
-                      <S.MenuValue>
+                        <S.Chevron src={chevronIcon} alt="" />
+                      </S.MenuButton>
+                      <S.MenuButton type="button" onClick={() => openSheet("cover")}>
                         <img src={cameraIcon} alt="" />
-                        <span>대표 이미지</span>
-                        <S.MenuMeta>이미지 없음</S.MenuMeta>
-                      </S.MenuValue>
+                        <span>대표 이미지 변경</span>
+                        <S.Chevron src={chevronIcon} alt="" />
+                      </S.MenuButton>
                     </S.MenuList>
                   </S.SettingsSection>
                   <S.Divider />
@@ -191,17 +232,23 @@ function ServerCourseSettings({ tripId }: { tripId: number }) {
                   <S.Divider />
                   <S.SettingsSection aria-label="일정 관리">
                     <h2>일정 관리</h2>
-                    <S.MenuValue>
+                    <S.MenuButton type="button" onClick={() => openSheet("duration")}>
                       <img src={daysIcon} alt="" />
-                      <span>여행 기간</span>
+                      <span>여행 기간 변경</span>
                       <S.MenuMeta>{summary.durationLabel ?? "날짜 미정"}</S.MenuMeta>
-                    </S.MenuValue>
+                      <S.Chevron src={chevronIcon} alt="" />
+                    </S.MenuButton>
                   </S.SettingsSection>
                   {currentMember && <>
                     <S.Divider />
                     <S.SettingsSection aria-label="기타">
                       <h2>기타</h2>
                       <S.MenuList>
+                        <S.MenuButton type="button" onClick={() => setShowNotifications(true)}>
+                          <img src={notificationIcon} alt="" />
+                          <span>알림 설정</span>
+                          <S.Chevron src={chevronIcon} alt="" />
+                        </S.MenuButton>
                         <S.MenuButton type="button" $danger onClick={() => openDialog("leave")}>
                           <S.LeaveIcon aria-hidden="true" />
                           <span>여행 나가기</span>
@@ -219,6 +266,58 @@ function ServerCourseSettings({ tripId }: { tripId: number }) {
             <S.HomeIndicator />
           </>
         )}
+        {activeSheet && trip && summary && (
+          <CourseSettingsSheet
+            activeSheet={activeSheet}
+            tripName={tripName}
+            draftName={draftName}
+            isDirty={isDirty}
+            isEditingName={isEditingName}
+            copied={copied}
+            copyError={copyError}
+            inviteLink={inviteLink}
+            nameInputRef={nameInputRef}
+            onDraftNameChange={setDraftName}
+            onStartEditingName={startEditingName}
+            onSaveTripName={saveTripName}
+            onSaveAndClose={saveAndCloseTripSheet}
+            onDiscardAndClose={closeSheet}
+            onCancelNameEdit={cancelNameEdit}
+            onCopyInviteLink={copyInviteLink}
+            onNotice={setNotice}
+            onClose={closeSheet}
+            selectedCover={selectedCover}
+            tripDays={tripDays}
+            onCoverChange={setSelectedCover}
+            onSaveCover={() => {
+              setNotice("대표 이미지를 변경했어요.");
+              closeSheet();
+            }}
+            onTripDaysChange={setTripDays}
+            onSaveDuration={() => {
+              if (pending) return;
+              const endDate = new Date(`${trip.startDate}T00:00:00`);
+              endDate.setDate(endDate.getDate() + tripDays - 1);
+              setPending(true);
+              void updateTrip(tripId, { endDate: endDate.toISOString().slice(0, 10) }).then(
+                (response) => {
+                  setTrip(response);
+                  setNotice(`여행 기간을 ${tripDays - 1}박 ${tripDays}일로 변경했어요.`);
+                  closeSheet();
+                  setPending(false);
+                },
+                () => {
+                  setNotice("여행 기간을 변경하지 못했어요. 다시 시도해 주세요.");
+                  setPending(false);
+                },
+              );
+            }}
+            tripCity={summary.city}
+            tripDateLabel={`${summary.dateLabel} · ${summary.durationLabel ?? "날짜 미정"}`}
+            tripCompanionLabel={`${trip.companionCount}명`}
+          />
+        )}
+        <S.LiveRegion aria-live="polite">{notice}</S.LiveRegion>
         {showInvite && <ServerInviteSheet tripId={tripId} onClose={() => setShowInvite(false)} />}
         {showShare && <ServerInviteSheet tripId={tripId} onClose={() => setShowShare(false)} publicShare />}
         {dialog && <CourseSettingsConfirmDialog

@@ -307,7 +307,7 @@ function PreferencesStep({
                 <P.Example
                   type="button"
                   key={text}
-                  onClick={() => changeText(text)}
+                  onClick={() => changeText(preferences.text.trim() ? `${preferences.text.trim()}\n${text}` : text)}
                 >
                   <span><img src={icon} alt="" /></span>
                   {text}

@@ -8,7 +8,7 @@ export const Shell = styled.div<{ $empty: boolean }>`
   overflow-x: hidden;
   background: #fff;
   color: #1a1a1a;
-  font-family: "Noto Sans KR", Arial, sans-serif;
+  font-family: "Pretendard", "Apple SD Gothic Neo", system-ui, sans-serif;
   ${({ $empty }) => $empty && `
     display: flex;
     flex-direction: column;

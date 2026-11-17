@@ -16,13 +16,15 @@ export type PlaceImportInput =
   | { method: "file"; file: File }
   | { method: "link"; link: string };
 
-type ImportView = "method" | "guide" | "file" | "link";
+export type PlaceImportView = "method" | "guide" | "file" | "link";
 
 interface PlaceImportFormProps {
   onImport: (input: PlaceImportInput) => void | Promise<void>;
   onSkip?: () => void;
   busy?: boolean;
   importError?: string;
+  view?: PlaceImportView;
+  onViewChange?: (view: PlaceImportView) => void;
 }
 
 const supportRows = [
@@ -30,7 +32,7 @@ const supportRows = [
   "ZIP 안에 다른 Google 데이터가 있어도 저장 장소만 가져와요",
   "리스트 이름은 CSV 파일 이름으로 표시돼요",
   "이미 가져온 장소는 중복으로 저장하지 않아요",
-  "JSON 파일과 20MB를 넘는 파일은 아직 지원하지 않아요",
+  "JSON 파일(별표 표시한 장소)은 아직 지원하지 않아요",
 ];
 
 function formatFileSize(size: number) {
@@ -38,11 +40,16 @@ function formatFileSize(size: number) {
   return `${(size / (1024 * 1024)).toFixed(1)}MB`;
 }
 
-function PlaceImportForm({ onImport, onSkip, busy = false, importError = "" }: PlaceImportFormProps) {
+function PlaceImportForm({ onImport, onSkip, busy = false, importError = "", view: controlledView, onViewChange }: PlaceImportFormProps) {
   const fileInputId = useId();
   const linkInputId = useId();
   const fileInput = useRef<HTMLInputElement>(null);
-  const [view, setView] = useState<ImportView>("method");
+  const [localView, setLocalView] = useState<PlaceImportView>("method");
+  const view = controlledView ?? localView;
+  const setView = (next: PlaceImportView) => {
+    setLocalView(next);
+    onViewChange?.(next);
+  };
   const [file, setFile] = useState<File | null>(null);
   const [link, setLink] = useState("");
   const [error, setError] = useState("");
@@ -96,15 +103,6 @@ function PlaceImportForm({ onImport, onSkip, busy = false, importError = "" }: P
         <p><img src={googleMapsLogo} alt="" />Google 지도에 저장해 둔 여행 장소를 도틀로로 가져와 보세요.</p>
       </I.Heading>
       <I.MethodList>
-        <I.MethodCard type="button" onClick={() => { setError(""); setDismissedImportError(importError); setView("link"); }}>
-          <I.MethodIcon $tone="purple"><img src={linkIcon} alt="" /></I.MethodIcon>
-          <I.MethodContent>
-            <strong>공유 리스트 링크로 가져오기</strong>
-            <p>Google 지도에서 공유한 리스트 링크를 붙여넣어 가져와요.</p>
-            <I.Badges><b>추천</b><span>공개 리스트만 가능</span></I.Badges>
-          </I.MethodContent>
-          <img src={chevronIcon} alt="" />
-        </I.MethodCard>
         <I.MethodCard type="button" onClick={() => setView("guide")}>
           <I.MethodIcon $tone="blue"><img src={zipIcon} alt="" /></I.MethodIcon>
           <I.MethodContent>
@@ -114,8 +112,17 @@ function PlaceImportForm({ onImport, onSkip, busy = false, importError = "" }: P
           </I.MethodContent>
           <img src={chevronIcon} alt="" />
         </I.MethodCard>
+        <I.MethodCard type="button" onClick={() => { setError(""); setDismissedImportError(importError); setView("link"); }}>
+          <I.MethodIcon $tone="purple"><img src={linkIcon} alt="" /></I.MethodIcon>
+          <I.MethodContent>
+            <strong>공유 리스트 링크로 가져오기</strong>
+            <p>Google 지도에서 공유한 리스트 링크를 붙여넣어 가져와요.</p>
+            <I.Badges><b>추천</b><span>공개 리스트만 가능</span></I.Badges>
+          </I.MethodContent>
+          <img src={chevronIcon} alt="" />
+        </I.MethodCard>
       </I.MethodList>
-      {onSkip && <I.SkipButton type="button" onClick={onSkip}>나중에 할게요</I.SkipButton>}
+      {onSkip && <I.MethodSkipButton type="button" onClick={onSkip}>나중에 할게요</I.MethodSkipButton>}
     </I.Flow>
   );
 
@@ -138,7 +145,6 @@ function PlaceImportForm({ onImport, onSkip, busy = false, importError = "" }: P
       </I.GuideList>
       <I.FormFooter>
         <I.PrimaryButton type="button" onClick={() => { setError(""); setDismissedImportError(importError); setView("file"); }}>파일이 준비됐어요</I.PrimaryButton>
-        <I.GuideLink type="button" onClick={() => setView("method")}>다른 방법 선택하기 <img src={chevronIcon} alt="" /></I.GuideLink>
         {onSkip && <I.SkipButton type="button" onClick={onSkip}>나중에 할게요</I.SkipButton>}
       </I.FormFooter>
     </I.Flow>

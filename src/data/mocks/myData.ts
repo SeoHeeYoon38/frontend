@@ -55,14 +55,6 @@ export const savedPlaces: SavedPlace[] = [
     image: osaka,
   },
   {
-    id: "sannenzaka",
-    name: "산넨자카 골목",
-    city: "교토",
-    category: "명소",
-    source: "직접 저장",
-    image: kyoto,
-  },
-  {
     id: "tokyo-tower",
     name: "도쿄 타워",
     city: "도쿄",

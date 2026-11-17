@@ -1,6 +1,6 @@
 import styled from "styled-components";
 
-export const Shell = styled.div<{ $courses: boolean; $trip?: boolean }>`
+export const Shell = styled.div<{ $courses: boolean; $trip?: boolean; $tripGradient?: boolean }>`
   width: 100%;
   max-width: 402px;
   display: flex;
@@ -9,9 +9,11 @@ export const Shell = styled.div<{ $courses: boolean; $trip?: boolean }>`
   min-height: 100dvh;
   height: ${({ $trip }) => ($trip ? "100dvh" : "auto")};
   margin: auto;
-  background: ${({ $courses }) => ($courses ? "#ffffff" : "#fcfdff")};
+  background: ${({ $tripGradient, $courses }) => $tripGradient
+    ? "linear-gradient(180deg, #f1eeff 0%, #eafbff 40%, #ffffff 75%)"
+    : $courses ? "#ffffff" : "#fcfdff"};
   color: #1a1a1a;
-  font-family: "Noto Sans KR", Arial, sans-serif;
+  font-family: "Pretendard", "Apple SD Gothic Neo", system-ui, sans-serif;
   font-weight: 500;
   padding-bottom: ${({ $courses }) => ($courses ? "0" : "110px")};
   :where(&) :where(a) {

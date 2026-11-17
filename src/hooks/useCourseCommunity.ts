@@ -13,12 +13,12 @@ function useCourseCommunity() {
     () =>
       communityPollOptions.map((option) => ({
         ...option,
-        votes:
-          option.id === selectedPollId && option.id !== "osaka-castle"
-            ? option.votes + 1
-            : option.votes,
+        votes: option.id === selectedPollId &&
+          (stage === "applied" || option.id !== "osaka-castle")
+          ? option.votes + 1
+          : option.votes,
       })),
-    [selectedPollId],
+    [selectedPollId, stage],
   );
 
   const submitMessage = () => {
@@ -31,7 +31,6 @@ function useCourseCommunity() {
   const showSummary = () => setStage("summary");
   const showPoll = () => setStage("poll");
   const openDayPicker = () => setStage("day-picker");
-  const applyToCourse = () => setStage("applied");
 
   return {
     message,
@@ -40,7 +39,6 @@ function useCourseCommunity() {
     selectedPollId,
     sentMessages,
     stage,
-    applyToCourse,
     openDayPicker,
     setMessage,
     setSelectedDay,

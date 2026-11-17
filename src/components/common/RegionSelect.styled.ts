@@ -15,7 +15,7 @@ export const Sheet = styled.dialog<{ $trip: boolean }>`
   padding: 44px 20px 0;
   background: white;
   color: #1a1a1a;
-  font-family: "Noto Sans KR", Arial, sans-serif;
+  font-family: "Pretendard", "Apple SD Gothic Neo", system-ui, sans-serif;
   overflow-y: auto;
   scrollbar-width: none;
   &[open] {

@@ -12,6 +12,7 @@ import coverFour from "../../assets/course-settings-details/cover-4.png";
 import durationMinus from "../../assets/course-settings-details/duration-minus.svg";
 import durationPlus from "../../assets/course-settings-details/duration-plus.svg";
 import selectedCheck from "../../assets/course-settings-details/selected-check.svg";
+import addIcon from "../../assets/icons/action-add.svg";
 import { courseMembers } from "../../data/mocks/courseSettingsData";
 import { demoInvitePath } from "../../utils/navigation";
 import type { CourseSettingsSheet as SheetName } from "../../types/courseSettings";
@@ -43,11 +44,15 @@ interface CourseSettingsSheetProps {
   onSaveCover: () => void;
   onTripDaysChange: (days: number) => void;
   onSaveDuration: () => void;
+  tripCity?: string;
+  tripDateLabel?: string;
+  tripCompanionLabel?: string;
+  tripTransportLabel?: string;
 }
 
 const sheetTitles: Record<SheetName, string> = {
   trip: "여행 정보 수정",
-  invite: "초대 데모",
+  invite: "친구 초대",
   cover: "대표 이미지 변경",
   duration: "여행 기간 변경",
 };
@@ -80,6 +85,10 @@ function CourseSettingsSheet({
   onSaveCover,
   onTripDaysChange,
   onSaveDuration,
+  tripCity = "일본 · 도쿄",
+  tripDateLabel = "2026.05.18 – 05.21 · 3박 4일",
+  tripCompanionLabel = "3명",
+  tripTransportLabel = "대중교통",
 }: CourseSettingsSheetProps) {
   const [showCloseConfirm, setShowCloseConfirm] = useState(
     initialCloseConfirm,
@@ -152,19 +161,19 @@ function CourseSettingsSheet({
             </S.DetailRow>
             <S.DetailRow>
               <dt>여행지</dt>
-              <dd>일본 · 도쿄</dd>
+              <dd>{tripCity}</dd>
             </S.DetailRow>
             <S.DetailRow>
               <dt>날짜</dt>
-              <dd>2026.05.18 – 05.21 · 3박 4일</dd>
+              <dd>{tripDateLabel}</dd>
             </S.DetailRow>
             <S.DetailRow>
               <dt>인원</dt>
-              <dd>3명</dd>
+              <dd>{tripCompanionLabel}</dd>
             </S.DetailRow>
             <S.DetailRow>
               <dt>이동 수단</dt>
-              <dd>대중교통</dd>
+              <dd>{tripTransportLabel}</dd>
             </S.DetailRow>
           </S.TripDetails>
         )}
@@ -220,7 +229,7 @@ function CourseSettingsSheet({
                 </button>
               ))}
               <label>
-                <strong aria-hidden="true">＋</strong>
+                <strong aria-hidden="true"><img src={addIcon} alt="" /></strong>
                 <span>앨범에서 선택</span>
                 <input type="file" accept="image/*" aria-label="앨범에서 대표 이미지 선택" onChange={() => onNotice("앨범에서 고른 사진을 대표 이미지 후보에 추가했어요.")} />
               </label>

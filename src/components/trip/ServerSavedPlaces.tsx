@@ -10,10 +10,38 @@ import {
   uploadTakeout,
 } from "../../api/places";
 import type { PlaceCandidate, SavedPlaceResponse } from "../../api/types";
-import PlaceImportForm, { type PlaceImportInput } from "./PlaceImportForm";
+import PlaceImportForm, { type PlaceImportInput, type PlaceImportView } from "./PlaceImportForm";
 import ServerRecommendedCourses from "./ServerRecommendedCourses";
+import { PlaceThumbnail } from "../common/PlacePhoto";
+import googleMapsLogo from "../../assets/images/brand-google-maps.webp";
+import foodIcon from "../../assets/icons/category-food.svg";
+import cafeIcon from "../../assets/icons/category-cafe.svg";
+import sightseeingIcon from "../../assets/icons/category-sightseeing.svg";
+import shoppingIcon from "../../assets/icons/category-shopping.svg";
 import * as S from "./Trip.styled";
 import * as P from "./SavedPlacesStep.styled";
+
+type CategoryFilter = "ALL" | "FOOD" | "CAFE" | "SIGHTSEEING" | "SHOPPING";
+
+const categoryFilters: Array<{ value: CategoryFilter; label: string; icon?: string }> = [
+  { value: "ALL", label: "전체" },
+  { value: "FOOD", label: "맛집", icon: foodIcon },
+  { value: "CAFE", label: "카페", icon: cafeIcon },
+  { value: "SIGHTSEEING", label: "명소", icon: sightseeingIcon },
+  { value: "SHOPPING", label: "쇼핑", icon: shoppingIcon },
+];
+
+const categoryLabels: Record<string, string> = {
+  FOOD: "맛집",
+  CAFE: "카페",
+  SIGHTSEEING: "명소",
+  SHOPPING: "쇼핑",
+  NATURE: "자연",
+  CULTURE: "문화",
+  NIGHTLIFE: "야경",
+  ACTIVITY: "체험",
+  OTHER: "기타",
+};
 
 interface ServerSavedPlacesProps {
   tripId: number;
@@ -25,15 +53,19 @@ interface ServerSavedPlacesProps {
   pickedPlaceIds?: Set<string>;
   pickLabel?: string;
   pickedLabel?: string;
+  importView?: PlaceImportView;
+  onImportViewChange?: (view: PlaceImportView) => void;
 }
 
 function ServerSavedPlaces({
   tripId, recommendationCity, onContinue, onPick, onPickMany, pickDay, pickedPlaceIds,
-  pickLabel = "일정에 담기", pickedLabel = "이날 일정에 담았어요",
+  pickLabel = "일정에 담기", pickedLabel = "이날 일정에 담았어요", importView, onImportViewChange,
 }: ServerSavedPlacesProps) {
+  const isTripCreation = Boolean(onContinue);
   const [places, setPlaces] = useState<SavedPlaceResponse[]>();
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [tab, setTab] = useState<"saved" | "recommended">("saved");
+  const [category, setCategory] = useState<CategoryFilter>("ALL");
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<PlaceCandidate[]>();
   const [matchId, setMatchId] = useState<number>();
@@ -50,7 +82,7 @@ function ServerSavedPlaces({
       (response) => {
         if (!signal.aborted) {
           setPlaces(response.places);
-          setShowImport(!recommendationCity && response.places.length === 0);
+          setShowImport(isTripCreation && response.places.length === 0);
         }
       },
       () => { if (!signal.aborted) setError("저장 장소를 불러오지 못했어요."); },
@@ -59,7 +91,7 @@ function ServerSavedPlaces({
       controller.abort();
       request.current?.abort();
     };
-  }, [tripId, recommendationCity]);
+  }, [tripId, isTripCreation]);
 
   async function run(action: (signal: AbortSignal) => Promise<void>) {
     if (request.current) return false;
@@ -93,6 +125,7 @@ function ServerSavedPlaces({
         setImportNotice(imported.totalNewCount > 0
           ? `새 장소 ${imported.totalNewCount}곳을 가져왔어요.`
           : "가져오기를 완료했어요. 새로 추가된 장소는 없어요.");
+        onImportViewChange?.("method");
         setShowImport(false);
       }
     });
@@ -111,11 +144,20 @@ function ServerSavedPlaces({
     });
   }
 
-  const canContinue = places?.some((place) => place.matchStatus === "MATCHED" && place.placeId);
-  const selection = (places ?? []).filter((place) =>
+  const selectablePlaces = (places ?? []).filter((place) =>
+    place.matchStatus === "MATCHED" && place.placeId && !pickedPlaceIds?.has(place.placeId));
+  const visiblePlaces = (places ?? []).filter((place) =>
+    category === "ALL" || place.category === category);
+  const selection = selectablePlaces.filter((place) =>
     place.matchStatus === "MATCHED" && place.placeId &&
     !pickedPlaceIds?.has(place.placeId) && selectedIds.includes(place.id),
   );
+  const canContinue = selection.length > 0;
+  const allSelected = selectablePlaces.length > 0 && selectablePlaces.every((place) => selectedIds.includes(place.id));
+
+  function toggleAll(checked: boolean) {
+    setSelectedIds(checked ? selectablePlaces.map((place) => place.id) : []);
+  }
 
   function addRecommended(ids: string[]) {
     if (!places) return Promise.resolve(false);
@@ -144,9 +186,11 @@ function ServerSavedPlaces({
       <P.ConnectStep aria-busy={busy}>
         <PlaceImportForm
           onImport={importPlaces}
-          onSkip={() => setShowImport(false)}
+          onSkip={() => { onImportViewChange?.("method"); setShowImport(false); }}
           busy={busy}
           importError={error}
+          view={importView}
+          onViewChange={onImportViewChange}
         />
       </P.ConnectStep>
     );
@@ -154,19 +198,24 @@ function ServerSavedPlaces({
 
   return (
     <P.PlacesStep $empty={false} aria-busy={busy}>
-      <P.PlacesTitle>저장 장소</P.PlacesTitle>
+      {onContinue && (
+        <P.PlacesLead>
+          <h1>여행에 담을 장소를 골라주세요</h1>
+          <p><img src={googleMapsLogo} alt="" />Google Maps에 저장한 장소를 불러왔어요</p>
+        </P.PlacesLead>
+      )}
+      {!onContinue && <P.PlacesTitle>저장 장소</P.PlacesTitle>}
       {recommendationCity && (
         <P.PlaceTabs aria-label="장소 선택 방법">
           <button type="button" aria-pressed={tab === "saved"} disabled={busy} onClick={() => { setError(""); setTab("saved"); }}>
-            {onPickMany ? "Google Maps 저장" : "저장 장소"}
+            저장 장소
           </button>
           <button type="button" aria-pressed={tab === "recommended"} disabled={busy} onClick={() => { setError(""); setTab("recommended"); }}>
-            {onPickMany ? "추천" : "추천 코스"}
+            추천 코스
           </button>
         </P.PlaceTabs>
       )}
       {importNotice && <p role="status">{importNotice}</p>}
-      {onContinue && <S.Subtitle>확인된 저장 장소를 바탕으로 AI 일정을 만들어요.</S.Subtitle>}
       {error && <S.ErrorText role="alert">{error}</S.ErrorText>}
       {!places && !error && <p role="status">저장 장소를 불러오고 있어요.</p>}
       {!places && error && (
@@ -187,16 +236,50 @@ function ServerSavedPlaces({
       {places && tab === "saved" && (
         <>
           {places.length === 0 && <p>저장된 장소가 없어요. 장소를 검색하거나 Google Maps에서 가져와 보세요.</p>}
+          {places.length > 0 && (
+            <>
+              <P.PlacesSummary>
+                <span>{recommendationCity ?? "여행지"}에 저장한 장소 <b>{places.length}곳</b></span>
+                {(onContinue || onPickMany) && (
+                  <label>
+                    <P.Checkbox
+                      type="checkbox"
+                      checked={allSelected}
+                      aria-label="저장 장소 전체 선택"
+                      onChange={(event) => toggleAll(event.currentTarget.checked)}
+                    />
+                    전체 선택
+                  </label>
+                )}
+              </P.PlacesSummary>
+              <P.Categories aria-label="장소 카테고리">
+                {categoryFilters.map((filter) => (
+                  <button
+                    key={filter.value}
+                    type="button"
+                    aria-pressed={category === filter.value}
+                    onClick={() => setCategory(filter.value)}
+                  >
+                    {filter.icon && <img src={filter.icon} alt="" />}
+                    {filter.label}
+                  </button>
+                ))}
+              </P.Categories>
+            </>
+          )}
           <P.PlaceList>
-            {places.map((place) => (
+            {visiblePlaces.map((place) => (
               <P.PlaceRow key={place.id}>
-                <div>
-                  <strong>{place.name}</strong>
-                  <small>{place.address}</small>
-                  {place.matchStatus !== "MATCHED" && (
-                    <p>{place.matchStatus === "CLOSED" ? "폐업" : place.matchStatus === "OUT_OF_CITY" ? "여행 도시 밖" : "확인 필요"}</p>
-                  )}
-                </div>
+                <P.PlaceThumb>
+                  {place.placeId && <PlaceThumbnail placeId={place.placeId} name={place.name} />}
+                </P.PlaceThumb>
+                <P.PlaceCopy>
+                  <div>
+                    <strong>{place.name}</strong>
+                    <P.PlaceStatus>{place.matchStatus === "MATCHED" ? categoryLabels[place.category ?? "OTHER"] : place.matchStatus === "CLOSED" ? "폐업" : place.matchStatus === "OUT_OF_CITY" ? "여행 도시 밖" : "확인 필요"}</P.PlaceStatus>
+                  </div>
+                  <p>{place.note || place.address || "저장한 장소"}</p>
+                </P.PlaceCopy>
                 {onPick && place.matchStatus === "MATCHED" && place.placeId && (
                   <P.MatchButton
                     type="button"
@@ -220,30 +303,39 @@ function ServerSavedPlaces({
                     }}
                   />
                 )}
-                {["PENDING", "NEEDS_REVIEW", "NOT_FOUND"].includes(place.matchStatus) && (
-                  <P.MatchButton type="button" disabled={busy} onClick={() => {
-                    setMatchId(place.id);
-                    setQuery(place.name);
-                    setResults(undefined);
-                  }}>장소 확인</P.MatchButton>
+                {onContinue && place.matchStatus === "MATCHED" && place.placeId && (
+                  <P.Checkbox
+                    type="checkbox"
+                    aria-label={`${place.name} 선택`}
+                    checked={selectedIds.includes(place.id)}
+                    disabled={busy}
+                    onChange={(event) => {
+                      const checked = event.currentTarget.checked;
+                      setSelectedIds((current) => checked
+                        ? [...current, place.id]
+                        : current.filter((id) => id !== place.id));
+                    }}
+                  />
                 )}
-                <P.MatchButton type="button" disabled={busy} aria-label={`${place.name} 저장 장소에서 삭제`} onClick={() => {
-                  void run(async (signal) => {
-                    await deleteSavedPlace(tripId, place.id, signal);
-                    if (signal.aborted) return;
-                    setPlaces((current) => current?.filter((item) => item.id !== place.id));
-                    setSelectedIds((current) => current.filter((id) => id !== place.id));
-                    if (matchId === place.id) {
-                      setMatchId(undefined);
+                {["PENDING", "NEEDS_REVIEW", "NOT_FOUND"].includes(place.matchStatus) && (
+                  <P.InlineActions>
+                    <P.MatchButton type="button" disabled={busy} onClick={() => {
+                      setMatchId(place.id);
+                      setQuery(place.name);
                       setResults(undefined);
-                      setQuery("");
-                    }
-                  });
-                }}>삭제</P.MatchButton>
+                    }}>장소 확인</P.MatchButton>
+                    <P.MatchButton type="button" disabled={busy} aria-label={`${place.name} 저장 장소에서 삭제`} onClick={() => {
+                      void run(async (signal) => {
+                        await deleteSavedPlace(tripId, place.id, signal);
+                        if (!signal.aborted) setPlaces((current) => current?.filter((item) => item.id !== place.id));
+                      });
+                    }}>삭제</P.MatchButton>
+                  </P.InlineActions>
+                )}
               </P.PlaceRow>
             ))}
           </P.PlaceList>
-          <form onSubmit={(event) => {
+          {matchId !== undefined && <P.SearchSection><form onSubmit={(event) => {
             event.preventDefault();
             if (!query.trim()) return;
             void run(async (signal) => {
@@ -259,11 +351,11 @@ function ServerSavedPlaces({
               <P.PlaceSearchButton type="submit" disabled={busy || !query.trim()}>검색</P.PlaceSearchButton>
             </S.Search>
           </form>
-          {matchId !== undefined && <P.MatchButton type="button" disabled={busy} onClick={() => {
+          <P.MatchButton type="button" disabled={busy} onClick={() => {
             setMatchId(undefined);
             setResults(undefined);
             setQuery("");
-          }}>장소 확인 취소</P.MatchButton>}
+          }}>장소 확인 취소</P.MatchButton></P.SearchSection>}
           {results && (results.length ? (
             <P.PlaceList>
               {results.map((candidate) => (
@@ -276,16 +368,14 @@ function ServerSavedPlaces({
               ))}
             </P.PlaceList>
           ) : <p role="status">검색 결과가 없어요.</p>)}
-          <P.MatchButton type="button" disabled={busy} aria-expanded={showImport} onClick={() => setShowImport(!showImport)}>
-            Google Maps에서 가져오기
-          </P.MatchButton>
+          {places.length === 0 && <P.MatchButton type="button" disabled={busy} aria-expanded={showImport} onClick={() => setShowImport(!showImport)}>Google Maps에서 가져오기</P.MatchButton>}
         </>
       )}
-      {onContinue && <S.Primary type="button" disabled={busy || !canContinue} onClick={() => places && onContinue(places)}>다음</S.Primary>}
+      {onContinue && <S.Footer><S.Primary type="button" disabled={busy || !canContinue} onClick={() => onContinue(selection)}>{selection.length ? `장소 ${selection.length}곳 선택 완료` : "장소를 선택해 주세요"}</S.Primary></S.Footer>}
       {onPickMany && (
-        <S.Primary type="button" disabled={busy || !selection.length} onClick={() => onPickMany(selection)}>
+        <S.Footer><S.Primary type="button" disabled={busy || !selection.length} onClick={() => onPickMany(selection)}>
           {selection.length ? `${selection.length}곳을 ${pickDay}일차에 담기` : "담을 장소를 골라주세요"}
-        </S.Primary>
+        </S.Primary></S.Footer>
       )}
     </P.PlacesStep>
   );

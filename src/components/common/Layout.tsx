@@ -10,6 +10,7 @@ interface LayoutProps {
   onBack?: () => void;
   hideProgress?: boolean;
   backDisabled?: boolean;
+  tripGradient?: boolean;
 }
 
 function Layout({
@@ -19,13 +20,14 @@ function Layout({
   onBack,
   hideProgress = false,
   backDisabled = false,
+  tripGradient = false,
 }: LayoutProps) {
   const isCourses = variant === "courses";
   const isTrip = variant === "trip";
   const hasBottomNav =
     variant === "home" || variant === "myTrips" || variant === "my";
   return (
-    <S.Shell $courses={isCourses || isTrip} $trip={isTrip}>
+    <S.Shell $courses={isCourses || isTrip} $trip={isTrip} $tripGradient={tripGradient}>
       <Header
         variant={variant}
         step={step}

@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   isDirectTripMode,
   importedTripPath,
+  readPlanDay,
   readPlanOrigin,
   savePendingInvite,
   settingsBackPath,
@@ -52,6 +53,16 @@ test("일정 결과와 설정 화면의 뒤로가기는 앱 안에서 이어진�
     assert.equal(settingsBackPath(path.slice(path.indexOf("?"))), "/trips/plan?from=my-trips&tripId=42");
   }
   assert.equal(routes.tripSettings, "/trips/settings");
+});
+
+test("채팅에서 고른 날짜의 일정으로 돌아가고 이전 날짜도 유지된다", () => {
+  assert.equal(readPlanDay("?from=home&day=2"), 2);
+  assert.equal(readPlanDay("?day=0"), 1);
+  assert.equal(readPlanDay("?day=abc"), 1);
+  const chatPath = tripCommunityPath("home", "osaka", undefined, 2);
+  assert.equal(chatPath, "/trips/community?from=home&course=osaka&day=2");
+  assert.equal(settingsBackPath(chatPath.slice(chatPath.indexOf("?"))), "/trips/plan?from=home&course=osaka&day=2");
+  assert.equal(tripPlanPath("home", "osaka", 3), "/trips/plan?from=home&course=osaka&day=3");
 });
 
 test("홈의 주요 탭과 알림 경로가 앱 안에 등록된다", () => {

@@ -30,7 +30,6 @@ function HomePage() {
   const [courseError, setCourseError] = useState("");
   const myTrips = useMyTrips(true);
   const [nickname] = useState(() => {
-    if (isApiEnabled()) return undefined;
     try {
       return parseProfileSettings(localStorage.getItem(PROFILE_STORAGE_KEY))?.nickname;
     } catch {
@@ -116,7 +115,7 @@ function HomePage() {
       {!myTrips.enabled && storageNotice && <p role="alert">{storageNotice}</p>}
       {accountError && <p role="alert">{accountError}</p>}
       <HomeIntro
-        name={accountName ?? nickname ?? (myTrips.enabled ? "" : data.userName)}
+        name={myTrips.enabled ? accountName ?? "" : nickname ?? data.userName}
         trip={featuredTrip}
         tripPath={tripPath}
         resumePath={myTrips.inProgress && resumeTripPath(myTrips.inProgress.id)}

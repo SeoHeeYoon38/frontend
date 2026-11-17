@@ -184,7 +184,15 @@ export function saveNotificationSettings(
 
 export function countEnabledNotifications(settings: NotificationSettings) {
   if (!settings.allNotifications) return 0;
-  return Object.values(settings).filter(Boolean).length;
+  return (
+    1 +
+    Number(settings.scheduleChanges) +
+    Number(settings.tripReminder) +
+    Number(settings.chatMessages) +
+    Number(settings.commentsAndMentions) +
+    Number(settings.voteResults) +
+    Number(settings.eventsAndBenefits)
+  );
 }
 
 export interface GoogleMapsSettings {

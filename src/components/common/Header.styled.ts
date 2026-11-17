@@ -147,7 +147,7 @@ export const TripHeader = styled.header`
   }
   span {
     font-size: 14px;
-    color: #7b6fe9;
+    color: #0079c2;
   }
 `;
 export const Progress = styled.div`
@@ -159,9 +159,9 @@ export const Progress = styled.div`
     height: 6px;
     flex: 1;
     border-radius: 8px;
-    background: #dde5e8;
+    background: #d1d1d6;
   }
   span[data-filled="true"] {
-    background: linear-gradient(90deg, #a5a5ff73, #6b6bd9);
+    background: #00e1ff;
   }
 `;

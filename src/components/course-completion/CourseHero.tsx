@@ -1,16 +1,18 @@
 import backIcon from "../../assets/course-completion/back.svg";
 import settingsIcon from "../../assets/course-completion/settings.svg";
+import chatIcon from "../../assets/course-community/chat.svg";
 import type { MockTrip } from "../../types/mockTrip";
 import { formatTripDateRange } from "../../utils/importedTrip";
 
 interface CourseHeroProps {
   trip: MockTrip;
   onOpenSettings: () => void;
+  onOpenChat?: () => void;
   onBack?: () => void;
   variant?: "default" | "ai";
 }
 
-function CourseHero({ trip, onOpenSettings, onBack, variant = "default" }: CourseHeroProps) {
+function CourseHero({ trip, onOpenSettings, onOpenChat, onBack, variant = "default" }: CourseHeroProps) {
   return (
     <header className={`course-hero ${variant === "ai" ? "course-hero--ai" : ""}`}>
       <img
@@ -24,6 +26,11 @@ function CourseHero({ trip, onOpenSettings, onBack, variant = "default" }: Cours
           <img src={backIcon} alt="" />
         </button>
         <strong>{trip.source === "direct" ? "직접 만든 여행" : "내 여행 코스"}</strong>
+        {onOpenChat && (
+          <button type="button" aria-label="함께하는 여행 채팅" onClick={onOpenChat}>
+            <img src={chatIcon} alt="" />
+          </button>
+        )}
         <button type="button" aria-label="설정 열기" onClick={onOpenSettings}>
           <img src={settingsIcon} alt="" />
         </button>

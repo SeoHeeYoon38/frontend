@@ -8,7 +8,7 @@ export const FullScreen = styled.main`
   overflow: hidden;
   background: #fff;
   color: #1a1a1a;
-  font-family: "Noto Sans KR", Arial, sans-serif;
+  font-family: "Pretendard", "Apple SD Gothic Neo", system-ui, sans-serif;
 `;
 
 export const MapScreen = styled(FullScreen)`
@@ -370,5 +370,57 @@ export const AiButton = styled.button`
   font-size: 15px;
   font-weight: 700;
   cursor: pointer;
+
+  img { width: 16px; height: 16px; margin-right: 8px; vertical-align: -3px; }
+`;
+
+export const AiScreen = styled(FullScreen)`
+  position: relative;
+  height: 100dvh;
+  background: linear-gradient(180deg, #f3f1ff 0%, #eefbff 45%, #ffffff 85%);
+`;
+
+export const AiHeader = styled.header`
+  height: 60px; display: flex; align-items: center; gap: 10px; padding: 0 20px; background: #fff;
+  > button { width: 18px; height: 36px; display: grid; place-items: center; margin-right: 2px; border: 0; background: none; }
+  > button img { width: 10px; height: 18px; }
+  > img { width: 36px; height: 36px; border-radius: 10px; object-fit: cover; }
+  > span { display: flex; flex-direction: column; }
+  strong { font-size: 15px; line-height: 22px; }
+  small { color: #8a8a8e; font-size: 12px; line-height: 17px; }
+`;
+
+export const AiMessages = styled.section`
+  display: flex; flex-direction: column; gap: 20px; max-height: calc(100dvh - 192px); overflow-y: auto; padding: 24px 20px 160px;
+`;
+
+export const AiMessage = styled.article`
+  display: flex; align-items: flex-start; gap: 10px;
+  > img { width: 32px; height: 32px; flex: 0 0 auto; object-fit: contain; }
+  > div { min-width: 0; flex: 1; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+  small { color: #8a8a8e; font-size: 12px; line-height: 17px; }
+  p { width: 100%; margin: 0; padding: 12px 14px; border-radius: 4px 16px 16px; background: #fff; box-shadow: 0 2px 12px rgba(89, 82, 178, 0.06); font-size: 14px; line-height: 20px; font-weight: 400; }
+  button { padding: 5px 10px; border: 1px solid #e4e6ec; border-radius: 99px; background: #fff; color: #5c5c63; font-size: 11px; line-height: 15px; }
+`;
+
+export const UserMessage = styled.p`
+  align-self: flex-end; max-width: 80%; margin: 0; padding: 10px 14px; border-radius: 16px 4px 16px 16px; background: #090738; color: #fff; font-size: 14px; line-height: 20px;
+`;
+
+export const AiComposer = styled.footer`
+  position: absolute; right: 0; bottom: 0; left: 0; display: flex; flex-direction: column; gap: 12px; padding: 12px 0 34px; border-top: 1px solid #eeeff3; background: #fff;
+  form { position: relative; display: flex; margin: 0 20px; }
+  input { width: 100%; height: 48px; padding: 6px 50px 6px 18px; border: 0; border-radius: 99px; outline: 0; background: #f3f5fa; font: inherit; font-size: 14px; }
+  form button { position: absolute; top: 6px; right: 6px; width: 36px; height: 36px; display: grid; place-items: center; border: 0; border-radius: 50%; background: #090738; }
+  form button img { width: 16px; height: 16px; }
+`;
+
+export const AiSuggestions = styled.div`
+  display: flex; gap: 8px; overflow-x: auto; padding: 0 20px; scrollbar-width: none;
+  button { flex: 0 0 auto; padding: 8px 14px; border: 0; border-radius: 99px; background: #f3f5fa; color: #5c5c63; font-size: 13px; line-height: 18px; }
+`;
+
+export const HomeIndicator = styled.div`
+  position: absolute; z-index: 5; bottom: 8px; left: 50%; width: 134px; height: 5px; transform: translateX(-50%); border-radius: 3px; background: #1a1a1a;
 `;
 

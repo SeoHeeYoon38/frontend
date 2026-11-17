@@ -7,6 +7,7 @@ import courseIcon from "../assets/icons/my-route.svg";
 import backIcon from "../assets/icons/nav-back.svg";
 import profileIcon from "../assets/icons/nav-profile.svg";
 import character from "../assets/images/character-blue.webp";
+import checkIcon from "../assets/icons/status-selected-check.svg";
 import { routes } from "../config/routes";
 import {
   GOOGLE_MAPS_STORAGE_KEY,
@@ -127,7 +128,7 @@ function WithdrawalPage() {
           ) : <p role="status">탈퇴 안내를 불러오고 있어요.</p>}
           <S.Footnote>같은 계정으로 다시 가입해도 삭제된 정보는 복구되지 않아요.</S.Footnote>
           <S.Agree>
-            <button type="button" role="checkbox" aria-label="탈퇴 안내 확인 및 동의" aria-checked={agreed} disabled={!preview} onClick={() => setAgreed((value) => !value)}>{agreed && "✓"}</button>
+            <button type="button" role="checkbox" aria-label="탈퇴 안내 확인 및 동의" aria-checked={agreed} disabled={!preview} onClick={() => setAgreed((value) => !value)}>{agreed && <img src={checkIcon} alt="" />}</button>
             <span>안내 내용을 모두 확인했고, 탈퇴에 동의해요</span>
           </S.Agree>
         </S.NoticeBody>

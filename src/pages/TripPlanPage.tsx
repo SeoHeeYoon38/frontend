@@ -14,8 +14,10 @@ import useCoursePlan from "../hooks/useCoursePlan";
 import { readMockTrips } from "../data/mocks/mockTripService";
 import { isServerTripId } from "../api/adapters";
 import ServerTripPlan from "./ServerTripPlan";
+import checkIcon from "../assets/icons/status-selected-check.svg";
 import {
   readPlanOrigin,
+  readPlanDay,
   tripCommunityPath,
   tripPlanBackPath,
   tripSettingsPath,
@@ -35,13 +37,14 @@ function TripPlanPage() {
     ? readMockTrips().find((trip) => trip.source === "generated" && !trip.saved)
     : undefined;
   const tripId = params.get("course") ?? legacyTrip?.id ?? "osaka";
-  return <CoursePlan key={tripId} tripId={tripId} />;
+  return <CoursePlan key={tripId} tripId={tripId} initialDay={readPlanDay(location.search)} />;
 }
 
-function CoursePlan({ tripId }: { tripId: string }) {
+function CoursePlan({ tripId, initialDay }: { tripId: string; initialDay: number }) {
   const navigate = useNavigate();
   const location = useLocation();
   const planOrigin = readPlanOrigin(location.search);
+  const openChat = (day: number) => navigate(tripCommunityPath(planOrigin, tripId, undefined, day));
   const {
     trip,
     candidates,
@@ -79,7 +82,7 @@ function CoursePlan({ tripId }: { tripId: string }) {
     savePlan,
     toggleCandidate,
     undoAiResult,
-  } = useCoursePlan(tripId);
+  } = useCoursePlan(tripId, initialDay);
 
   useEffect(() => {
     if (["place-detail", "ai-loading", "ai-result"].includes(screen)) {
@@ -130,6 +133,7 @@ function CoursePlan({ tripId }: { tripId: string }) {
           variant={overviewVariant === "default" ? "default" : "ai"}
           onBack={() => navigate(tripPlanBackPath(location.search))}
           onOpenSettings={() => navigate(tripSettingsPath(planOrigin, trip.id))}
+          onOpenChat={trip.people > 1 ? () => openChat(activeDay + 1) : undefined}
         />
 
         <div className="course-content">
@@ -173,15 +177,17 @@ function CoursePlan({ tripId }: { tripId: string }) {
                 {isSaved ? "저장 완료" : "내 여행에 저장하기"}
               </button>
             </div>
+          ) : trip.people > 1 ? (
+            <button type="button" onClick={() => openChat(activeDay + 1)}>AI 수정 요청</button>
           ) : (
             <div className="course-cta__row">
-              <button className="is-secondary" type="button" onClick={() => navigate(tripCommunityPath(planOrigin, trip.id))}>AI 수정 요청</button>
+              <button className="is-secondary" type="button" onClick={() => setScreen("ai-edit")}>AI 수정 요청</button>
               <button type="button" onClick={savePlan} disabled={isSaved}>{isSaved ? "저장 완료" : "내 여행에 저장하기"}</button>
             </div>
           )}
         </div>
         {planVariant === "applied" && screen === "plan" && (
-          <div className="course-toast" role="status"><span>✓</span><p>수정한 일정을 적용했어요</p><button type="button" onClick={undoAiResult}>되돌리기</button></div>
+          <div className="course-toast" role="status"><span><img src={checkIcon} alt="" /></span><p>수정한 일정을 적용했어요</p><button type="button" onClick={undoAiResult}>되돌리기</button></div>
         )}
 
         {screen === "ai-edit" && (

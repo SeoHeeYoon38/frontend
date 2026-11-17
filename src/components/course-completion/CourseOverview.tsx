@@ -1,4 +1,4 @@
-import aiAvatar from "../../assets/course-completion/ai-avatar.png";
+import aiAvatar from "../../assets/course-community/ai-avatar.png";
 import calendarIcon from "../../assets/course-completion/icon-calendar.svg";
 import pinIcon from "../../assets/course-completion/icon-pin.svg";
 import trainIcon from "../../assets/course-completion/icon-train.svg";
@@ -17,10 +17,12 @@ interface CourseOverviewProps {
 
 function CourseOverview({ trip, places, activeDay, onDayChange, variant = "default" }: CourseOverviewProps) {
   const isAdjusted = variant !== "default";
-  const summaryTitle = variant === "result" ? "이렇게 바꿔봤어요" : "AI 한줄평";
+  const summaryTitle = variant === "result" ? "이렇게 바꿔봤어요" : "도틀로 AI의 일정 구성";
   const summaryCopy = isAdjusted
-    ? "선택한 일차에서 카페를 제외한 샘플 수정안이에요"
-    : `${trip.city}에서 선택한 장소를 날짜별로 나눈 샘플 일정이에요`;
+    ? "수정 요청을 반영해 동선을 다시 구성했어요"
+    : trip.id === "osaka"
+      ? "부모님과 함께하는 여행을 고려해 덜 걷고 여유롭게 구성했어요"
+      : `${trip.city}에서 선택한 장소를 여행 날짜에 맞춰 구성했어요`;
 
   return (
     <>

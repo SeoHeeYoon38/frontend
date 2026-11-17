@@ -6,14 +6,15 @@ import DirectTripBuilder from "../components/direct-trip/DirectTripBuilder";
 import TripInfoStep from "../components/trip/TripInfoStep";
 import SavedPlacesStep from "../components/trip/SavedPlacesStep";
 import ServerSavedPlaces from "../components/trip/ServerSavedPlaces";
+import type { PlaceImportView } from "../components/trip/PlaceImportForm";
 import PreferencesStep from "../components/trip/PreferencesStep";
 import { durationLabel } from "../utils/trip";
-import logo from "../assets/images/brand-dotlo-logo.png";
-import generationPurple from "../assets/icons/effect-generation-purple.svg";
-import generationCyan from "../assets/icons/effect-generation-cyan.svg";
-import done from "../assets/icons/status-generation-done.svg";
-import current from "../assets/icons/status-generation-current.svg";
-import pending from "../assets/icons/status-generation-pending.svg";
+import generationIllustration from "../assets/trip-generation-illustration.png";
+import generationGlow from "../assets/trip-generation-glow.svg";
+import generationDone from "../assets/trip-generation-done.svg";
+import generationHalo from "../assets/trip-generation-halo.svg";
+import generationNow from "../assets/trip-generation-now.svg";
+import generationWait from "../assets/trip-generation-wait.svg";
 import { isDirectTripMode } from "../utils/navigation";
 import * as S from "./TripCreatePage.styled";
 import { isServerTripId, savedPlaceToTripPlace } from "../api/adapters";
@@ -108,6 +109,7 @@ function AiTripCreatePage({
   initialLoadWarning?: string;
 }) {
   const [importing, setImporting] = useState(false);
+  const [importView, setImportView] = useState<PlaceImportView>("method");
   const {
     draft,
     step,
@@ -138,7 +140,10 @@ function AiTripCreatePage({
         key={draft.tripId}
         tripId={Number(draft.tripId)}
         recommendationCity={draft.city}
+        importView={importView}
+        onImportViewChange={setImportView}
         onContinue={(saved) => {
+          setImportView("method");
           const places = saved.map((place) => savedPlaceToTripPlace(place, draft.city));
           update({
             ...draft,
@@ -155,6 +160,8 @@ function AiTripCreatePage({
         onChange={update}
         onNext={() => move(3)}
         onLoadingChange={setImporting}
+        importView={importView}
+        onImportViewChange={setImportView}
       />
     );
   if (step === 3)
@@ -169,41 +176,25 @@ function AiTripCreatePage({
   if (generating)
     content = (
       <S.Generation role="status" aria-live="polite">
-        <S.GenerationGlow src={generationPurple} alt="" $tone="purple" />
-        <S.GenerationGlow src={generationCyan} alt="" $tone="cyan" />
-        <S.SymbolBox>
-          <div>
-            <img src={logo} alt="Dotlo" />
-          </div>
-        </S.SymbolBox>
+        <S.GenerationGlow src={generationGlow} alt="" />
+        <S.GenerationIllustration src={generationIllustration} alt="일정을 만들고 있는 도틀로 캐릭터" />
         <S.GenerationCopy>
           <h1>
             {draft.city} {durationLabel(draft.startDate, draft.endDate)} 코스를
             <br />
             만들고 있어요
           </h1>
-          <p>최대 3분 정도 걸릴 수 있어요</p>
-          <S.GenerationNotice>화면을 닫지 않고 잠시 기다려 주세요</S.GenerationNotice>
         </S.GenerationCopy>
         <S.GenerationSteps>
           {phases.map((phase, index) => (
-            <li key={phase} data-pending={index > progress}>
-              <img
-                src={
-                  index < progress
-                    ? done
-                    : index === progress
-                      ? current
-                      : pending
-                }
-                alt={
-                  index < progress
-                    ? "완료"
-                    : index === progress
-                      ? "진행 중"
-                      : "대기"
-                }
-              />
+            <li key={phase} data-status={index < progress ? "done" : index === progress ? "current" : "waiting"}>
+              <span>
+                {index === progress && <img className="halo" src={generationHalo} alt="" />}
+                <img
+                  src={index < progress ? generationDone : index === progress ? generationNow : generationWait}
+                  alt={index < progress ? "완료" : index === progress ? "진행 중" : "대기"}
+                />
+              </span>
               {phase}
             </li>
           ))}
@@ -214,9 +205,16 @@ function AiTripCreatePage({
     <Layout
       variant="trip"
       step={step}
-      onBack={back}
+      onBack={() => {
+        if (step === 2 && importView !== "method") {
+          setImportView(importView === "file" ? "guide" : "method");
+        } else {
+          back();
+        }
+      }}
       hideProgress={generating || importing}
       backDisabled={generating}
+      tripGradient={step === 3 && !generating}
     >
       {initialLoadWarning && <S.LoadWarning role="alert">{initialLoadWarning}</S.LoadWarning>}
       {content}

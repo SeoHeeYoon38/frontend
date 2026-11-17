@@ -7,6 +7,8 @@ import settingsIcon from "../assets/course-completion/settings.svg";
 import trainIcon from "../assets/course-completion/icon-train.svg";
 import minusIcon from "../assets/icons/counter-minus.svg";
 import plusIcon from "../assets/icons/counter-plus.svg";
+import checkIcon from "../assets/icons/status-selected-check.svg";
+import closeIcon from "../assets/icons/action-close.svg";
 import DateRangePicker from "../components/trip/DateRangePicker";
 import { routes } from "../config/routes";
 import { travelerCourse } from "../data/mocks/travelerCourseData";
@@ -207,7 +209,7 @@ function ImportedTrip({ tripId }: { tripId: string }) {
           </button>
         </S.BottomAction>
 
-        {notice && <S.Toast role="status"><b>✓</b>{notice}</S.Toast>}
+        {notice && <S.Toast role="status"><b><img src={checkIcon} alt="" /></b>{notice}</S.Toast>}
 
         {sheet && (
           <S.Overlay role="presentation" onMouseDown={() => setSheet(null)}>
@@ -215,7 +217,7 @@ function ImportedTrip({ tripId }: { tripId: string }) {
               <S.Handle />
               {sheet === "info" && (
                 <>
-                  <S.SheetHeader><h2>여행 정보 수정</h2><button type="button" aria-label="닫기" onClick={() => setSheet(null)}>×</button></S.SheetHeader>
+                  <S.SheetHeader><h2>여행 정보 수정</h2><button type="button" aria-label="닫기" onClick={() => setSheet(null)}><img src={closeIcon} alt="" /></button></S.SheetHeader>
                   <S.InfoList>
                     <S.InfoRow><span>여행 이름</span><div><strong>교토 2박 3일</strong><button type="button">수정</button></div></S.InfoRow>
                     <S.InfoRow><span>여행지</span><div><strong>교토, 일본</strong><button type="button">수정</button></div></S.InfoRow>
@@ -235,7 +237,7 @@ function ImportedTrip({ tripId }: { tripId: string }) {
 
               {sheet === "date" && (
                 <>
-                  <S.SheetHeader><div><h2>언제 떠나세요?</h2><p>코스 기간(2박 3일)에 맞춰 날짜를 골라주세요</p></div><button type="button" aria-label="닫기" onClick={() => setSheet("info")}>×</button></S.SheetHeader>
+                  <S.SheetHeader><div><h2>언제 떠나세요?</h2><p>코스 기간(2박 3일)에 맞춰 날짜를 골라주세요</p></div><button type="button" aria-label="닫기" onClick={() => setSheet("info")}><img src={closeIcon} alt="" /></button></S.SheetHeader>
                   <DateRangePicker
                     start={draft.startDate ?? ""}
                     end={draft.endDate ?? ""}
@@ -248,7 +250,7 @@ function ImportedTrip({ tripId }: { tripId: string }) {
 
               {sheet === "people" && (
                 <>
-                  <S.SheetHeader><h2>누구와 떠나세요?</h2><button type="button" aria-label="닫기" onClick={() => setSheet("info")}>×</button></S.SheetHeader>
+                  <S.SheetHeader><h2>누구와 떠나세요?</h2><button type="button" aria-label="닫기" onClick={() => setSheet("info")}><img src={closeIcon} alt="" /></button></S.SheetHeader>
                   <S.CompanionChoices>
                     {companionTypes.map((type) => <button key={type} type="button" aria-pressed={draft.companionType === type} onClick={() => setDraft((current) => ({ ...current, companionType: type, peopleCount: type === "혼자" ? 1 : Math.max(2, current.peopleCount ?? 2) }))}>{type}</button>)}
                   </S.CompanionChoices>

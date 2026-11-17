@@ -25,11 +25,13 @@ test("홈과 온보딩, 앱 내부 화면은 로그인으로 보낸다", () => {
   assert.equal(authRedirectPath("/my-trips"), "/login");
 });
 
-test("개발용 데모에서는 세션 없이 온보딩 단계를 이동할 수 있다", () => {
+test("개발용 데모에서는 세션 없이 온보딩과 앱 화면을 이동할 수 있다", () => {
   assert.equal(authRedirectPath("/onboarding/terms", true), null);
   assert.equal(authRedirectPath("/onboarding/profile", true), null);
   assert.equal(authRedirectPath("/onboarding/preferences", true), null);
   assert.equal(authRedirectPath("/onboarding/complete", true), null);
+  assert.equal(authRedirectPath("/", true), null);
+  assert.equal(authRedirectPath("/my-trips", true), null);
 });
 
 test("데모 로그인은 개발 환경 또는 명시적인 목업 모드에서만 허용한다", () => {

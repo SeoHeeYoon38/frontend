@@ -1,21 +1,26 @@
 import backIcon from "../../assets/course-settings/back.svg";
+import aiAvatar from "../../assets/course-community/ai-avatar.png";
 import {
-  aiAvatar,
   communityDays,
   communityMembers,
 } from "../../data/mocks/courseCommunityData";
 import useCourseCommunity from "../../hooks/useCourseCommunity";
+import sendIcon from "../../assets/course-community/send.svg";
+import selectedCheckIcon from "../../assets/icons/status-selected-check.svg";
+import osakaCastlePhoto from "../../assets/direct-trip/osaka-castle-figma.png";
+import type { CommunityPollOption } from "../../types/courseCommunity";
 
 interface CourseCommunityChatProps {
   onBack: () => void;
-  onViewCourse: () => void;
+  onViewCourse: (day: number) => void;
+  onApplyToCourse?: (day: number, place: CommunityPollOption) => void;
 }
 
 function AiAvatar() {
   return <img className="community-chat__ai-avatar" src={aiAvatar} alt="도틀로 AI" />;
 }
 
-function CourseCommunityChat({ onBack, onViewCourse }: CourseCommunityChatProps) {
+function CourseCommunityChat({ onBack, onViewCourse, onApplyToCourse }: CourseCommunityChatProps) {
   const {
     message,
     pollOptions,
@@ -23,7 +28,6 @@ function CourseCommunityChat({ onBack, onViewCourse }: CourseCommunityChatProps)
     selectedPollId,
     sentMessages,
     stage,
-    applyToCourse,
     openDayPicker,
     setMessage,
     setSelectedDay,
@@ -38,6 +42,10 @@ function CourseCommunityChat({ onBack, onViewCourse }: CourseCommunityChatProps)
   const showSummaryCard = stage === "summary";
   const showPollCard = ["poll", "day-picker"].includes(stage);
   const selectedPlace = pollOptions.find((option) => option.id === selectedPollId);
+  const applyToCourse = () => {
+    if (selectedPlace) onApplyToCourse?.(selectedDay, selectedPlace);
+    setStage("applied");
+  };
 
   return (
     <main className="community-chat">
@@ -46,8 +54,8 @@ function CourseCommunityChat({ onBack, onViewCourse }: CourseCommunityChatProps)
           <img src={backIcon} alt="" />
         </button>
         <div>
-          <h1>오사카 공동 계획 데모</h1>
-          <p>샘플 멤버 3명</p>
+          <h1>오사카 3박 4일</h1>
+          <p>함께하는 3명</p>
         </div>
         <ul aria-label="함께하는 멤버">
           {communityMembers.map((member) => (
@@ -58,8 +66,9 @@ function CourseCommunityChat({ onBack, onViewCourse }: CourseCommunityChatProps)
         </ul>
       </header>
 
-      <section className="community-chat__messages" aria-live="polite">
-        <p className="community-chat__system">채팅과 투표는 이 화면에서 체험할 수 있어요. 다른 브라우저나 내 여행 일정에는 반영되지 않아요.</p>
+      <section className={`community-chat__messages community-chat__messages--${stage}`} aria-live="polite">
+        {stage === "welcome" && <p className="community-chat__system">정다은님, 이지우님이 여행에 참여했어요</p>}
+        {stage === "applied" && <p className="community-chat__system">이지우님이 투표했어요</p>}
         {stage === "welcome" && (
           <>
             <article className="community-chat__ai-message">
@@ -104,14 +113,14 @@ function CourseCommunityChat({ onBack, onViewCourse }: CourseCommunityChatProps)
                     <div className="community-chat__ai-bubble community-chat__ai-bubble--summary">
                       <p>두 분의 의견을 정리했어요.</p>
                       <ul>
-                        <li><b>정다은</b> 유니버설 스튜디오에 가고 싶어요</li>
-                        <li><b>이지우</b> 비용 부담이 적은 곳을 원해요</li>
+                        <li><img src={communityMembers[1].avatar} alt="" /><span><b>정다은</b>유니버설 스튜디오에 가고 싶어요</span></li>
+                        <li><img src={communityMembers[2].avatar} alt="" /><span><b>이지우</b>비용 부담이 적은 곳을 원해요</span></li>
                       </ul>
                     </div>
                     <p className="community-chat__prompt">어떤 방향으로 조율해 볼까요?</p>
                     <div className="community-chat__options">
                       <button type="button" onClick={showPoll}>비용이 적은 대체 장소 찾기</button>
-                      <button type="button" onClick={showPoll}>반나절만 머물고 다른 곳도 가기</button>
+                      <button type="button" onClick={showPoll}>반나절만 머물고 다른 곳 가기</button>
                       <button type="button" onClick={() => setStage("welcome")}>조금 더 이야기해 볼게요</button>
                     </div>
                   </div>
@@ -145,7 +154,7 @@ function CourseCommunityChat({ onBack, onViewCourse }: CourseCommunityChatProps)
                             key={option.id}
                           >
                             <span className="community-poll__check" aria-hidden="true">
-                              {selectedPollId === option.id ? "✓" : ""}
+                              {selectedPollId === option.id ? <img src={selectedCheckIcon} alt="" /> : null}
                             </span>
                             <span><strong>{option.title}</strong><small>{option.detail}</small></span>
                             <b>{option.votes}</b>
@@ -153,7 +162,7 @@ function CourseCommunityChat({ onBack, onViewCourse }: CourseCommunityChatProps)
                         ))}
                       </div>
                       <button className="community-poll__apply" type="button" onClick={openDayPicker}>
-                        선택한 장소 반영 체험
+                        1위 장소 일정에 넣기
                       </button>
                     </section>
                   </div>
@@ -167,14 +176,33 @@ function CourseCommunityChat({ onBack, onViewCourse }: CourseCommunityChatProps)
                   <AiAvatar />
                   <div>
                     <strong>도틀로 AI</strong>
+                    <section className="community-poll community-poll--complete" aria-label="투표 완료 결과">
+                      <header><h2>2일차에 어디 갈까요?</h2><span>3명 투표 완료</span></header>
+                      <div>
+                        {pollOptions.map((option) => (
+                          <button className={selectedPollId === option.id ? "is-selected" : ""} type="button" disabled key={option.id}>
+                            <span className="community-poll__check" aria-hidden="true">{selectedPollId === option.id && <img src={selectedCheckIcon} alt="" />}</span>
+                            <span><strong>{option.title}</strong><small>{option.detail}</small></span>
+                            <b>{option.votes}</b>
+                          </button>
+                        ))}
+                      </div>
+                    </section>
+                  </div>
+                </article>
+                <article className="community-chat__ai-message">
+                  <AiAvatar />
+                  <div>
+                    <strong>도틀로 AI</strong>
                     <div className="community-chat__ai-bubble">
-                      <p>선택한 장소를 일정에 넣는 예시예요.</p>
+                      <p>모두의 의견을 모아<br />{selectedDay}일차에 {selectedPlace?.title}을 넣었어요.<br />이동 동선도 다시 맞춰 두었어요.</p>
                     </div>
                     <div className="community-chat__result-card">
-                      <span>{selectedDay}일차 반영 예시</span>
+                      {selectedPlace?.id === "osaka-castle" && <img src={osakaCastlePhoto} alt="" />}
+                      <span>{selectedDay}일차 추가</span>
                       <strong>{selectedPlace?.title}</strong>
-                      <small>{selectedPlace?.detail}</small>
-                      <button type="button" onClick={onViewCourse}>일정 화면으로 돌아가기</button>
+                      <small>{selectedPlace?.detail.split(",")[0]}</small>
+                      <button type="button" onClick={() => onViewCourse(selectedDay)}>코스에서 보기</button>
                     </div>
                   </div>
                 </article>
@@ -210,7 +238,7 @@ function CourseCommunityChat({ onBack, onViewCourse }: CourseCommunityChatProps)
               onChange={(event) => setMessage(event.target.value)}
             />
           </label>
-          <button type="submit" disabled={!message.trim()} aria-label="데모 메시지 추가">↑</button>
+          <button type="submit" disabled={!message.trim()} aria-label="메시지 보내기"><img src={sendIcon} alt="" /></button>
         </form>
         <span className="community-chat__home-indicator" aria-hidden="true" />
       </footer>
@@ -219,8 +247,8 @@ function CourseCommunityChat({ onBack, onViewCourse }: CourseCommunityChatProps)
         <div className="community-day-picker" role="dialog" aria-modal="true" aria-labelledby="day-picker-title">
           <section>
             <header>
-              <h2 id="day-picker-title">어느 날에 넣을까요?</h2>
-              <p>이동 동선을 고려해 2일차를 추천해요</p>
+              <h2 id="day-picker-title">{selectedPlace?.title}, 언제 넣을까요?</h2>
+              <p>동선이 가장 자연스러운 날을 추천했어요</p>
             </header>
             <div>
               {communityDays.map((day) => (
@@ -237,7 +265,7 @@ function CourseCommunityChat({ onBack, onViewCourse }: CourseCommunityChatProps)
               ))}
             </div>
             <button className="community-day-picker__apply" type="button" onClick={applyToCourse}>
-              {selectedDay}일차 반영 미리보기
+              {selectedDay}일차에 넣기
             </button>
           </section>
         </div>
