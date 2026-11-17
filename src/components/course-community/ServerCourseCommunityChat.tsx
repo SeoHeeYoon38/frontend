@@ -13,6 +13,7 @@ import avatarPurple from "../../assets/course-settings/avatar-purple.png";
 import avatarYellow from "../../assets/course-settings/avatar-yellow.png";
 import sendIcon from "../../assets/course-community/send.svg";
 import selectedCheckIcon from "../../assets/icons/status-selected-check.svg";
+import closeIcon from "../../assets/icons/action-close.svg";
 
 function avatarFor(characterId: number | null) {
   return characterId === 2 ? avatarPurple : characterId === 3 ? avatarYellow : avatarBlue;
@@ -206,7 +207,7 @@ export default function ServerCourseCommunityChat({ tripId, initialDay, onBack, 
 
     {selectedPoll && <div className="community-day-picker" role="dialog" aria-modal="true" aria-labelledby="server-day-picker-title">
       <section><header><h2 id="server-day-picker-title">{[...selectedPoll.candidates].sort((a, b) => b.votes - a.votes)[0]?.name}, 언제 넣을까요?</h2>
-        <button type="button" onClick={() => setSelectedPoll(undefined)} aria-label="닫기">×</button></header>
+        <button type="button" onClick={() => setSelectedPoll(undefined)} aria-label="닫기"><img src={closeIcon} alt="" /></button></header>
         <div>{Array.from({ length: days }, (_, index) => <button type="button" key={index}
           className={selectedDay === index + 1 ? "is-selected" : ""} onClick={() => setSelectedDay(index + 1)}>
           <strong>{index + 1}일차</strong>

@@ -23,6 +23,7 @@ interface TripInfoStepProps {
   onNext: () => void | Promise<void>;
   submitting?: boolean;
   submitError?: string;
+  nextLabel?: string;
 }
 function TripInfoStep({
   draft,
@@ -30,6 +31,7 @@ function TripInfoStep({
   onNext,
   submitting = false,
   submitError = "",
+  nextLabel = "다음",
 }: TripInfoStepProps) {
   const [sheet, setSheet] = useState<
     "city" | "dates" | "people" | "flight" | "stay" | "car" | null
@@ -240,7 +242,7 @@ function TripInfoStep({
           disabled={!valid || submitting}
           onClick={() => void onNext()}
         >
-          {submitting ? "여행 정보를 저장하고 있어요" : "다음"}
+          {submitting ? "여행 정보를 저장하고 있어요" : nextLabel}
         </S.Primary>
       </S.Footer>
       {sheet === "city" && (

@@ -6,6 +6,7 @@ import PlaceTimeline from "./PlaceTimeline";
 
 interface DayCourseProps {
   dayLabel: string;
+  travelLabel?: string;
   places: CoursePlace[];
   onAddPlace: () => void;
   onEditPlace?: () => void;
@@ -18,6 +19,7 @@ interface DayCourseProps {
 
 function DayCourse({
   dayLabel,
+  travelLabel,
   places,
   onAddPlace,
   onEditPlace,
@@ -34,7 +36,7 @@ function DayCourse({
         <p>
           <span>{places.length}곳</span>
           <i />
-          <span>방문 일정</span>
+          <span>{travelLabel ?? "방문 일정"}</span>
         </p>
       </div>
       {unplacedCount > 0 && (

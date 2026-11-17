@@ -83,6 +83,7 @@ function CoursePlan({ tripId, initialDay }: { tripId: string; initialDay: number
     toggleCandidate,
     undoAiResult,
   } = useCoursePlan(tripId, initialDay);
+  const sharedSample = tripId === "osaka" && trip?.source === "sample";
 
   useEffect(() => {
     if (["place-detail", "ai-loading", "ai-result"].includes(screen)) {
@@ -132,8 +133,9 @@ function CoursePlan({ tripId, initialDay }: { tripId: string; initialDay: number
           trip={trip}
           variant={overviewVariant === "default" ? "default" : "ai"}
           onBack={() => navigate(tripPlanBackPath(location.search))}
-          onOpenSettings={() => navigate(tripSettingsPath(planOrigin, trip.id))}
-          onOpenChat={trip.people > 1 ? () => openChat(activeDay + 1) : undefined}
+          onOpenSettings={() => navigate(`${tripSettingsPath(planOrigin, trip.id)}&day=${activeDay + 1}`)}
+          onOpenChat={sharedSample ? () => openChat(activeDay + 1) : undefined}
+          onInvite={sharedSample ? undefined : () => navigate(`${tripSettingsPath(planOrigin, trip.id)}&panel=invite&day=${activeDay + 1}`)}
         />
 
         <div className="course-content">
@@ -149,12 +151,15 @@ function CoursePlan({ tripId, initialDay }: { tripId: string; initialDay: number
             variant={overviewVariant}
           />
           <DayCourse
-            dayLabel={`${activeDay + 1}일차 ${trip.city} 일정`}
+            dayLabel={trip.id === "osaka" && trip.source === "sample" && activeDay === 0
+              ? "천천히 즐기는 미식과 야경"
+              : `${activeDay + 1}일차 ${trip.city} 일정`}
+            travelLabel={trip.id === "osaka" && trip.source === "sample" && activeDay === 0 ? "도보 1.1km" : undefined}
             places={displayPlaces}
             variant={overviewVariant}
             unplacedCount={overviewVariant === "default" ? removedPlaces.length : 0}
             onAddPlace={() => setScreen("place-add")}
-            onEditPlace={() => setScreen("schedule-edit")}
+            onEditPlace={sharedSample ? undefined : () => setScreen("schedule-edit")}
             onOpenPlace={openPlaceDetail}
             onRemovePlace={removePlace}
             onRestorePlace={addRemovedPlace}
@@ -177,7 +182,7 @@ function CoursePlan({ tripId, initialDay }: { tripId: string; initialDay: number
                 {isSaved ? "저장 완료" : "내 여행에 저장하기"}
               </button>
             </div>
-          ) : trip.people > 1 ? (
+          ) : sharedSample ? (
             <button type="button" onClick={() => openChat(activeDay + 1)}>AI 수정 요청</button>
           ) : (
             <div className="course-cta__row">

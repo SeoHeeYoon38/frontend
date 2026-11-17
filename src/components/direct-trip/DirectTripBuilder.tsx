@@ -310,6 +310,7 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
             setDraft(next);
           }}
           onNext={startItinerary}
+          nextLabel="일정 만들기"
           submitting={preparingTrip}
           submitError={notice}
         />

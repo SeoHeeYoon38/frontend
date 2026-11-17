@@ -4,7 +4,7 @@ import type { CoursePlace } from "../../types/courseCompletion";
 import { durationLabel, rangeDates, selectedPlaces, tripDateStatus } from "../../utils/trip";
 import { formatTripDateRange, parseImportedTripRegistration } from "../../utils/importedTrip";
 import { readStoredTrips, writeStoredTrip } from "../../utils/mockTrips";
-import { initialCoursePlaces } from "./courseCompletionData";
+import { initialCoursePlaces, replacementPlaces, suggestedPlaces } from "./courseCompletionData";
 import { mockTripCities, mockTripPlaces } from "./tripData";
 import { upcomingTrips, pastTrips } from "./myTripsData";
 import { travelerCourse } from "./travelerCourseData";
@@ -93,12 +93,17 @@ function sampleTrips(): MockTrip[] {
     const dates = summary.dateLabel.match(/(\d{4})\.(\d+)\.(\d+)\s*–\s*(\d+)\.(\d+)/);
     const startDate = dates ? `${dates[1]}-${dates[2].padStart(2, "0")}-${dates[3].padStart(2, "0")}` : "2026-05-18";
     const endDate = dates ? `${dates[1]}-${dates[4].padStart(2, "0")}-${dates[5].padStart(2, "0")}` : "2026-05-21";
-    const places: CoursePlace[] = summary.city === "오사카" ? initialCoursePlaces :
-      mockTripPlaces.filter((place) => place.city === summary.city).map((place, index) => ({
+    const places: CoursePlace[] = mockTripPlaces.filter((place) => place.city === summary.city).map((place, index) => ({
         id: index + 1, name: place.title, category: place.category,
         detail: place.description, image: place.image, icon: placeIcon(place.category),
         latitude: place.latitude, longitude: place.longitude,
       }));
+    const osakaSampleDays: CoursePlace[][] = [
+      initialCoursePlaces,
+      suggestedPlaces.slice(0, 3).map((place) => ({ ...place, detail: place.distance, icon: placeIcon(place.category) })),
+      suggestedPlaces.slice(3).map((place) => ({ ...place, detail: place.distance, icon: placeIcon(place.category) })),
+      replacementPlaces.slice(1, 3).map((place) => ({ ...place, detail: place.distance, icon: placeIcon(place.category) })),
+    ];
     return {
       id: summary.id, title: summary.title, city: summary.city, country: "",
       startDate, endDate, companion: "친구" as const, people: 3,
@@ -106,7 +111,9 @@ function sampleTrips(): MockTrip[] {
       sampleStatus: upcomingTrips.some((trip) => trip.id === summary.id) ? "upcoming" as const : "past" as const,
       days: rangeDates(startDate, endDate).map((date, index, days) => ({
         date,
-        places: places.filter((_, placeIndex) => Math.floor(placeIndex * days.length / places.length) === index),
+        places: summary.id === "osaka"
+          ? osakaSampleDays[index] ?? []
+          : places.filter((_, placeIndex) => Math.floor(placeIndex * days.length / places.length) === index),
       })),
     };
   });

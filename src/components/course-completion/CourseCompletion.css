@@ -332,6 +332,13 @@
   object-fit: cover;
 }
 
+.course-map__exact {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .course-map--expanded {
   height: clamp(264px, 64dvh, 620px);
 }

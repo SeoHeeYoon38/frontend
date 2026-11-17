@@ -345,7 +345,7 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
               <p>{summary.dateLabel}</p>
             </div>
             {!shared && (
-              <Link className="course-hero__invite" to={tripSettingsPath(origin, undefined, tripId)}>
+              <Link className="course-hero__invite" to={`${tripSettingsPath(origin, undefined, tripId)}&panel=invite&day=${activeDay + 1}`}>
                 <img src={inviteIcon} alt="" />친구 초대
               </Link>
             )}

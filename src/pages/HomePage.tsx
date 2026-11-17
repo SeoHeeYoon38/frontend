@@ -6,7 +6,7 @@ import HomeIntro from "../components/home/HomeIntro";
 import MyTripsSection from "../components/home/MyTripsSection";
 import RecommendedCourses from "../components/home/RecommendedCourses";
 import { readMockScenario } from "../utils/mockScenario";
-import { parseProfileSettings, PROFILE_STORAGE_KEY } from "../utils/mySettings";
+import { readProfileSettings } from "../utils/mySettings";
 import { getMe } from "../api/auth";
 import { isApiEnabled } from "../api/config";
 import { getCourses } from "../api/courses";
@@ -29,13 +29,7 @@ function HomePage() {
   const [coursePending, setCoursePending] = useState(isApiEnabled());
   const [courseError, setCourseError] = useState("");
   const myTrips = useMyTrips(true);
-  const [nickname] = useState(() => {
-    try {
-      return parseProfileSettings(localStorage.getItem(PROFILE_STORAGE_KEY))?.nickname;
-    } catch {
-      return undefined;
-    }
-  });
+  const nickname = readProfileSettings(window.localStorage).nickname;
   const [accountName, setAccountName] = useState<string>();
   const [accountError, setAccountError] = useState("");
   const [tripAvatars, setTripAvatars] = useState<{ tripId: string; images: string[] }>();
@@ -115,7 +109,7 @@ function HomePage() {
       {!myTrips.enabled && storageNotice && <p role="alert">{storageNotice}</p>}
       {accountError && <p role="alert">{accountError}</p>}
       <HomeIntro
-        name={myTrips.enabled ? accountName ?? "" : nickname ?? data.userName}
+        name={myTrips.enabled ? accountName ?? "" : nickname}
         trip={featuredTrip}
         tripPath={tripPath}
         resumePath={myTrips.inProgress && resumeTripPath(myTrips.inProgress.id)}

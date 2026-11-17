@@ -48,7 +48,7 @@ function ServerCourseSettings({ tripId }: { tripId: number }) {
   const [memberAttempt, setMemberAttempt] = useState(0);
   const [showMembers, setShowMembers] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [showInvite, setShowInvite] = useState(false);
+  const [showInvite, setShowInvite] = useState(() => new URLSearchParams(search).get("panel") === "invite");
   const [showShare, setShowShare] = useState(false);
   const [dialog, setDialog] = useState<"delete" | "leave">();
   const [actionError, setActionError] = useState("");
@@ -341,6 +341,7 @@ function DemoCourseSettings() {
   const trip = readMockTrip(tripId);
   const showUnsavedMock =
     readMockScenario(location.search) === "settings-unsaved-close";
+  const openInviteInitially = new URLSearchParams(location.search).get("panel") === "invite";
   const [view, setView] = useState<CourseSettingsView>("menu");
   const [dialog, setDialog] = useState<CourseSettingsDialog>(null);
   const [selectedCover, setSelectedCover] = useState(0);
@@ -369,7 +370,7 @@ function DemoCourseSettings() {
     { initialTripName: trip?.title, onSaveTripName: (title) => {
       const current = readMockTrip(tripId);
       return current ? saveMockTrip({ ...current, title }) : false;
-    }, ...(showUnsavedMock
+    }, ...(openInviteInitially ? { initialSheet: "invite" as const } : showUnsavedMock
       ? {
           initialSheet: "trip",
           initialDraftName: "오사카 우정 여행",

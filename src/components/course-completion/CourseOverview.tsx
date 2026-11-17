@@ -23,6 +23,7 @@ function CourseOverview({ trip, places, activeDay, onDayChange, variant = "defau
     : trip.id === "osaka"
       ? "부모님과 함께하는 여행을 고려해 덜 걷고 여유롭게 구성했어요"
       : `${trip.city}에서 선택한 장소를 여행 날짜에 맞춰 구성했어요`;
+  const figmaSample = trip.id === "osaka" && trip.source === "sample";
 
   return (
     <>
@@ -49,8 +50,8 @@ function CourseOverview({ trip, places, activeDay, onDayChange, variant = "defau
           </div>
           <div className="course-fact">
             <img src={trainIcon} alt="" />
-            <strong>{trip.companion} {trip.people}명</strong>
-            <span>동행</span>
+            <strong>{figmaSample ? "도보와 버스" : `${trip.companion} ${trip.people}명`}</strong>
+            <span>{figmaSample ? "이동 방법" : "동행"}</span>
           </div>
         </div>
 

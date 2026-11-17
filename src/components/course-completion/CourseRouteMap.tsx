@@ -1,4 +1,5 @@
 import routeMap from "../../assets/course-completion/route-map.png";
+import figmaRouteMap from "../../assets/course-completion/route-map-figma.png";
 import type { CoursePlace } from "../../types/courseCompletion";
 import "./CourseCompletion.css";
 
@@ -17,6 +18,12 @@ interface CourseRouteMapProps {
 
 function CourseRouteMap({ places, city, day, schematic = false, expanded = false, onSelect }: CourseRouteMapProps) {
   const dayLabel = day === undefined ? "전체" : `${day}일차`;
+  const isFigmaSample = !schematic && !expanded && !onSelect && city === "오사카" && day === 1 &&
+    places.map((place) => place.name).join("|") ===
+      "간사이 공항 도착|APA 호텔 난바|구로몬 시장|리로 커피 로스터스|도톤보리 저녁 식사";
+  if (isFigmaSample) return <div className="course-map" aria-label="1일차 오사카 경로">
+    <img className="course-map__exact" src={figmaRouteMap} alt="오사카 1일차 경로 지도" />
+  </div>;
   const rows = Math.max(1, Math.ceil(places.length / 3));
   const hasCoordinates = places.every((place) =>
     Number.isFinite(place.latitude) && Number.isFinite(place.longitude),
