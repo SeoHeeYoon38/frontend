@@ -185,10 +185,16 @@ const ItemRow = styled.article`
     border-radius: 14px;
     object-fit: cover;
   }
+
+  > .place-photo {
+    flex: 0 0 auto;
+    overflow: hidden;
+    border-radius: 14px;
+  }
 `;
 
 export const PlaceRow = styled(ItemRow)`
-  > img {
+  > img, > .place-photo, > span:not(.place-photo) {
     width: 56px;
     height: 56px;
   }
@@ -197,9 +203,22 @@ export const PlaceRow = styled(ItemRow)`
 export const CourseRow = styled(ItemRow)`
   min-height: 88px;
 
-  > img {
+  > img, > span {
     width: 72px;
     height: 72px;
+  }
+`;
+
+export const ImageFallback = styled.span`
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: #f3f5fa;
+
+  img {
+    width: 22px;
+    height: 22px;
   }
 `;
 
@@ -276,6 +295,11 @@ export const BookmarkButton = styled.button`
   img {
     width: 22px;
     height: 22px;
+  }
+
+  &:disabled {
+    cursor: wait;
+    opacity: 0.55;
   }
 `;
 

@@ -85,6 +85,11 @@ export interface SavedPlaceListResponse {
   places: SavedPlaceResponse[];
 }
 
+export interface MySavedPlaceResponse {
+  trip: Pick<TripResponse, "id" | "city" | "startDate" | "endDate">;
+  place: SavedPlaceResponse;
+}
+
 export interface PlaceImportResponse {
   tripId: number;
   totalNewCount: number;

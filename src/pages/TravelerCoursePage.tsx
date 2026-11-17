@@ -82,7 +82,7 @@ function TravelerCoursePage() {
   const [activeDay, setActiveDay] = useState(0);
   const [mapDay, setMapDay] = useState<number>();
   const [placeOrigin, setPlaceOrigin] = useState<"course" | "map">("course");
-  const { isCourseSaved, setCourse: setSavedCourse, saveError } = useSavedItems();
+  const { isCourseSaved, setCourse: setSavedCourse, saveError, coursesLoading, coursesLoadError, pendingId } = useSavedItems();
   const [notice, setNotice] = useState("");
   const [screen, setScreen] = useState<"course" | "map" | "place" | "ai">("course");
   const [selectedPlaceId, setSelectedPlaceId] = useState<string>();
@@ -124,8 +124,8 @@ function TravelerCoursePage() {
     .find((place) => place.id === selectedPlaceId);
 
   const isSaved = isCourseSaved(course.id);
-  const toggleSaved = () => {
-    if (setSavedCourse(course.id, isSaved ? null : {
+  const toggleSaved = async () => {
+    if (await setSavedCourse(course.id, isSaved ? null : {
       id: course.id,
       title: course.title.replace(/\s+/g, " "),
       durationLabel: course.duration,
@@ -182,7 +182,7 @@ function TravelerCoursePage() {
             <img src={backIcon} alt="" />
           </button>
           <strong>여행자 코스</strong>
-          <S.Heart type="button" $saved={isSaved} aria-label={isSaved ? "코스 찜 해제" : "코스 찜하기"} onClick={toggleSaved}>
+          <S.Heart type="button" $saved={isSaved} aria-label={isSaved ? "코스 찜 해제" : "코스 찜하기"} disabled={coursesLoading || Boolean(coursesLoadError) || pendingId !== null} onClick={() => { void toggleSaved(); }}>
             <img src={isSaved ? heartFilledIcon : heartIcon} alt="" />
           </S.Heart>
         </S.Navigation>
@@ -245,6 +245,7 @@ function TravelerCoursePage() {
       <S.Cta><button type="button" onClick={importCourse}>내 일정으로 가져오기</button></S.Cta>
       {notice && <S.Toast role="status"><b><img src={checkIcon} alt="" /></b>{notice}</S.Toast>}
       {saveError && <S.Toast role="alert">{saveError}</S.Toast>}
+      {coursesLoadError && <S.Toast role="alert">{coursesLoadError}</S.Toast>}
     </S.Shell>
   );
 }
