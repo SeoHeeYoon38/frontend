@@ -7,32 +7,45 @@ import {
   getLatestItinerary,
   requestItineraryEdit,
   revertItinerary,
+  saveItinerary,
 } from "../api/itineraries";
+import { getTripInteractions, type TripInteractions } from "../api/interactions";
 import { getSavedPlaces } from "../api/places";
+import { getTripMembers } from "../api/members";
 import { confirmTrip, getTrip } from "../api/trips";
 import type {
   ItineraryEditPreview,
   ItineraryVersionSummary,
   ItineraryVersionView,
   SavedPlaceResponse,
+  MemberResponse,
   TripResponse,
 } from "../api/types";
-import { readPlanOrigin, resumeTripPath, tripCommunityPath, tripPlanBackPath, tripSettingsPath } from "../utils/navigation";
+import { readPlanDay, readPlanOrigin, resumeTripPath, tripCommunityPath, tripPlanBackPath, tripSettingsPath } from "../utils/navigation";
 import { apiTripToDraft, apiTripToSummary } from "../utils/serverTrip";
 import { dateLabel, durationLabel, timeLabel } from "../utils/trip";
 import DirectTripBuilder from "../components/direct-trip/DirectTripBuilder";
-import ItineraryIssues from "../components/course-completion/ItineraryIssues";
 import CourseRouteMap from "../components/course-completion/CourseRouteMap";
 import TripTimeline from "../components/course-completion/TripTimeline";
+import PlaceDetail from "../components/course-completion/PlaceDetail";
 import AddItineraryPlaceSheet from "../components/course-completion/AddItineraryPlaceSheet";
 import TravelModeSheet from "../components/course-completion/TravelModeSheet";
 import type { TravelLeg } from "../api/types";
 import { travelModeLabels } from "../utils/trip";
 import TripSummary from "../components/course-completion/TripSummary";
 import TripSheet from "../components/common/TripSheet";
-import { PlaceGallery } from "../components/common/PlacePhoto";
 import backIcon from "../assets/icons/nav-back.svg";
 import settingsIcon from "../assets/course-completion/settings.svg";
+import heroPhoto from "../assets/course-completion/hero-photo.png";
+import aiAvatar from "../assets/course-community/ai-avatar.png";
+import addIcon from "../assets/icons/action-add.svg";
+import checkIcon from "../assets/icons/status-selected-check.svg";
+import triangleIcon from "../assets/course-completion/triangle-down.svg";
+import inviteIcon from "../assets/course-settings-details/member-add.svg";
+import chatIcon from "../assets/course-community/chat.svg";
+import avatarBlue from "../assets/course-settings/avatar-blue.png";
+import avatarPurple from "../assets/course-settings/avatar-purple.png";
+import avatarYellow from "../assets/course-settings/avatar-yellow.png";
 import { routes } from "../config/routes";
 
 interface TripPlanData {
@@ -40,6 +53,8 @@ interface TripPlanData {
   itinerary: ItineraryVersionView | null;
   places: SavedPlaceResponse[];
   history: ItineraryVersionSummary[];
+  members: MemberResponse[];
+  interactions?: TripInteractions;
 }
 
 const sourceLabels: Record<ItineraryVersionSummary["source"], string> = {
@@ -50,13 +65,28 @@ const sourceLabels: Record<ItineraryVersionSummary["source"], string> = {
   REVERT: "되돌리기",
 };
 
+const categoryLabels: Record<string, string> = {
+  FOOD: "맛집",
+  CAFE: "카페",
+  SIGHTSEEING: "명소",
+  SHOPPING: "쇼핑",
+  NATURE: "자연",
+  CULTURE: "문화",
+  NIGHTLIFE: "야경",
+  ACTIVITY: "체험",
+  OTHER: "장소",
+};
+
 function ServerTripPlan({ tripId }: { tripId: number }) {
   const { search, state } = useLocation();
   const [data, setData] = useState<TripPlanData>();
   const [error, setError] = useState("");
-  const [activeDay, setActiveDay] = useState(0);
+  const [activeDay, setActiveDay] = useState(() => readPlanDay(search) - 1);
   const [mapExpanded, setMapExpanded] = useState(false);
-  const [photoPlace, setPhotoPlace] = useState<{ placeId: string; name: string }>();
+  const [photoPlace, setPhotoPlace] = useState<{ itemId: string; placeId: string; name: string }>();
+  const [photoError, setPhotoError] = useState("");
+  const [photoPending, setPhotoPending] = useState(false);
+  const [interactionError, setInteractionError] = useState("");
   const [editing, setEditing] = useState(false);
   const [showAddPlace, setShowAddPlace] = useState(false);
   const [showAiEdit, setShowAiEdit] = useState(false);
@@ -92,9 +122,20 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
           throw reason;
         });
         if (signal.aborted) return;
-        const saved = itinerary ? await getSavedPlaces(tripId, signal).catch(() => undefined) : undefined;
-        const history = itinerary ? await getItineraryHistory(tripId, signal).catch(() => []) : [];
-        if (!signal.aborted) setData({ trip, itinerary, places: saved?.places ?? [], history });
+        const saved = itinerary ? await getSavedPlaces(tripId, signal) : undefined;
+        const [history, members, interactions] = await Promise.all([
+          itinerary ? getItineraryHistory(tripId, signal).catch(() => []) : Promise.resolve([]),
+          getTripMembers(tripId, signal),
+          itinerary ? getTripInteractions(tripId, signal).catch(() => {
+            if (!signal.aborted) setInteractionError("좋아요와 댓글을 불러오지 못했어요.");
+            return undefined;
+          }) : Promise.resolve(undefined),
+        ]);
+        if (!signal.aborted) {
+          const dayCount = itinerary?.validation.days.length ?? 0;
+          setActiveDay((current) => Math.min(current, Math.max(dayCount - 1, 0)));
+          setData({ trip, itinerary, places: saved?.places ?? [], history, members, interactions });
+        }
       } catch (reason) {
         if (signal.aborted) return;
         setError(reason instanceof ApiError && reason.code === "TRIP_NOT_FOUND"
@@ -122,6 +163,12 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
     return [{ id: visit.itemId, name: place.name, latitude: place.latitude, longitude: place.longitude, order: index + 1 }];
   });
   const excludedPlaceIds: string[] = Array.isArray(state?.excludedPlaceIds) ? state.excludedPlaceIds : [];
+  const movementModes = new Set(days.flatMap((item) => item.visits.map((visit) => visit.travel.mode)));
+  const movementLabel = movementModes.size === 0
+    ? "이동 정보 확인 중"
+    : [...movementModes].map((mode) => travelModeLabels[mode]).join("와 ");
+  const shared = (data?.members.length ?? 0) > 1;
+  const memberFallbacks = [avatarBlue, avatarPurple, avatarYellow];
 
   async function retryConfirmation() {
     if (!data?.itinerary || confirmationPending.current) return;
@@ -140,6 +187,37 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
   const reloadHistory = async () => {
     const history = await getItineraryHistory(tripId);
     setData((current) => current ? { ...current, history } : current);
+  };
+
+  const refreshInteractions = async () => {
+    const interactions = await getTripInteractions(tripId);
+    setData((current) => current ? { ...current, interactions } : current);
+    setInteractionError("");
+  };
+
+  const removeSelectedPlace = async () => {
+    if (!data?.itinerary || !photoPlace || photoPending) return;
+    setPhotoPending(true);
+    setPhotoError("");
+    try {
+      if (!data.itinerary.draft.days.some((item) => item.visits.some((visit) => visit.itemId === photoPlace.itemId))) {
+        throw new Error("현재 일정에서 이 장소를 찾지 못했어요. 일정을 다시 열어 주세요.");
+      }
+      const days = data.itinerary.draft.days.map((item) => ({
+        ...item,
+        visits: item.visits.filter((visit) => visit.itemId !== photoPlace.itemId),
+      }));
+      const itinerary = await saveItinerary(tripId, days, data.itinerary.version);
+      setData((current) => current ? { ...current, itinerary } : current);
+      setPhotoPlace(undefined);
+      setNotice(`${photoPlace.name}을 일정에서 뺐어요.`);
+      void reloadHistory().catch(() => undefined);
+      void refreshInteractions().catch(() => undefined);
+    } catch (reason) {
+      setPhotoError(reason instanceof Error ? reason.message : "장소를 일정에서 빼지 못했어요.");
+    } finally {
+      setPhotoPending(false);
+    }
   };
 
   const requestEdit = async () => {
@@ -217,24 +295,69 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
     );
   }
 
+  if (photoPlace && data) {
+    const savedPlace = data.places.find((item) => item.placeId === photoPlace.placeId);
+    return <div className="course-page-shell"><div className="course-page">
+      <PlaceDetail
+        place={{
+          id: savedPlace?.id ?? 0,
+          name: savedPlace?.name ?? photoPlace.name,
+          category: categoryLabels[savedPlace?.category ?? "OTHER"],
+          detail: savedPlace?.note ?? savedPlace?.address ?? "",
+          image: "",
+          icon: "",
+          latitude: savedPlace?.latitude ?? undefined,
+          longitude: savedPlace?.longitude ?? undefined,
+        }}
+        onBack={() => setPhotoPlace(undefined)}
+        onRemove={() => void removeSelectedPlace()}
+        removePending={photoPending}
+        removeError={photoError}
+        server={{ tripId, itemId: photoPlace.itemId, placeId: photoPlace.placeId,
+          interactions: data.interactions, loadError: interactionError, onRefresh: refreshInteractions }}
+      />
+    </div></div>;
+  }
+
   return (
     <div className="course-page-shell">
       <main className="course-page">
         {data && summary && (
-          <header className="course-hero server-course-hero">
+          <header className="course-hero">
+            {(summary.city === "오사카" || summary.coverImage) && <img className="course-hero__photo"
+              src={summary.city === "오사카" ? heroPhoto : summary.coverImage} alt={`${summary.city} 여행`} />}
+            <div className="course-hero__scrim" />
             <nav className="course-navigation" aria-label="코스 화면 탐색">
               <Link to={backPath} aria-label="뒤로 가기"><img src={backIcon} alt="" /></Link>
-              <strong>내 여행 코스</strong>
+              <strong>{shared ? "함께하는 여행" : "AI 여행 코스"}</strong>
+              {shared && (
+                <Link to={tripCommunityPath(origin, undefined, tripId, activeDay + 1)} aria-label="함께하는 여행 채팅">
+                  <img src={chatIcon} alt="" />
+                </Link>
+              )}
               <Link to={tripSettingsPath(origin, undefined, tripId)} aria-label="코스 설정">
                 <img src={settingsIcon} alt="" />
               </Link>
             </nav>
-            <p className="server-course-hero__placeholder">이미지 없음</p>
             <div className="course-hero__title">
               <span>{summary.city}</span>
               <h1>{summary.title}</h1>
               <p>{summary.dateLabel}</p>
             </div>
+            {!shared && (
+              <Link className="course-hero__invite" to={tripSettingsPath(origin, undefined, tripId)}>
+                <img src={inviteIcon} alt="" />친구 초대
+              </Link>
+            )}
+            {shared && (
+              <ul className="course-hero__members" aria-label={`함께하는 ${data.members.length}명`}>
+                {data.members.slice(0, 3).map((member, index) => (
+                  <li key={member.userId} title={member.name}>
+                    <img src={member.profileImageUrl || memberFallbacks[index % memberFallbacks.length]} alt={member.name} />
+                  </li>
+                ))}
+              </ul>
+            )}
           </header>
         )}
         <div className="course-content">
@@ -244,7 +367,7 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
           {notice && <p role="status">{notice}</p>}
           {inviteAccepted && summary && (
             <div className="course-toast course-toast--invite" role="status">
-              <span aria-hidden="true">✓</span>
+              <img src={checkIcon} alt="" />
               <p>{summary.title}에 참여했어요.</p>
               <button type="button" onClick={() => setInviteAccepted(false)}>닫기</button>
             </div>
@@ -252,11 +375,15 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
           {!data && !error && <p role="status">여행 일정을 불러오고 있어요.</p>}
           {data && summary && (
             <section className="course-section">
-              <div className="server-course-summary">
-                <p>AI 요약 문장 없음</p>
-                <TripSummary duration={summary.durationLabel ?? durationLabel(data.trip.startDate, data.trip.endDate)} placeCount={placeCount} companion={`${apiTripToDraft(data.trip).companion} ${data.trip.companionCount}명`} />
-              </div>
-              <Link to={tripCommunityPath(origin, "osaka", tripId)}>공동 계획 데모 열기</Link>
+              <section className="ai-summary" aria-label="도틀로 AI 일정 구성 설명">
+                <img src={aiAvatar} alt="도틀로 AI" />
+                <div className="ai-summary__bubble">
+                  <b>도틀로 AI의 일정 구성</b>
+                  <p>{data.itinerary
+                    ? `${summary.durationLabel ?? "여행 기간"} 동안 ${placeCount}곳을 방문하는 일정이에요.`
+                    : "일정을 만들면 여행 동선을 확인할 수 있어요."}</p>
+                </div>
+              </section>
               {data.itinerary ? (
                 <>
                   {confirmation === null && (
@@ -269,14 +396,13 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
                       </button>
                     </div>
                   )}
-                  {confirmation && (
-                    <p role="status">
-                      코스가 완성돼서 내 여행에 저장됐어요.
-                      {confirmation.placesNeedingCheck > 0 && ` 확인이 필요한 장소가 ${confirmation.placesNeedingCheck}곳 있어요.`}
-                    </p>
-                  )}
                   <h2>일정</h2>
-                  <button type="button" className="course-inline-edit" onClick={() => setEditing(true)}>일정 직접 편집하기</button>
+                  <TripSummary
+                    duration={summary.durationLabel ?? durationLabel(data.trip.startDate, data.trip.endDate)}
+                    placeCount={placeCount}
+                    companion={movementLabel}
+                    companionLabel="이동 방법"
+                  />
                   {excludedPlaceIds.length > 0 && (
                     <section aria-label="일정에 넣지 못한 장소">
                       <p role="status">{excludedPlaceIds.length}곳은 일정에 넣지 못했어요.</p>
@@ -287,7 +413,6 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
                       </ul>
                     </section>
                   )}
-                  <ItineraryIssues validation={data.itinerary.validation} />
                   <div className="course-tabs" aria-label="여행 일차">
                     {days.map((item, index) => (
                       <button
@@ -313,7 +438,7 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
                       <CourseRouteMap places={mapPlaces} city={summary.city} day={activeDay + 1} schematic expanded />
                     </TripSheet>
                   )}
-                  <TripTimeline day={activeDay + 1} onOpenPlace={(placeId, name) => setPhotoPlace({ placeId, name })} visits={(day?.visits ?? []).map((visit, index, visits) => {
+                   <TripTimeline day={activeDay + 1} shared={shared} onEdit={() => setEditing(true)} onOpenPlace={(itemId, placeId, name) => setPhotoPlace({ itemId, placeId, name })} visits={(day?.visits ?? []).map((visit, index, visits) => {
                     const place = placesById.get(visit.placeId);
                     const next = visits[index + 1];
                     const key = next && JSON.stringify([day?.date, visit.itemId, next.itemId]);
@@ -324,6 +449,8 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
                       photoPlaceId: visit.placeId,
                       address: place?.address,
                       timing: `${timeLabel(visit.start)} – ${timeLabel(visit.end)}`,
+                      category: categoryLabels[place?.category ?? "OTHER"],
+                      reactions: data.interactions?.items.find((item) => item.itemId === visit.itemId),
                       connection: next && key && mode && (
                         <div className="travel-mode-connection">
                           <button type="button" aria-haspopup="dialog" onClick={() => setTravelSelection({
@@ -332,18 +459,13 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
                             to: placesById.get(next.placeId)?.name ?? "다음 장소",
                             travel: next.travel,
                           })}>
-                            {travelModeLabels[mode]}{mode === next.travel.mode && ` ${next.travel.minutes}분`} <span aria-hidden="true">▾</span>
+                            {travelModeLabels[mode]}{mode === next.travel.mode && ` ${next.travel.minutes}분`} <img src={triangleIcon} alt="" />
                           </button>
                           {mode === next.travel.mode && <small>{(next.travel.distanceMeters / 1000).toFixed(1)}km</small>}
                         </div>
                       ),
                     };
                   })} />
-                  {photoPlace && (
-                    <TripSheet title={photoPlace.name} onClose={() => setPhotoPlace(undefined)}>
-                      <div className="server-place-gallery"><PlaceGallery {...photoPlace} /></div>
-                    </TripSheet>
-                  )}
                   {travelSelection && (
                     <TravelModeSheet
                       {...travelSelection}
@@ -362,7 +484,7 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
                       }}
                     />
                   )}
-                  <button type="button" className="course-inline-edit" disabled={!day || editPending} onClick={() => setShowAddPlace(true)}>＋ 장소 추가</button>
+                  <button type="button" className="add-place-button" disabled={!day || editPending} onClick={() => setShowAddPlace(true)}><img src={addIcon} alt="" /> 장소 추가</button>
                   {showAddPlace && (
                     <AddItineraryPlaceSheet
                       tripId={tripId}
@@ -383,9 +505,6 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
                       }}
                     />
                   )}
-                  <button type="button" className="course-inline-edit" aria-expanded={showAiEdit} aria-controls="ai-edit-section" onClick={() => setShowAiEdit((open) => !open)}>
-                    AI 수정 요청
-                  </button>
                   <section id="ai-edit-section" hidden={!showAiEdit} aria-labelledby="ai-edit-title">
                     <h2 id="ai-edit-title">AI로 일정 수정하기</h2>
                     <textarea
@@ -447,6 +566,21 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
             </section>
           )}
         </div>
+        {data?.itinerary && (
+          <div className="course-cta">
+            {shared ? (
+              <Link to={tripCommunityPath(origin, undefined, tripId, activeDay + 1)}>AI 수정 요청</Link>
+            ) : (
+              <button type="button" aria-expanded={showAiEdit} aria-controls="ai-edit-section" onClick={() => setShowAiEdit((open) => !open)}>AI 수정 요청</button>
+            )}
+          </div>
+        )}
+        {confirmation && (
+          <div className="course-toast" role="status">
+            <img src={checkIcon} alt="" />
+            <p>코스가 완성돼서 내 여행에 저장했어요</p>
+          </div>
+        )}
       </main>
     </div>
   );
