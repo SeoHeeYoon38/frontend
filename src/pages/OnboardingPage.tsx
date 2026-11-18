@@ -16,10 +16,8 @@ import checkAllIcon from "../assets/onboarding/check-all.svg";
 import checkIcon from "../assets/onboarding/check.svg";
 import clearIcon from "../assets/onboarding/clear.svg";
 import googleIcon from "../assets/onboarding/google.svg";
-import profileAvatar from "../assets/onboarding/profile-avatar.png";
 import profileRing from "../assets/onboarding/profile-ring.svg";
 import camera from "../assets/onboarding/camera.svg";
-import purpleAvatar from "../assets/images/character-purple.webp";
 import introOne from "../assets/onboarding/intro-1.png";
 import introTwo from "../assets/onboarding/intro-2.png";
 import introThree from "../assets/onboarding/intro-3.png";
@@ -28,7 +26,8 @@ import validCheckIcon from "../assets/onboarding/valid-check.svg";
 import welcomeCharacter from "../assets/onboarding/welcome-character.png";
 import { routes } from "../config/routes";
 import { policyPath, type PolicyDocumentId } from "../data/policyDocuments";
-import { parseProfileSettings, PROFILE_STORAGE_KEY, saveProfileSettings, validateNickname, validateNicknameFormat } from "../utils/mySettings";
+import { parseProfileSettings, PROFILE_STORAGE_KEY, profileAvatarId, saveProfileSettings, validateNickname, validateNicknameFormat } from "../utils/mySettings";
+import { profileCharacter } from "../config/profileCharacters";
 import { allowDemoAuthentication } from "../utils/authNavigation";
 import { takePendingInvitePath } from "../utils/navigation";
 import * as S from "./OnboardingPage.styled";
@@ -143,7 +142,7 @@ function OnboardingPage() {
       "",
   );
   const [preferences, setPreferences] = useState<string[]>([]);
-  const [avatar, setAvatar] = useState<ProfileAvatar>(onboarding?.avatar ?? "blue");
+  const [avatar, setAvatar] = useState<ProfileAvatar>(profileAvatarId(onboarding?.avatar));
   const [showCharacterSheet, setShowCharacterSheet] = useState(false);
   const [featureIndex, setFeatureIndex] = useState<number>();
   const [recentGoogleLogin] = useState(hasRecentGoogleLogin);
@@ -249,7 +248,7 @@ function OnboardingPage() {
               location: agreementsState.location,
             },
             nickname: value,
-            characterId: avatar === "purple" ? 2 : 1,
+            characterId: avatar,
           });
         } catch (reason) {
           setProfileError(
@@ -282,8 +281,8 @@ function OnboardingPage() {
           <h1>어떻게 불러드릴까요?</h1>
           <S.Avatar>
             <img className="ring" src={profileRing} alt="" />
-            <img className="photo" src={avatar === "purple" ? purpleAvatar : profileAvatar} alt="프로필 캐릭터" />
-            <button type="button" aria-label="프로필 캐릭터 선택" disabled={savingProfile} onClick={() => setShowCharacterSheet(true)}>
+            <img className="photo" src={profileCharacter(avatar).image} alt="프로필 캐릭터" />
+            <button type="button" aria-label="프로필 사진 선택" disabled={savingProfile} onClick={() => setShowCharacterSheet(true)}>
               <img src={camera} alt="" />
             </button>
           </S.Avatar>

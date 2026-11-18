@@ -5,12 +5,12 @@ import { isApiEnabled } from "../api/config";
 import { hasAuthSession } from "../api/tokenStorage";
 import cameraIcon from "../assets/course-settings/camera.svg";
 import backIcon from "../assets/icons/nav-back.svg";
-import blueAvatar from "../assets/images/character-blue.webp";
-import purpleAvatar from "../assets/images/character-purple.webp";
+import { profileCharacter } from "../config/profileCharacters";
 import ProfileCharacterSheet from "../components/common/ProfileCharacterSheet";
 import { routes } from "../config/routes";
 import {
   readProfileSettings,
+  profileAvatarId,
   saveProfileSettings,
   validateNickname,
   type ProfileAvatar,
@@ -42,7 +42,7 @@ function ProfileEditPage() {
           nickname: user.nickname?.trim() || user.name,
           email: user.email,
           introduction: user.bio ?? "",
-          avatar: (user.characterId === 2 ? "purple" : "blue") as ProfileAvatar,
+          avatar: profileAvatarId(user.characterId),
           travelPreferences: initialProfile.travelPreferences,
         };
         setInitialProfile(profile);
@@ -75,7 +75,7 @@ function ProfileEditPage() {
     avatar !== initialProfile.avatar;
   const canSave =
     dirty && validation.valid && introduction.length <= 30 && !loading && !saving;
-  const avatarImage = avatar === "purple" ? purpleAvatar : blueAvatar;
+  const avatarImage = profileCharacter(avatar).image;
 
   const requestBack = () => {
     if (dirty) setShowLeaveDialog(true);
@@ -105,14 +105,14 @@ function ProfileEditPage() {
         const user = await updateMyProfile({
           nickname: profile.nickname,
           bio: profile.introduction || null,
-          characterId: avatar === "purple" ? 2 : 1,
+          characterId: avatar,
         });
         profile = {
           ...profile,
           nickname: user.nickname?.trim() || profile.nickname,
           email: user.email,
           introduction: user.bio ?? "",
-          avatar: user.characterId === 2 ? "purple" : "blue",
+          avatar: profileAvatarId(user.characterId),
         };
       } catch (reason) {
         setServerError(

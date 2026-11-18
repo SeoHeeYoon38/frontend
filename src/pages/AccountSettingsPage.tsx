@@ -2,8 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useOutletContext } from "react-router";
 import backIcon from "../assets/icons/nav-back.svg";
 import chevronIcon from "../assets/icons/nav-chevron-right-muted.svg";
-import blueAvatar from "../assets/images/character-blue.webp";
-import purpleAvatar from "../assets/images/character-purple.webp";
+import { profileCharacter } from "../config/profileCharacters";
 import googleMapsLogo from "../assets/images/brand-google-maps.webp";
 import { routes } from "../config/routes";
 import { policyPath, type PolicyDocumentId } from "../data/policyDocuments";
@@ -27,8 +26,8 @@ function AccountSettingsPage() {
   const signedIn = hasAuthSession();
   const [googlePlaceCount, setGooglePlaceCount] = useState(myProfile.googlePlaceCount);
   const avatar = account
-    ? account.profileImageUrl || (account.characterId === 2 ? purpleAvatar : blueAvatar)
-    : profile.avatar === "purple" ? purpleAvatar : blueAvatar;
+    ? account.profileImageUrl || profileCharacter(account.characterId).image
+    : profileCharacter(profile.avatar).image;
   const joinedDate = account?.createdAt.split("T")[0].split("-").map(Number);
 
   useEffect(() => {
