@@ -3,6 +3,7 @@ import type {
   PlaceCandidate,
   PlaceImportResponse,
   MySavedPlaceResponse,
+  PopularPlaceResponse,
   SavedPlaceListResponse,
 } from "./types";
 
@@ -17,6 +18,13 @@ export function searchPlaces(
 ) {
   return apiRequest<PlaceCandidate[]>(
     `/api/places/search${queryString({ query, tripId })}`,
+    { signal },
+  );
+}
+
+export function getPopularPlaces(tripId: number, signal?: AbortSignal) {
+  return apiRequest<PopularPlaceResponse[]>(
+    `/api/places/popular${queryString({ tripId })}`,
     { signal },
   );
 }

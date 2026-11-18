@@ -3,8 +3,7 @@ import { useLocation, useNavigate } from "react-router";
 import directHeroPhoto from "../../assets/direct-trip/hero.png";
 import CourseRouteMap from "../course-completion/CourseRouteMap";
 import TripInfoStep from "../trip/TripInfoStep";
-import PlaceImportForm from "../trip/PlaceImportForm";
-import ServerSavedPlaces from "../trip/ServerSavedPlaces";
+import DirectPlaceSearch from "./DirectPlaceSearch";
 import { isServerTripId, savedPlaceToTripPlace, tripDraftToApiInput } from "../../api/adapters";
 import { isApiEnabled } from "../../api/config";
 import { hasAuthSession } from "../../api/tokenStorage";
@@ -26,7 +25,6 @@ import closeIcon from "../../assets/icons/action-close.svg";
 import addIcon from "../../assets/direct-trip/add.svg";
 import cityPinIcon from "../../assets/direct-trip/city-pin.svg";
 import emptyPinIcon from "../../assets/direct-trip/empty-pin.svg";
-import selectedCheckIcon from "../../assets/icons/status-selected-check.svg";
 import { routes } from "../../config/routes";
 import { serverTripPlanPath, tripSettingsPath } from "../../utils/navigation";
 import {
@@ -34,7 +32,6 @@ import {
 } from "../../data/mocks/directTripData";
 import type {
   DirectTripPlace,
-  DirectTripSearchTab,
   DirectTripStage,
 } from "../../types/directTrip";
 import { readMockScenario } from "../../utils/mockScenario";
@@ -117,14 +114,6 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
       image: place.image, source: "recommend" as const,
     })), [draft.city]);
   const [selectedDay, setSelectedDay] = useState(existing?.initialDay ?? 1);
-  const [searchTab, setSearchTab] = useState<DirectTripSearchTab>(() =>
-    mockScenario === "direct-google-unlinked" ? "google" : "recommend",
-  );
-  const [query, setQuery] = useState(() =>
-    mockScenario === "direct-search-empty" ? "쿠로몬 야타이" : "",
-  );
-  const [samplePlacesReady, setSamplePlacesReady] = useState(false);
-  const [selectedPlaceIds, setSelectedPlaceIds] = useState<string[]>([]);
   const [dayPlaces, setDayPlaces] = useState<Record<number, string[]>>(() => existing
     ? Object.fromEntries(rangeDates(draft.startDate, draft.endDate).map((date, index) => [
       index + 1,
@@ -146,28 +135,6 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
     [dayPlaces, selectedDay, directTripPlaces, live, livePlaces],
   );
 
-  const filteredPlaces = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
-    const matches = directTripPlaces.filter((place) => {
-      const category = place.category.toLowerCase();
-      const sourceMatches = searchTab === "recommend" ||
-        (searchTab === "google" && place.source === "google") ||
-        (searchTab === "sightseeing" && /관광|명소|역사/.test(category)) ||
-        (searchTab === "food" && /맛집|라멘|시장/.test(category)) ||
-        (searchTab === "cafe" && /카페|디저트/.test(category)) ||
-        (searchTab === "shopping" && /쇼핑/.test(category));
-      const queryMatches =
-        !normalizedQuery ||
-        `${place.name} ${place.category} ${place.detail}`
-          .toLowerCase()
-          .includes(normalizedQuery);
-      return sourceMatches && queryMatches;
-    });
-    return searchTab === "recommend" && !normalizedQuery && draft.city === "오사카"
-      ? matches.slice(0, 5)
-      : matches;
-  }, [query, searchTab, directTripPlaces, draft.city]);
-
   const placeCount = Object.values(dayPlaces).reduce(
     (total, places) => total + places.length,
     0,
@@ -182,7 +149,6 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
 
   const goBack = () => {
     if (stage === "search") {
-      setSelectedPlaceIds([]);
       setStage("itinerary");
       return;
     }
@@ -195,25 +161,15 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
     leave();
   };
 
-  const togglePlace = (id: string) => {
-    setSelectedPlaceIds((current) =>
-      current.includes(id)
-        ? current.filter((placeId) => placeId !== id)
-        : [...current, id],
-    );
-  };
-
-  const addSelectedPlaces = () => {
+  const addDemoPlaces = (ids: string[]) => {
     resetCheck();
     setChanged(true);
     setDayPlaces((current) => ({
       ...current,
       [selectedDay]: Array.from(
-        new Set([...(current[selectedDay] ?? []), ...selectedPlaceIds]),
+        new Set([...(current[selectedDay] ?? []), ...ids]),
       ),
     }));
-    setSelectedPlaceIds([]);
-    setQuery("");
     setStage("itinerary");
   };
 
@@ -310,7 +266,6 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
             if (next.city !== draft.city || next.startDate !== draft.startDate || next.endDate !== draft.endDate) {
               setDayPlaces(Object.fromEntries(rangeDates(next.startDate, next.endDate).map((_, index) => [index + 1, []])));
               setSelectedDay(1);
-              setSamplePlacesReady(false);
             }
             setDraft(next);
           }}
@@ -539,138 +494,26 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
     </S.PlanScreen>
   );
 
-  const renderSearch = () => {
-    const showImportForm = mockScenario === "direct-google-unlinked" && searchTab === "google" && !samplePlacesReady;
-    return (
-      <S.SearchOverlay>
-        <S.SearchBackdrop onClick={goBack} aria-label="장소 추가 닫기" />
-        <S.SearchSheet $compact={Boolean(query) && filteredPlaces.length <= 3} role="dialog" aria-modal="true" aria-label={`${selectedDay}일차에 장소 추가`}>
-        <S.SearchHandle />
-        <S.SearchHeader>
-          <h2>{selectedDay}일차에 장소 추가</h2>
-          <button type="button" onClick={goBack} aria-label="닫기"><img src={closeIcon} alt="" /></button>
-        </S.SearchHeader>
-        <S.SheetSearchField data-active={Boolean(query)}>
-            <img src={searchIcon} alt="" />
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="장소, 맛집, 숙소 검색"
-              aria-label="장소 검색어"
-            />
-            {query && (
-              <button type="button" onClick={() => setQuery("")} aria-label="검색어 지우기">
-                <img src={closeIcon} alt="" />
-              </button>
-            )}
-        </S.SheetSearchField>
-
-        <S.SearchTabs>
-          {([
-            ["recommend", "추천"], ["google", "저장한 곳"], ["sightseeing", "관광"],
-            ["food", "맛집"], ["cafe", "카페"], ["shopping", "쇼핑"],
-          ] as const).map(([value, label]) => (
-            <button key={value} type="button" aria-pressed={searchTab === value}
-              onClick={() => { setSearchTab(value); setSelectedPlaceIds([]); }}>
-              {label}
-            </button>
-          ))}
-        </S.SearchTabs>
-
-        <S.SearchScroll>
-          {showImportForm ? (
-            <PlaceImportForm onImport={() => {
-              setSamplePlacesReady(true);
-              setSelectedPlaceIds([]);
-              setQuery("");
-            }} />
-          ) : filteredPlaces.length === 0 ? (
-            <S.NoResults>
-              <S.StateIcon>
-                <img src={searchIcon} alt="" />
-              </S.StateIcon>
-              <h2>검색 결과가 없어요</h2>
-              <p>철자를 확인하거나 다른 이름으로 검색해 보세요</p>
-            </S.NoResults>
-          ) : (
-            <>
-              <S.ResultHeading>
-                {query ? `검색 결과 ${filteredPlaces.length}곳` : "지금 동선에서 가까운 순"}
-              </S.ResultHeading>
-              <S.PlaceList>
-                {filteredPlaces.map((place) => {
-                  const selected = selectedPlaceIds.includes(place.id);
-                  const alreadyAdded = dayPlaces[selectedDay].includes(place.id);
-                  return (
-                    <li key={place.id}>
-                      <button
-                        type="button"
-                        aria-pressed={selected}
-                        disabled={alreadyAdded}
-                        onClick={() => togglePlace(place.id)}
-                      >
-                        <img src={place.image} alt="" />
-                        <span>
-                          <strong>{place.name}</strong>
-                          <em>{place.category}  |  {place.detail}</em>
-                        </span>
-                        <i aria-hidden="true">
-                          {alreadyAdded ? "완료" : selected ? <img src={selectedCheckIcon} alt="" /> : null}
-                        </i>
-                      </button>
-                    </li>
-                  );
-                })}
-              </S.PlaceList>
-            </>
-          )}
-        </S.SearchScroll>
-
-        <S.BottomAction $floating>
-          <button
-            type="button"
-            disabled={
-              showImportForm ||
-              filteredPlaces.length === 0 ||
-              selectedPlaceIds.length === 0
-            }
-            onClick={addSelectedPlaces}
-          >
-            {selectedPlaceIds.length > 0
-              ? `${selectedPlaceIds.length}곳을 ${selectedDay}일차에 추가`
-              : "추가할 장소를 골라주세요"}
-          </button>
-        </S.BottomAction>
-        </S.SearchSheet>
-      </S.SearchOverlay>
-    );
-  };
-
   return (
     <S.Shell>
       {stage === "info" && renderInfo()}
-      {(stage === "itinerary" || stage === "search") && renderItinerary()}
-      {stage === "search" && (live ? (
-        <S.SearchOverlay>
-          <S.SearchBackdrop onClick={goBack} aria-label="장소 추가 닫기" />
-          <S.SearchSheet role="dialog" aria-modal="true" aria-label={`${selectedDay}일차에 장소 추가`}>
-          <S.SearchHandle />
-          <S.SearchHeader>
-            <h2>{selectedDay}일차에 장소 추가</h2>
-            <button type="button" onClick={goBack} aria-label="닫기"><img src={closeIcon} alt="" /></button>
-          </S.SearchHeader>
-          <S.SearchScroll>
-            <ServerSavedPlaces
-              tripId={Number(draft.tripId)}
-              recommendationCity={draft.city}
-              onPickMany={addLivePlaces}
-              pickDay={selectedDay}
-              pickedPlaceIds={new Set((dayPlaces[selectedDay] ?? []).map((id) => livePlaces[id].visit.placeId))}
-            />
-          </S.SearchScroll>
-          </S.SearchSheet>
-        </S.SearchOverlay>
-      ) : renderSearch())}
+      {stage === "itinerary" && renderItinerary()}
+      {stage === "search" && <DirectPlaceSearch
+        tripId={live ? Number(draft.tripId) : undefined}
+        city={draft.city}
+        selectedDay={selectedDay}
+        days={directTripDays.map((day) => ({ ...day, placeCount: dayPlaces[day.day]?.length ?? 0 }))}
+        pickedPlaceIds={new Set(live
+          ? (dayPlaces[selectedDay] ?? []).map((id) => livePlaces[id]?.visit.placeId).filter((id): id is string => Boolean(id))
+          : dayPlaces[selectedDay] ?? [])}
+        demoPlaces={live ? undefined : directTripPlaces}
+        demoGoogleUnlinked={mockScenario === "direct-google-unlinked"}
+        initialQuery={mockScenario === "direct-search-empty" ? "쿠로몬 야타이" : ""}
+        onSelectDay={setSelectedDay}
+        onAddLive={addLivePlaces}
+        onAddDemo={addDemoPlaces}
+        onClose={goBack}
+      />}
       {showExitConfirm && (
         <S.ConfirmOverlay role="presentation" onMouseDown={() => setShowExitConfirm(false)}>
           <S.ConfirmDialog
