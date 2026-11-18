@@ -4,11 +4,11 @@ import SheetHandle from "../components/common/SheetHandle";
 import { onboardingPreferencesToInput } from "../api/adapters";
 import {
   canStartGoogleLogin,
-  checkNickname,
   completeSignup,
   googleAuthorizationUrl,
   hasRecentGoogleLogin,
 } from "../api/auth";
+import { ApiError } from "../api/client";
 import { apiMode, isApiEnabled } from "../api/config";
 import { saveUserPreferences } from "../api/preferences";
 import { hasAuthSession } from "../api/tokenStorage";
@@ -25,15 +25,16 @@ import ProfileCharacterSheet from "../components/common/ProfileCharacterSheet";
 import validCheckIcon from "../assets/onboarding/valid-check.svg";
 import welcomeCharacter from "../assets/onboarding/welcome-character.png";
 import { routes } from "../config/routes";
+import useNicknameAvailability from "../hooks/useNicknameAvailability";
 import { policyPath, type PolicyDocumentId } from "../data/policyDocuments";
 import { parseProfileSettings, PROFILE_STORAGE_KEY, profileAvatarId, saveProfileSettings, validateNickname, validateNicknameFormat } from "../utils/mySettings";
 import { profileCharacter } from "../config/profileCharacters";
 import { allowDemoAuthentication } from "../utils/authNavigation";
-import { takePendingInvitePath } from "../utils/navigation";
+import { takePendingLoginPath } from "../utils/navigation";
 import * as S from "./OnboardingPage.styled";
 import type { ProfileAvatar } from "../utils/mySettings";
 
-type AgreementKey = "service" | "privacy" | "age" | "location" | "marketing";
+type AgreementKey = "service" | "privacy" | "age" | "location";
 type AgreementState = Record<AgreementKey, boolean>;
 
 interface OnboardingState {
@@ -56,7 +57,7 @@ const ONBOARDING_NICKNAME_STORAGE_KEY = "dotlo:onboarding:nickname";
 const ONBOARDING_AGREEMENTS_STORAGE_KEY = "dotlo:onboarding:agreements";
 
 const initialAgreements: AgreementState = {
-  service: false, privacy: false, age: false, location: false, marketing: false,
+  service: false, privacy: false, age: false, location: false,
 };
 
 function readStoredAgreements(): AgreementState | null {
@@ -64,7 +65,7 @@ function readStoredAgreements(): AgreementState | null {
     const stored = sessionStorage.getItem(ONBOARDING_AGREEMENTS_STORAGE_KEY);
     if (!stored) return null;
     const value = JSON.parse(stored) as Partial<AgreementState>;
-    const keys: AgreementKey[] = ["service", "privacy", "age", "location", "marketing"];
+    const keys: AgreementKey[] = ["service", "privacy", "age", "location"];
     return keys.every((key) => typeof value[key] === "boolean")
       ? (value as AgreementState)
       : null;
@@ -78,14 +79,12 @@ const agreements: Array<{ key: AgreementKey; required: boolean; label: string; d
   { key: "privacy", required: true, label: "개인정보 수집 및 이용", details: true },
   { key: "age", required: true, label: "만 14세 이상이에요" },
   { key: "location", required: false, label: "위치 정보 이용", details: true },
-  { key: "marketing", required: false, label: "혜택과 이벤트 알림 받기", details: true },
 ];
 
 const agreementPolicy: Partial<Record<AgreementKey, PolicyDocumentId>> = {
   service: "service",
   privacy: "privacy",
   location: "location",
-  marketing: "marketing",
 };
 
 const preferenceOptions = [
@@ -118,7 +117,7 @@ function LoginBackdrop({ withTagline = false }: { withTagline?: boolean }) {
         {withTagline && (
           <>
             <h1>가고 싶은 곳만 고르면<br />여행 코스가 완성돼요</h1>
-            <p>샘플 장소를 골라 여행 일정을 만들어 보세요</p>
+            <p>구글맵에 저장한 장소로 AI가 일정을 짜드려요</p>
           </>
         )}
       </S.LoginHero>
@@ -155,6 +154,11 @@ function OnboardingPage() {
   const liveGoogleLogin = isApiEnabled() && canStartGoogleLogin();
   const demoAuthentication = allowDemoAuthentication(import.meta.env.DEV, apiMode);
   const liveSession = isApiEnabled() && hasAuthSession();
+  const nicknameText = nickname.trim();
+  const format = validateNicknameFormat(nicknameText);
+  const { availability, clear: clearNicknameCheck, markTaken } = useNicknameAvailability(
+    liveSession && location.pathname === routes.onboardingProfile && format.valid ? nicknameText : undefined,
+  );
 
   const displayNickname =
     onboarding?.nickname ??
@@ -170,7 +174,7 @@ function OnboardingPage() {
 
   const toggleAll = () => {
     const next = !allAgreed;
-    setAgreementsState({ service: next, privacy: next, age: next, location: next, marketing: next });
+    setAgreementsState({ service: next, privacy: next, age: next, location: next });
   };
 
   const startGoogleLogin = () => {
@@ -212,35 +216,25 @@ function OnboardingPage() {
   }
 
   if (location.pathname === routes.onboardingProfile) {
-    const validation = liveSession
-      ? validateNicknameFormat(nickname)
-      : validateNickname(nickname);
-    const nicknameEmpty = nickname.trim().length === 0;
-    const nicknameInvalid = !nicknameEmpty && !validation.valid;
+    const validation = liveSession ? format : validateNickname(nickname);
+    const nicknameEmpty = nicknameText.length === 0;
+    const nicknameInvalid = !nicknameEmpty && (!validation.valid || availability === "taken");
+    const canContinue = validation.valid && (!liveSession || availability === "available");
     const changeNickname = (value: string) => {
       setNickname(value);
+      if (value.trim() !== nicknameText) clearNicknameCheck();
       setProfileError("");
     };
     const continueProfile = async () => {
-      if (!validation.valid || savingProfile || profileRequestPending.current) return;
-      const value = nickname.trim();
+      if (!canContinue || savingProfile || profileRequestPending.current) return;
       setProfileError("");
-      let email = onboarding?.email;
-      let introduction = onboarding?.introduction;
+      const email = onboarding?.email;
+      const introduction = onboarding?.introduction;
 
       if (liveSession) {
         profileRequestPending.current = true;
         setSavingProfile(true);
         try {
-          const nicknameCheck = await checkNickname(value);
-          if (nicknameCheck?.available === false) {
-            setProfileError("이미 사용 중인 닉네임이에요.");
-            return;
-          }
-          if (nicknameCheck?.available !== true) {
-            setProfileError("닉네임을 확인하지 못했어요. 다시 시도해 주세요.");
-            return;
-          }
           await completeSignup({
             agreements: {
               terms: agreementsState.service,
@@ -248,10 +242,14 @@ function OnboardingPage() {
               age14: agreementsState.age,
               location: agreementsState.location,
             },
-            nickname: value,
+            nickname: nicknameText,
             characterId: avatar,
           });
         } catch (reason) {
+          if (reason instanceof ApiError && reason.code === "NICKNAME_TAKEN") {
+            markTaken(nicknameText);
+            return;
+          }
           setProfileError(
             reason instanceof Error
               ? reason.message
@@ -264,17 +262,22 @@ function OnboardingPage() {
         }
       }
 
-      sessionStorage.setItem(ONBOARDING_NICKNAME_STORAGE_KEY, value);
+      sessionStorage.setItem(ONBOARDING_NICKNAME_STORAGE_KEY, nicknameText);
       navigate(routes.onboardingPreferences, {
         state: {
           agreements: agreementsState,
-          nickname: value,
+          nickname: nicknameText,
           avatar,
           email,
           introduction,
         },
       });
     };
+    const validationMessage = !validation.valid ? validation.message
+      : availability === "taken" ? "이미 다른 사람이 쓰고 있는 닉네임이에요"
+      : availability === "error" ? "닉네임을 확인하지 못했어요. 다시 입력해 주세요"
+      : canContinue ? "사용할 수 있는 닉네임이에요"
+      : "닉네임을 확인하고 있어요";
     return (
       <S.FlowScreen>
         <S.FlowBody>
@@ -306,27 +309,20 @@ function OnboardingPage() {
               </button>
             )}
           </S.NicknameField>
-          {(!nicknameEmpty || profileError) && <S.ValidText $error={nicknameInvalid || Boolean(profileError)} role="status">
-            {validation.valid && !savingProfile && !profileError && <img src={validCheckIcon} alt="" />}
-            {profileError ||
-              (savingProfile
-                ? "가입 정보를 저장하고 있어요"
-                : validation.valid
-                  ? liveSession
-                    ? "사용할 수 있는 형식의 닉네임이에요"
-                    : "데모에서 사용할 수 있는 닉네임이에요"
-                  : validation.message)}
+          {(!nicknameEmpty || profileError) && <S.ValidText $error={nicknameInvalid || availability === "error" || Boolean(profileError)} role="status">
+            {canContinue && !savingProfile && !profileError && <img src={validCheckIcon} alt="" />}
+            {profileError || (savingProfile ? "가입 정보를 저장하고 있어요" : validationMessage)}
           </S.ValidText>}
         </S.FlowBody>
         <S.BottomButton
           type="button"
-          disabled={!validation.valid || savingProfile}
+          disabled={!canContinue || savingProfile}
           onClick={() => void continueProfile()}
         >
           {savingProfile ? "저장하고 있어요" : "다음"}
         </S.BottomButton>
         {showCharacterSheet && (
-          <ProfileCharacterSheet current={avatar} title="프로필 사진" onClose={() => setShowCharacterSheet(false)}
+          <ProfileCharacterSheet current={avatar} title="프로필 사진" description="기본 이미지" onClose={() => setShowCharacterSheet(false)}
             onApply={(value) => { setAvatar(value); setShowCharacterSheet(false); }} />
         )}
       </S.FlowScreen>
@@ -439,10 +435,10 @@ function OnboardingPage() {
     if (featureIndex !== undefined) {
       const feature = featureIntroductions[featureIndex];
       const last = featureIndex === featureIntroductions.length - 1;
-      const finishIntroduction = () => navigate(takePendingInvitePath(sessionStorage) ?? routes.home, { replace: true });
+      const finishIntroduction = () => navigate(takePendingLoginPath(sessionStorage) ?? routes.home, { replace: true });
       return (
         <S.FeatureScreen>
-          <S.FeatureSkip type="button" onClick={finishIntroduction}>건너뛰기</S.FeatureSkip>
+          {!last && <S.FeatureSkip type="button" onClick={finishIntroduction}>건너뛰기</S.FeatureSkip>}
           <S.FeatureIllustration $last={last}><img src={feature.image} alt="" /></S.FeatureIllustration>
           <S.FeatureDescription aria-live="polite">
             <S.FeatureDots aria-label={`기능 소개 ${featureIndex + 1}/3`}>
@@ -475,13 +471,6 @@ function OnboardingPage() {
       <LoginBackdrop withTagline={termsOpen} />
       {!termsOpen && (
         <S.LoginButtons>
-          <S.LoginNotice>
-            {liveGoogleLogin
-              ? "Google 계정으로 로그인하고 내 여행을 안전하게 불러와요."
-              : demoAuthentication
-                ? "Google 계정 없이 로그인과 가입 흐름을 체험할 수 있어요."
-                : "Google 로그인 설정을 확인하고 있어요."}
-          </S.LoginNotice>
           <S.ProviderButton
             type="button"
             disabled={!liveGoogleLogin && !demoAuthentication}
@@ -496,28 +485,24 @@ function OnboardingPage() {
                 : "Google 로그인 준비 중"}
           </S.ProviderButton>
           {error && <S.ValidText $error role="alert">{error}</S.ValidText>}
-          {demoAuthentication && (
-            <S.GuestButton type="button" onClick={() => navigate(routes.home)}>
-              먼저 둘러볼게요
-            </S.GuestButton>
-          )}
+          <S.GuestButton type="button" onClick={() => navigate(routes.courses)}>
+            먼저 둘러볼게요
+          </S.GuestButton>
         </S.LoginButtons>
       )}
       {termsOpen && (
         <>
           <S.Dim
+            type="button"
+            aria-label="약관 닫기"
+            tabIndex={liveSession ? -1 : undefined}
             onClick={() => {
               if (!liveSession) navigate(routes.login);
             }}
           />
           <S.TermsSheet role="dialog" aria-modal="true" aria-labelledby="terms-title">
             <SheetHandle onClose={() => { if (!liveSession) navigate(routes.login); }} />
-            <h2 id="terms-title">{liveSession ? "약관에 동의해 주세요" : "약관 동의 체험"}</h2>
-            <p>
-              {liveSession
-                ? "도틀로를 이용하려면 필수 약관 동의가 필요해요."
-                : "필수 항목을 선택하면 데모 프로필을 만들 수 있어요."}
-            </p>
+            <h2 id="terms-title">약관에 동의해 주세요</h2>
             <S.AllAgreement type="button" aria-pressed={allAgreed} onClick={toggleAll}>
               <S.Check $large $checked={allAgreed}>{allAgreed && <img src={checkAllIcon} alt="" />}</S.Check>
               <span><strong>전체 동의</strong><small>선택 항목을 포함한 모든 약관에 동의해요</small></span>

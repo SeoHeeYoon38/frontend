@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import backIcon from "../../assets/course-settings/back.svg";
 import aiAvatar from "../../assets/course-community/ai-avatar.png";
 import {
@@ -9,6 +10,8 @@ import sendIcon from "../../assets/course-community/send.svg";
 import selectedCheckIcon from "../../assets/icons/status-selected-check.svg";
 import osakaCastlePhoto from "../../assets/direct-trip/osaka-castle-figma.png";
 import type { CommunityPollOption } from "../../types/courseCommunity";
+import { chatActions, chatStarters } from "../../utils/chatActions";
+import ChatPendingBubble from "./ChatPendingBubble";
 
 interface CourseCommunityChatProps {
   onBack: () => void;
@@ -27,16 +30,18 @@ function CourseCommunityChat({ onBack, onViewCourse, onApplyToCourse }: CourseCo
     selectedDay,
     selectedPollId,
     sentMessages,
+    pendingAi,
     stage,
     openDayPicker,
     setMessage,
     setSelectedDay,
     setSelectedPollId,
     setStage,
-    showPoll,
-    showSummary,
     submitMessage,
   } = useCourseCommunity();
+  const bottom = useRef<HTMLDivElement>(null);
+  const composer = useRef<HTMLInputElement>(null);
+  useEffect(() => { bottom.current?.scrollIntoView({ block: "end" }); }, [sentMessages.length, pendingAi]);
 
   const showConversation = stage !== "welcome";
   const showSummaryCard = stage === "summary";
@@ -84,9 +89,8 @@ function CourseCommunityChat({ onBack, onViewCourse, onApplyToCourse }: CourseCo
                 </div>
                 <p className="community-chat__prompt">어떤 이야기부터 나눠볼까요?</p>
                 <div className="community-chat__options">
-                  <button type="button" onClick={showSummary}>가고 싶은 장소 정하기</button>
-                  <button type="button" onClick={showSummary}>일정 함께 조율하기</button>
-                  <button type="button" onClick={showSummary}>서로 다른 의견 조율하기</button>
+                  {chatStarters.map(({ text }) => <button key={text} type="button" disabled={Boolean(pendingAi)}
+                    onClick={() => { setMessage(text); composer.current?.focus(); }}>{text}</button>)}
                 </div>
               </div>
             </article>
@@ -119,8 +123,8 @@ function CourseCommunityChat({ onBack, onViewCourse, onApplyToCourse }: CourseCo
                     </div>
                     <p className="community-chat__prompt">어떤 방향으로 조율해 볼까요?</p>
                     <div className="community-chat__options">
-                      <button type="button" onClick={showPoll}>비용이 적은 대체 장소 찾기</button>
-                      <button type="button" onClick={showPoll}>반나절만 머물고 다른 곳 가기</button>
+                      <button type="button" onClick={() => submitMessage("비용이 적은 대체 장소 찾기", "poll")}>비용이 적은 대체 장소 찾기</button>
+                      <button type="button" onClick={() => submitMessage("반나절만 머물고 다른 곳 가기", "poll")}>반나절만 머물고 다른 곳 가기</button>
                       <button type="button" onClick={() => setStage("welcome")}>조금 더 이야기해 볼게요</button>
                     </div>
                   </div>
@@ -209,20 +213,26 @@ function CourseCommunityChat({ onBack, onViewCourse, onApplyToCourse }: CourseCo
               </>
             )}
 
-            {sentMessages.map((sentMessage, index) => (
-              <p className="community-chat__my-message" key={`${sentMessage}-${index}`}>
-                {sentMessage}
-              </p>
-            ))}
           </>
         )}
+        {sentMessages.map((sentMessage, index) => (
+          <p className="community-chat__my-message" key={`${sentMessage}-${index}`}>{sentMessage}</p>
+        ))}
+        {stage === "recommendation" && <article className="community-chat__ai-message">
+          <AiAvatar />
+          <div><strong>도틀로 AI</strong><div className="community-chat__ai-bubble">
+            <p>이런 곳을 추천해요.</p>
+            <p>{pollOptions.map((option) => option.title).join(" · ")}</p>
+          </div></div>
+        </article>}
+        {pendingAi && <ChatPendingBubble action={pendingAi} />}
+        <div ref={bottom} />
       </section>
 
       <footer className="community-chat__composer">
         <div className="community-chat__quick-actions">
-          <button type="button" onClick={() => setStage("welcome")}><b>@도틀로</b> 일정 점검</button>
-          <button type="button" onClick={showSummary}><b>@도틀로</b> 의견 조율</button>
-          <button type="button" onClick={showPoll}><b>@도틀로</b> 투표 만들기</button>
+          {chatActions.map(({ id, label }) => <button type="button" key={id} disabled={Boolean(pendingAi)}
+            onClick={() => submitMessage(`@도틀로 ${label}`, id)}><b>@도틀로</b> {label}</button>)}
         </div>
         <form
           onSubmit={(event) => {
@@ -233,12 +243,13 @@ function CourseCommunityChat({ onBack, onViewCourse, onApplyToCourse }: CourseCo
           <label>
             <span className="course-community__sr-only">채팅 메시지</span>
             <input
+              ref={composer}
               value={message}
               placeholder="메시지를 입력하거나 @도틀로를 불러보세요"
               onChange={(event) => setMessage(event.target.value)}
             />
           </label>
-          <button type="submit" disabled={!message.trim()} aria-label="메시지 보내기"><img src={sendIcon} alt="" /></button>
+          <button type="submit" disabled={!message.trim() || Boolean(pendingAi)} aria-label="메시지 보내기"><img src={sendIcon} alt="" /></button>
         </form>
       </footer>
 

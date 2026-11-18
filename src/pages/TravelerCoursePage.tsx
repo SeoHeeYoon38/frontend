@@ -14,12 +14,14 @@ import { mockTripCities } from "../data/mocks/tripData";
 import CourseMapScreen from "../components/traveler-course/CourseMapScreen";
 import TravelerPlaceDetail from "../components/traveler-course/TravelerPlaceDetail";
 import TravelerAiChat from "../components/traveler-course/TravelerAiChat";
+import CourseLoginSheet from "../components/traveler-course/CourseLoginSheet";
 import { PlaceThumbnail } from "../components/common/PlacePhoto";
 import * as S from "./TravelerCoursePage.styled";
-import { importedTripPath, serverTripPlanPath } from "../utils/navigation";
+import { courseFavoritesPath, importedTripPath, serverTripPlanPath } from "../utils/navigation";
 import { createImportedTrip, saveMockTrip, tripStorageNotice } from "../data/mocks/mockTripService";
 import { getCourse, importCourse as importApiCourse } from "../api/courses";
 import { isApiEnabled } from "../api/config";
+import { hasAuthSession } from "../api/tokenStorage";
 import type { CourseDetailResponse, PlaceCategoryCode } from "../api/types";
 import type { TravelerCourseView } from "../types/course";
 import useSavedItems from "../hooks/useSavedItems";
@@ -84,8 +86,10 @@ function TravelerCoursePage() {
   const location = useLocation();
   const catalogSearch: unknown = location.state?.courseCatalogSearch;
   const settingsSearch: unknown = location.state?.courseSettingsSearch;
+  const savedSearch: unknown = location.state?.savedItemsSearch;
   const { courseId } = useParams();
   const apiEnabled = isApiEnabled();
+  const isGuest = apiEnabled && !hasAuthSession();
   const liveCourseId = courseId && /^\d+$/.test(courseId) && apiEnabled
     ? Number(courseId)
     : null;
@@ -98,11 +102,14 @@ function TravelerCoursePage() {
   const [activeDay, setActiveDay] = useState(0);
   const [mapDay, setMapDay] = useState<number>();
   const [placeOrigin, setPlaceOrigin] = useState<"course" | "map">("course");
-  const { isCourseSaved, setCourse: setSavedCourse, saveError, coursesLoading, coursesLoadError, pendingId } = useSavedItems();
+  const { isCourseSaved, setCourse: setSavedCourse, saveError, coursesLoading, coursesLoadError, pendingId } = useSavedItems(!isGuest);
   const [notice, setNotice] = useState("");
   const [screen, setScreen] = useState<"course" | "map" | "place" | "ai">("course");
   const [selectedPlaceId, setSelectedPlaceId] = useState<string>();
-  const [dateSheetOpen, setDateSheetOpen] = useState(false);
+  const [dateSheetOpen, setDateSheetOpen] = useState(() =>
+    !isGuest && Boolean(liveCourseId) && new URLSearchParams(location.search).get("import") === "1",
+  );
+  const [loginAction, setLoginAction] = useState<"import" | "save">();
   const [importStartDate, setImportStartDate] = useState("");
   const [importPending, setImportPending] = useState(false);
   const [importError, setImportError] = useState("");
@@ -152,8 +159,12 @@ function TravelerCoursePage() {
     .flatMap((item) => item.places)
     .find((place) => place.id === selectedPlaceId);
 
-  const isSaved = isCourseSaved(course.id);
+  const isSaved = !isGuest && isCourseSaved(course.id);
   const toggleSaved = async () => {
+    if (isGuest) {
+      setLoginAction("save");
+      return;
+    }
     if (await setSavedCourse(course.id, isSaved ? null : {
       id: course.id,
       title: course.title.replace(/\s+/g, " "),
@@ -161,6 +172,7 @@ function TravelerCoursePage() {
       city: course.city,
       placeCount: course.placeCount,
       image: course.hero,
+      author: course.author,
     })) {
       setNotice(isSaved ? "찜한 코스에서 뺐어요" : "찜한 코스에 담았어요");
     } else {
@@ -169,6 +181,10 @@ function TravelerCoursePage() {
   };
 
   const importCourse = () => {
+    if (isGuest) {
+      setLoginAction("import");
+      return;
+    }
     if (liveCourseId) {
       if (!importUncertain) {
         setImportStartDate("");
@@ -237,7 +253,7 @@ function TravelerCoursePage() {
   }
 
   if (screen === "ai") {
-    return <TravelerAiChat place={selectedPlace} onBack={() => setScreen("place")} />;
+    return <TravelerAiChat place={selectedPlace} live={Boolean(liveCourseId)} onBack={() => setScreen("place")} />;
   }
 
   return (
@@ -245,14 +261,15 @@ function TravelerCoursePage() {
       <S.Hero>
         {course.hero && <img src={course.hero} alt={course.title.replace("\n", " ")} />}
         <S.Navigation aria-label="여행자 코스 탐색">
-          <button type="button" aria-label={typeof settingsSearch === "string" ? "코스 설정으로 돌아가기" : "코스 목록으로 돌아가기"} onClick={() => navigate({
-            pathname: typeof settingsSearch === "string" ? routes.tripSettings : routes.courses,
-            search: typeof settingsSearch === "string" ? settingsSearch : typeof catalogSearch === "string" ? catalogSearch : "",
-          })}>
+          <button type="button" aria-label="이전 화면으로 돌아가기" onClick={() => {
+            if (typeof settingsSearch === "string") navigate({ pathname: routes.tripSettings, search: settingsSearch });
+            else if (typeof savedSearch === "string") navigate({ pathname: routes.savedItems, search: savedSearch }, { state: { courseCatalogSearch: catalogSearch } });
+            else navigate({ pathname: routes.courses, search: typeof catalogSearch === "string" ? catalogSearch : "" });
+          }}>
             <img src={backIcon} alt="" />
           </button>
           <strong>여행자 코스</strong>
-          <S.Heart type="button" $saved={isSaved} aria-label={isSaved ? "코스 찜 해제" : "코스 찜하기"} disabled={coursesLoading || Boolean(coursesLoadError) || pendingId !== null} onClick={() => { void toggleSaved(); }}>
+          <S.Heart type="button" $saved={isSaved} aria-label={isSaved ? "코스 찜 해제" : "코스 찜하기"} disabled={!isGuest && (coursesLoading || Boolean(coursesLoadError) || pendingId !== null)} onClick={() => { void toggleSaved(); }}>
             <img src={isSaved ? heartFilledIcon : heartIcon} alt="" />
           </S.Heart>
         </S.Navigation>
@@ -334,12 +351,15 @@ function TravelerCoursePage() {
       <S.Cta><button type="button" onClick={importCourse}>내 일정으로 가져오기</button></S.Cta>
       {notice && <S.Toast role="status">
         <b><img src={checkIcon} alt="" /></b>{notice}
-        {notice === "찜한 코스에 담았어요" && <button type="button" onClick={() => navigate(`${routes.savedItems}?tab=courses`)}>
+        {notice === "찜한 코스에 담았어요" && <button type="button" onClick={() => navigate(courseFavoritesPath, { state: { courseCatalogSearch: catalogSearch } })}>
           찜 목록 보기<img src={chevronIcon} alt="" />
         </button>}
       </S.Toast>}
       {saveError && <S.Toast role="alert">{saveError}</S.Toast>}
       {coursesLoadError && <S.Toast role="alert">{coursesLoadError}</S.Toast>}
+      {isGuest && liveCourseId && loginAction && (
+        <CourseLoginSheet courseId={liveCourseId} importCourse={loginAction === "import"} onClose={() => setLoginAction(undefined)} />
+      )}
       {dateSheetOpen && <ImportedSheet.Overlay role="presentation" onMouseDown={() => { if (!importPending) setDateSheetOpen(false); }}>
         <ImportedSheet.Sheet role="dialog" aria-modal="true" aria-labelledby="course-import-date-title" onMouseDown={(event) => event.stopPropagation()}>
           <SheetHandle onClose={() => setDateSheetOpen(false)} closeDisabled={importPending} />

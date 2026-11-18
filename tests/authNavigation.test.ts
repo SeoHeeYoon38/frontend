@@ -25,6 +25,13 @@ test("홈과 온보딩, 앱 내부 화면은 로그인으로 보낸다", () => {
   assert.equal(authRedirectPath("/my-trips"), "/login");
 });
 
+test("비회원은 공개 코스를 탐색할 수 있다", () => {
+  assert.equal(authRedirectPath("/courses"), null);
+  assert.equal(authRedirectPath("/courses/12"), null);
+  assert.equal(authRedirectPath("/courses/12/edit"), "/login");
+  assert.equal(authRedirectPath("/my/saved"), "/login");
+});
+
 test("개발용 데모에서는 세션 없이 온보딩과 앱 화면을 이동할 수 있다", () => {
   assert.equal(authRedirectPath("/onboarding/terms", true), null);
   assert.equal(authRedirectPath("/onboarding/profile", true), null);

@@ -61,9 +61,14 @@ export const Prompt = styled.div<{ $active: boolean; $exceeded: boolean }>`
 `;
 
 export const PromptError = styled.p`
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
   margin: -6px 4px 0;
-  color: #d72b38;
+  color: #e5484d;
   font-size: 13px;
+  line-height: 18px;
+  img { width: 16px; height: 16px; flex: none; }
 `;
 
 export const AiBadge = styled.span`

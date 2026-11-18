@@ -45,26 +45,26 @@ export function getChatMessages(tripId: number, after?: number, signal?: AbortSi
   return apiRequest<ChatMessageList>(`/api/trips/${tripId}/chat/messages${queryString({ after })}`, { signal });
 }
 
-export function sendChatMessage(tripId: number, value: string) {
+export function sendChatMessage(tripId: number, value: string, signal?: AbortSignal) {
   return apiRequest<ChatMessage>(`/api/trips/${tripId}/chat/messages`, {
-    method: "POST", json: { text: value },
+    method: "POST", json: { text: value }, signal,
   });
 }
 
-export function coordinateChat(tripId: number, messages: ChatMessage[], memberIds: number[]) {
+export function coordinateChat(tripId: number, messages: ChatMessage[], memberIds: number[], signal?: AbortSignal) {
   const input = coordinationMessages(messages, memberIds);
   if (!input.length) throw new Error("조율할 대화가 없어요. 현재 일행과 먼저 이야기를 나눠 주세요.");
   return apiRequest<ChatCoordinationResult>(`/api/trips/${tripId}/chat/coordinate`, {
-    method: "POST", json: { messages: input }, timeoutMs: 180_000,
+    method: "POST", json: { messages: input }, signal, timeoutMs: 180_000,
   });
 }
 
-export function createChatPoll(tripId: number, direction: string, messages: ChatMessage[], memberIds: number[]) {
+export function createChatPoll(tripId: number, direction: string, messages: ChatMessage[], memberIds: number[], signal?: AbortSignal) {
   if (!direction.trim() || direction.length > 100) throw new Error("조율 방향은 1~100자로 선택해 주세요.");
   return apiRequest<ChatPoll>(`/api/trips/${tripId}/chat/poll-candidates`, {
     method: "POST",
     json: { direction, messages: coordinationMessages(messages, memberIds) },
-    timeoutMs: 180_000,
+    signal, timeoutMs: 180_000,
   });
 }
 

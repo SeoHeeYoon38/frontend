@@ -188,6 +188,17 @@
 
 .community-chat__ai-bubble p {
   margin: 0 0 6px;
+  white-space: pre-wrap;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .community-chat__ai-bubble--loading p {
+    animation: community-chat-waiting 1.4s ease-in-out infinite alternate;
+  }
+}
+
+@keyframes community-chat-waiting {
+  to { opacity: 0.55; }
 }
 
 .community-chat__ai-bubble p:last-child {
@@ -505,7 +516,7 @@
 
 .community-chat__quick-actions {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   padding: 10px 16px 4px;
   overflow-x: auto;
   scrollbar-width: none;
@@ -517,7 +528,7 @@
 
 .community-chat__quick-actions button {
   flex: 0 0 auto;
-  padding: 6px 12px;
+  padding: 6px 8px;
   border-radius: 16px;
   background: #f3f5fa;
   font-size: 12px;
@@ -859,6 +870,43 @@
   border-top: 1px solid #e4e6ec;
   background: #fff;
 }
+
+.companion-composer-frame {
+  position: sticky;
+  z-index: 8;
+  bottom: 0;
+}
+
+.companion-composer-frame .companion-composer {
+  position: static;
+}
+
+.companion-reply-target {
+  display: flex;
+  min-height: 38px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 20px;
+  border-top: 1px solid #e4e6ec;
+  background: #f3f5fa;
+  color: #5c5c63;
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.companion-reply-target strong { color: #1a1a1a; }
+.companion-reply-target button {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  background: transparent;
+}
+.companion-reply-target img { width: 16px; height: 16px; }
+.companion-reply-mention { flex: none; color: #0079c2; font-size: 13px; }
 
 .companion-composer > img {
   width: 32px;

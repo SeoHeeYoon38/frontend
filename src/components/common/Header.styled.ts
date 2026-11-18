@@ -126,12 +126,6 @@ export const CourseHeader = styled.header`
     width: 22px;
     height: 22px;
   }
-  button {
-    display: grid;
-    place-items: center;
-    width: 20px;
-    height: 22px;
-  }
 `;
 
 export const TripHeader = styled.header`

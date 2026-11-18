@@ -9,7 +9,7 @@ import {
   saveItinerary,
 } from "../api/itineraries";
 import { getTripInteractions, type TripInteractions } from "../api/interactions";
-import { getSavedPlaces } from "../api/places";
+import { addSavedPlace, getSavedPlaces } from "../api/places";
 import { getTripMembers } from "../api/members";
 import { confirmTrip, getTrip } from "../api/trips";
 import { getPlacePhoto } from "../api/placePhotos";
@@ -23,6 +23,7 @@ import type {
 } from "../api/types";
 import { readPlanDay, readPlanOrigin, resumeTripPath, tripCommunityPath, tripPlanBackPath, tripSettingsPath } from "../utils/navigation";
 import { apiTripToDraft, apiTripToSummary, companionLabels } from "../utils/serverTrip";
+import { editItineraryPlace, type ItineraryPlaceEdit } from "../utils/itineraryPlaceEdits";
 import { dateLabel, durationLabel, timeLabel } from "../utils/trip";
 import { formatTripDetailDateRange, hasRegisteredImportedTrip, markImportedTripRegistered } from "../utils/importedTrip";
 import DirectTripBuilder from "../components/direct-trip/DirectTripBuilder";
@@ -31,6 +32,7 @@ import CourseMapScreen from "../components/traveler-course/CourseMapScreen";
 import TripTimeline from "../components/course-completion/TripTimeline";
 import PlaceDetail from "../components/course-completion/PlaceDetail";
 import AddItineraryPlaceSheet from "../components/course-completion/AddItineraryPlaceSheet";
+import ItineraryMovePlaceSheet from "../components/course-completion/ItineraryMovePlaceSheet";
 import TravelModeSheet from "../components/course-completion/TravelModeSheet";
 import AiEditSheet from "../components/course-completion/AiEditSheet";
 import type { TravelLeg } from "../api/types";
@@ -46,12 +48,11 @@ import settingsIcon from "../assets/course-completion/settings.svg";
 import aiAvatar from "../assets/course-community/ai-avatar.png";
 import addIcon from "../assets/icons/action-add.svg";
 import checkIcon from "../assets/icons/status-selected-check.svg";
+import addedCheckIcon from "../assets/course-completion/picker-added.svg";
 import triangleIcon from "../assets/course-completion/triangle-down.svg";
 import inviteIcon from "../assets/course-settings-details/member-add.svg";
 import chatIcon from "../assets/course-community/chat.svg";
-import avatarBlue from "../assets/course-settings/avatar-blue.png";
-import avatarPurple from "../assets/course-settings/avatar-purple.png";
-import avatarYellow from "../assets/course-settings/avatar-yellow.png";
+import { profileCharacter } from "../config/profileCharacters";
 import { routes } from "../config/routes";
 import { isMapCoordinate } from "../utils/googleMaps";
 
@@ -96,6 +97,7 @@ function ServerTripPlan({ tripId, userId }: { tripId: number; userId: number }) 
   const [mapOpen, setMapOpen] = useState(false);
   const [mapDay, setMapDay] = useState<number>();
   const [photoPlace, setPhotoPlace] = useState<{ itemId: string; placeId: string; name: string }>();
+  const [photoAction, setPhotoAction] = useState<"move" | "replace">();
   const courseReturnScroll = useRef<number | null>(null);
   const [photoError, setPhotoError] = useState("");
   const [photoPending, setPhotoPending] = useState(false);
@@ -131,6 +133,9 @@ function ServerTripPlan({ tripId, userId }: { tripId: number; userId: number }) 
   const [editPending, setEditPending] = useState(false);
   const [actionError, setActionError] = useState("");
   const [notice, setNotice] = useState(state?.courseImported === true ? "내 일정으로 가져왔어요" : "");
+  const [placeAddNotice, setPlaceAddNotice] = useState("");
+  const [addedPlaceIds, setAddedPlaceIds] = useState<ReadonlySet<string>>(() => new Set());
+  const addPlaceButton = useRef<HTMLButtonElement>(null);
   const [inviteAccepted, setInviteAccepted] = useState(state?.inviteAccepted === true);
   const [confirmation, setConfirmation] = useState<Awaited<ReturnType<typeof confirmTrip>> | null | undefined>(
     state?.confirmation,
@@ -213,12 +218,28 @@ function ServerTripPlan({ tripId, userId }: { tripId: number; userId: number }) 
     return () => window.clearTimeout(timeout);
   }, [imported, notice]);
 
+  useEffect(() => {
+    if (!placeAddNotice) return;
+    addPlaceButton.current?.scrollIntoView({ block: "end" });
+    const timeout = window.setTimeout(() => setPlaceAddNotice(""), 4_000);
+    return () => window.clearTimeout(timeout);
+  }, [placeAddNotice]);
+
   const day = days[activeDay];
   const origin = readPlanOrigin(search);
   const backPath = origin === "generated" ? routes.myTrips : tripPlanBackPath(search);
   const placesById = new Map(data?.places.map((place) => [place.placeId, place]));
-  const scheduledPlaceIds = new Set(days.flatMap((item) => item.visits.map((visit) => visit.placeId)));
-  const placeCount = scheduledPlaceIds.size;
+  const scheduledDays = new Map<string, number>();
+  days.forEach((item, index) => item.visits.forEach(({ placeId }) => {
+    if (!scheduledDays.has(placeId)) scheduledDays.set(placeId, index + 1);
+  }));
+  const placeCount = scheduledDays.size;
+  const anchor = day?.visits.flatMap(({ placeId }) => {
+    const place = placesById.get(placeId);
+    return place && isMapCoordinate(place) ? [{
+      name: place.name, latitude: place.latitude, longitude: place.longitude,
+    }] : [];
+  }).at(-1);
   const courseMapDays = (mapOpen ? days : day ? [day] : []).map((item) => ({
     date: item.date,
     label: `${days.indexOf(item) + 1}일차`,
@@ -246,7 +267,6 @@ function ServerTripPlan({ tripId, userId }: { tripId: number; userId: number }) 
     ? "이동 정보 없음"
     : [...movementModes].map((mode) => travelModeLabels[mode]).join(" · ");
   const shared = (data?.members.length ?? 0) > 1;
-  const memberFallbacks = [avatarBlue, avatarPurple, avatarYellow];
 
   function openCourseMap() {
     courseReturnScroll.current = window.scrollY;
@@ -310,26 +330,45 @@ function ServerTripPlan({ tripId, userId }: { tripId: number; userId: number }) 
     setInteractionError("");
   };
 
-  const removeSelectedPlace = async () => {
+  const commitPlaceEdit = async (edit: ItineraryPlaceEdit) => {
+    if (!data?.itinerary || !photoPlace) return;
+    const { itinerary: original } = data;
+    const days = editItineraryPlace(original.draft.days, photoPlace.itemId, edit);
+    const updatedPlaces = edit.kind === "replace" && !data.places.some((place) => place.placeId === edit.placeId && place.matchStatus === "MATCHED")
+      ? (await addSavedPlace(tripId, edit.placeId)).places : undefined;
+    let itinerary;
+    try {
+      itinerary = await saveItinerary(tripId, days, original.version);
+    } catch (reason) {
+      if (reason instanceof ApiError && reason.status === 409) {
+        const latest = await getLatestItinerary(tripId).catch(() => undefined);
+        if (latest) setData((current) => current ? { ...current, itinerary: latest } : current);
+        throw new Error("일정이 바뀌었어요. 최신 일정을 확인하고 다시 선택해 주세요.");
+      }
+      throw reason;
+    }
+    setData((current) => current ? { ...current, itinerary, places: updatedPlaces ?? current.places } : current);
+    setPhotoAction(undefined);
+    setPhotoPlace(undefined);
+    if (edit.kind === "move") {
+      setActiveDay(edit.day - 1);
+      setMapDay(edit.day - 1);
+      setNotice(`${edit.day}일차로 장소를 옮겼어요.`);
+    } else {
+      setNotice(edit.kind === "remove" ? `${photoPlace.name}을 일정에서 뺐어요.` : "일정의 장소를 바꿨어요.");
+    }
+    void reloadHistory().catch(() => undefined);
+    void refreshInteractions().catch(() => setInteractionError("일행 의견을 불러오지 못했어요."));
+  };
+
+  const changeSelectedPlace = async (edit: ItineraryPlaceEdit) => {
     if (!data?.itinerary || !photoPlace || photoPending) return;
     setPhotoPending(true);
     setPhotoError("");
     try {
-      if (!data.itinerary.draft.days.some((item) => item.visits.some((visit) => visit.itemId === photoPlace.itemId))) {
-        throw new Error("현재 일정에서 이 장소를 찾지 못했어요. 일정을 다시 열어 주세요.");
-      }
-      const days = data.itinerary.draft.days.map((item) => ({
-        ...item,
-        visits: item.visits.filter((visit) => visit.itemId !== photoPlace.itemId),
-      }));
-      const itinerary = await saveItinerary(tripId, days, data.itinerary.version);
-      setData((current) => current ? { ...current, itinerary } : current);
-      setPhotoPlace(undefined);
-      setNotice(`${photoPlace.name}을 일정에서 뺐어요.`);
-      void reloadHistory().catch(() => undefined);
-      void refreshInteractions().catch(() => undefined);
+      await commitPlaceEdit(edit);
     } catch (reason) {
-      setPhotoError(reason instanceof Error ? reason.message : "장소를 일정에서 빼지 못했어요.");
+      setPhotoError(reason instanceof Error ? reason.message : "장소 변경을 저장하지 못했어요.");
     } finally {
       setPhotoPending(false);
     }
@@ -418,6 +457,13 @@ function ServerTripPlan({ tripId, userId }: { tripId: number; userId: number }) 
 
   if (photoPlace && data) {
     const savedPlace = data.places.find((item) => item.placeId === photoPlace.placeId);
+    const draftDays = data.itinerary?.draft.days ?? [];
+    const placeDay = draftDays.findIndex((item) => item.visits.some((visit) => visit.itemId === photoPlace.itemId)) + 1;
+    const currentMember = data.members.find((member) => member.me);
+    const openPlaceAction = (action: "move" | "replace") => {
+      setPhotoError("");
+      setPhotoAction(action);
+    };
     return <div className="course-page-shell"><div className="course-page">
       <PlaceDetail
         place={{
@@ -430,19 +476,36 @@ function ServerTripPlan({ tripId, userId }: { tripId: number; userId: number }) 
           latitude: savedPlace?.latitude ?? undefined,
           longitude: savedPlace?.longitude ?? undefined,
         }}
-        onBack={() => setPhotoPlace(undefined)}
-        onRemove={() => void removeSelectedPlace()}
+        onBack={() => { setPhotoPlace(undefined); setPhotoError(""); }}
+        onRemove={() => void changeSelectedPlace({ kind: "remove" })}
+        onMove={placeDay > 0 && draftDays.length > 1 ? () => openPlaceAction("move") : undefined}
+        onReplace={placeDay > 0 ? () => openPlaceAction("replace") : undefined}
         removePending={photoPending}
         removeError={photoError}
-        server={{ tripId, itemId: photoPlace.itemId, placeId: photoPlace.placeId,
+        server={{ tripId, day: placeDay || undefined, itemId: photoPlace.itemId, placeId: photoPlace.placeId,
           interactions: data.interactions, loadError: interactionError, onRefresh: refreshInteractions,
-          currentUserId: data.members.find((member) => member.me)?.userId,
+          currentUserId: currentMember?.userId,
+          currentCharacterId: currentMember?.characterId,
           onChange: (update) => {
             interactionRequest.current += 1;
             setData((current) => current?.interactions
               ? { ...current, interactions: update(current.interactions) } : current);
           } }}
       />
+      {photoAction === "move" && <ItineraryMovePlaceSheet days={draftDays} currentDay={placeDay} placeId={photoPlace.placeId}
+        pending={photoPending} error={photoError} onMove={(day) => void changeSelectedPlace({ kind: "move", day })}
+        onClose={() => setPhotoAction(undefined)} />}
+      {photoAction === "replace" && <AddItineraryPlaceSheet
+        tripId={tripId} city={data.trip.city} day={placeDay}
+        anchor={savedPlace && isMapCoordinate(savedPlace) ? {
+          name: savedPlace.name, latitude: savedPlace.latitude, longitude: savedPlace.longitude,
+        } : undefined}
+        scheduledDays={scheduledDays}
+        replacement={{ category: savedPlace?.category ?? undefined,
+          onSave: (placeId) => commitPlaceEdit({ kind: "replace", placeId, itemId: crypto.randomUUID() }),
+        }}
+        onClose={() => setPhotoAction(undefined)}
+      />}
     </div></div>;
   }
 
@@ -492,9 +555,9 @@ function ServerTripPlan({ tripId, userId }: { tripId: number; userId: number }) 
             )}
             {shared && (
               <ul className="course-hero__members" aria-label={`함께하는 ${data.members.length}명`}>
-                {data.members.slice(0, 3).map((member, index) => (
+                {data.members.slice(0, 3).map((member) => (
                   <li key={member.userId} title={member.name}>
-                    <img src={member.profileImageUrl || memberFallbacks[index % memberFallbacks.length]} alt={member.name} />
+                    <img src={profileCharacter(member.characterId).image} alt={member.name} />
                   </li>
                 ))}
               </ul>
@@ -589,6 +652,7 @@ function ServerTripPlan({ tripId, userId }: { tripId: number; userId: number }) 
                       address: place?.address,
                       timing: `${timeLabel(visit.start)} – ${timeLabel(visit.end)}`,
                       category: categoryLabels[place?.category ?? "OTHER"],
+                      added: addedPlaceIds.has(visit.placeId),
                       reactions: data.interactions?.items.find((item) => item.itemId === visit.itemId),
                       connection: next && mode && (
                         <div className="travel-mode-connection">
@@ -622,24 +686,24 @@ function ServerTripPlan({ tripId, userId }: { tripId: number; userId: number }) 
                       onApply={(mode, all) => void applyTravelMode(mode, all)}
                     />
                   )}
-                  <button type="button" className="add-place-button" disabled={!day || editPending} onClick={() => setShowAddPlace(true)}><img src={addIcon} alt="" /> 장소 추가</button>
+                  <button ref={addPlaceButton} type="button" className="add-place-button" disabled={!day || editPending} onClick={() => setShowAddPlace(true)}><img src={addIcon} alt="" /> 장소 추가</button>
                   {showAddPlace && (
                     <AddItineraryPlaceSheet
                       tripId={tripId}
+                      city={summary.city}
                       day={activeDay + 1}
-                      scheduledPlaceIds={scheduledPlaceIds}
+                      anchor={anchor}
+                      scheduledDays={scheduledDays}
                       onClose={() => setShowAddPlace(false)}
-                      onSaved={({ itinerary, reason, placeName }, place, selectedDay) => {
-                        setActiveDay(selectedDay - 1);
-                        setData((current) => {
-                          if (!current) return current;
-                          const places = current.places.filter((item) => item.placeId !== place.placeId);
-                          return { ...current, itinerary, places: [...places, place] };
-                        });
+                      onSaved={(itinerary, addedIds, places, complete) => {
+                        setData((current) => current ? { ...current, itinerary, places: places ?? current.places } : current);
+                        setAddedPlaceIds((current) => new Set([...current, ...addedIds]));
                         setEditPreview(undefined);
                         setActionError("");
-                        setNotice(reason || `${placeName}을(를) 일정에 추가했어요.`);
-                        setShowAddPlace(false);
+                        if (complete) {
+                          setShowAddPlace(false);
+                          setPlaceAddNotice(`${addedIds.length}곳을 ${activeDay + 1}일차에 추가했어요`);
+                        }
                         void reloadHistory().catch(() => undefined);
                         void refreshInteractions().catch(() => setInteractionError("일행 의견을 불러오지 못했어요."));
                       }}
@@ -699,7 +763,8 @@ function ServerTripPlan({ tripId, userId }: { tripId: number; userId: number }) 
             if (imported) markImportedTripRegistered(tripId);
           }}
         />}
-        {imported && notice && <div className="course-toast" role="status"><img src={checkIcon} alt="" /><p>{notice}</p></div>}
+        {placeAddNotice ? <div className="course-toast" role="status"><img src={addedCheckIcon} alt="" /><p>{placeAddNotice}</p></div>
+          : imported && notice && <div className="course-toast" role="status"><img src={checkIcon} alt="" /><p>{notice}</p></div>}
         {confirmation && (
           <div className="course-toast" role="status">
             <img src={checkIcon} alt="" />

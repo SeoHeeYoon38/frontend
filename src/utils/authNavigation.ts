@@ -1,6 +1,7 @@
 import { routes } from "../config/routes.ts";
 
 const publicRoutePatterns = [
+  /^\/courses(?:\/\d+)?\/?$/,
   /^\/share\/[^/]+\/?$/,
   /^\/login\/?$/,
   /^\/my\/account\/withdrawal\/complete\/?$/,

@@ -4,6 +4,9 @@ import SheetHandle from "./SheetHandle";
 import * as S from "./TripSheet.styled";
 interface TripSheetProps {
   title: string;
+  titleAdornment?: ReactNode;
+  className?: string;
+  closeIcon?: string;
   onClose: () => void;
   children: ReactNode;
   footer?: ReactNode;
@@ -12,10 +15,14 @@ interface TripSheetProps {
   variant?: "default" | "course" | "people" | "dates" | "trip-info";
   contentGap?: number;
   compactHeader?: boolean;
+  hideHeader?: boolean;
   closeDisabled?: boolean;
 }
 function TripSheet({
   title,
+  titleAdornment,
+  className,
+  closeIcon = close,
   onClose,
   children,
   footer,
@@ -24,6 +31,7 @@ function TripSheet({
   variant = "default",
   contentGap,
   compactHeader = false,
+  hideHeader = false,
   closeDisabled = false,
 }: TripSheetProps) {
   const ref = useRef<HTMLDialogElement>(null);
@@ -38,18 +46,20 @@ function TripSheet({
   }, []);
   return (
     <S.Sheet
+      className={className}
       $minHeight={minHeight}
       $course={variant === "course"}
       $courseHeight={courseHeight}
       ref={ref}
-      aria-labelledby={id}
+      aria-labelledby={hideHeader ? undefined : id}
+      aria-label={hideHeader ? title : undefined}
       onCancel={(event) => {
         event.preventDefault();
         if (!closeDisabled) onClose();
       }}
     >
       <SheetHandle onClose={onClose} closeDisabled={closeDisabled} />
-      <S.SheetHeader
+      {!hideHeader && <S.SheetHeader
         $course={variant === "course"}
         $compact={compactHeader}
         $tripInfo={variant === "trip-info"}
@@ -57,7 +67,7 @@ function TripSheet({
           variant === "people" || variant === "dates" ? variant : undefined
         }
       >
-        <h2 id={id}>{title}</h2>
+        {titleAdornment ? <S.SheetHeading><h2 id={id}>{title}</h2>{titleAdornment}</S.SheetHeading> : <h2 id={id}>{title}</h2>}
         <button
           type="button"
           aria-label="닫기"
@@ -66,9 +76,9 @@ function TripSheet({
           disabled={closeDisabled}
           onClick={onClose}
         >
-          <img src={close} alt="" />
+          <img src={closeIcon} alt="" />
         </button>
-      </S.SheetHeader>
+      </S.SheetHeader>}
       <S.SheetBody $course={variant === "course"} $gap={contentGap}>
         {children}
       </S.SheetBody>

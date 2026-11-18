@@ -608,3 +608,59 @@ export const RecommendHeading = styled.div`
     }
   }
 `;
+
+export const SuggestedSection = styled.section`
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+
+  > h2 { margin: 0; font-size: 16px; line-height: 22px; }
+  > p { margin: 0; color: #8a8a8e; font-size: 14px; line-height: 20px; }
+`;
+
+export const SuggestedCarousel = styled.div`
+  display: flex;
+  gap: 12px;
+  margin-right: -20px;
+  padding-right: 20px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+`;
+
+export const SuggestedCourse = styled.button`
+  width: min(232px, 72%);
+  flex: none;
+  overflow: hidden;
+  border: 1px solid #e4e6ec;
+  border-radius: 18px;
+  background: #fff;
+  text-align: left;
+  scroll-snap-align: start;
+
+  > .suggested-cover {
+    display: block;
+    width: 100%;
+    height: 168px;
+    object-fit: cover;
+  }
+
+  > .suggested-course-copy {
+    display: grid;
+    gap: 8px;
+    padding: 14px;
+  }
+
+  strong { font-size: 15px; line-height: 21px; }
+  .suggested-course-copy > span { display: flex; align-items: center; gap: 4px; color: #5c5c63; font-size: 12px; }
+  .suggested-course-copy img { width: 14px; height: 14px; }
+`;
+
+export const SuggestedDots = styled.div`
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+
+  span { width: 6px; height: 6px; border-radius: 999px; background: #d1d1d6; }
+  [data-active="true"] { width: 18px; background: #090738; }
+`;

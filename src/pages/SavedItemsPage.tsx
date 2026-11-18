@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useSearchParams } from "react-router";
+import { Link, useLocation, useSearchParams } from "react-router";
 import backIcon from "../assets/course-settings/back.svg";
 import googleMapsLogo from "../assets/images/brand-google-maps.webp";
 import bookmarkOn from "../assets/my/bookmark-on.svg";
 import bookmarkOff from "../assets/icons/nav-bookmark.svg";
+import favoriteOn from "../assets/figma/course-favorite-filled.svg";
 import sortChevron from "../assets/my/sort-chevron.svg";
 import emptyPin from "../assets/direct-trip/empty-pin.svg";
 import { PlaceThumbnail } from "../components/common/PlacePhoto";
@@ -19,15 +20,16 @@ type SavedTab = "places" | "courses";
 
 interface BookmarkButtonProps {
   active: boolean;
+  favorite?: boolean;
   label: string;
   onClick: () => void;
   disabled?: boolean;
 }
 
-function BookmarkButton({ active, label, onClick, disabled }: BookmarkButtonProps) {
+function BookmarkButton({ active, favorite, label, onClick, disabled }: BookmarkButtonProps) {
   return (
     <S.BookmarkButton type="button" aria-label={label} onClick={onClick} disabled={disabled}>
-      <img src={active ? bookmarkOn : bookmarkOff} alt="" />
+      <img src={favorite ? favoriteOn : active ? bookmarkOn : bookmarkOff} alt="" />
     </S.BookmarkButton>
   );
 }
@@ -65,8 +67,13 @@ function CourseThumbnail({ course }: { course: SavedCourse }) {
 }
 
 function SavedItemsPage() {
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
-  const tab = (searchParams.get("tab") === "courses" ? "courses" : "places") as SavedTab;
+  const favorites = searchParams.get("view") === "likes";
+  const requestedTab = searchParams.get("tab");
+  const tab: SavedTab = requestedTab === "places" || requestedTab === "courses"
+    ? requestedTab : favorites ? "courses" : "places";
+  const catalogSearch = typeof location.state?.courseCatalogSearch === "string" ? location.state.courseCatalogSearch : "";
   const [region, setRegion] = useState("전체");
   const {
     places, courses, setPlace, setCourse, saveError, pendingId,
@@ -85,41 +92,37 @@ function SavedItemsPage() {
 
   const selectTab = (nextTab: SavedTab) => {
     setRegion("전체");
-    setSearchParams(nextTab === "courses" ? { tab: "courses" } : { tab: "places" });
+    const next = new URLSearchParams(searchParams);
+    next.set("tab", nextTab);
+    setSearchParams(next, { state: location.state });
   };
 
   const visibleCount = isPlaces ? `${filteredPlaces.length}곳` : `${filteredCourses.length}개`;
 
   return (
-    <S.Page>
+    <S.Page data-favorites={favorites || undefined}>
       <S.Header>
-        <Link to={routes.my} aria-label="마이 화면으로 돌아가기">
+        <Link to={favorites ? { pathname: routes.courses, search: catalogSearch } : routes.my}
+          aria-label={favorites ? "코스 둘러보기로 돌아가기" : "마이 화면으로 돌아가기"}>
           <img src={backIcon} alt="" />
         </Link>
-        <h1>저장한 장소와 코스</h1>
+        <h1>{favorites ? "찜 목록" : "저장한 장소와 코스"}</h1>
       </S.Header>
 
       <S.Tabs aria-label="저장 목록 분류">
-        <button
-          type="button"
-          aria-pressed={isPlaces}
-          onClick={() => selectTab("places")}
-        >
-          장소 <b>{placesLoading ? "…" : places.length}</b>
-        </button>
-        <button
-          type="button"
-          aria-pressed={!isPlaces}
-          onClick={() => selectTab("courses")}
-        >
-          코스 <b>{coursesLoading ? "…" : courses.length}</b>
-        </button>
+        {(favorites ? ["courses", "places"] : ["places", "courses"]).map((key) => {
+          const placesTab = key === "places";
+          return <button type="button" key={key} aria-pressed={tab === key}
+            onClick={() => selectTab(placesTab ? "places" : "courses")}>
+            {placesTab ? "장소" : "코스"} <b>{placesTab ? placesLoading ? "…" : places.length : coursesLoading ? "…" : courses.length}</b>
+          </button>;
+        })}
       </S.Tabs>
 
       <S.Content>
         {saveError && <p role="alert">{saveError}</p>}
         {loadError && <p role="alert">{loadError}</p>}
-        <S.RegionFilters aria-label="지역 필터">
+        {!favorites && <S.RegionFilters aria-label="지역 필터">
           {[...regions].map((item) => (
             <button
               type="button"
@@ -130,19 +133,19 @@ function SavedItemsPage() {
               {item}
             </button>
           ))}
-        </S.RegionFilters>
+        </S.RegionFilters>}
 
-        <S.ListHeader>
+        {!favorites && <S.ListHeader>
           <strong>
             {activeRegion} {visibleCount}
           </strong>
           <span>최근 저장순 {isPlaces && <img src={sortChevron} alt="" />}</span>
-        </S.ListHeader>
+        </S.ListHeader>}
 
         {loading ? <S.Empty role="status">저장 목록을 불러오고 있어요.</S.Empty> : isPlaces ? (
           <S.List aria-label="저장한 장소">
             {filteredPlaces.map((place) => (
-              <S.PlaceRow key={place.id}>
+              <S.PlaceRow key={place.id} data-kind="place">
                 {place.placeId ? (
                   <PlaceThumbnail placeId={place.placeId} name={place.name} />
                 ) : place.image ? (
@@ -151,8 +154,9 @@ function SavedItemsPage() {
                   <S.ImageFallback><img src={emptyPin} alt="" /></S.ImageFallback>
                 )}
                 <S.ItemText>
+                  {favorites && <span><em>{place.category}</em><i />{place.city}</span>}
                   <strong>{place.name}</strong>
-                  <span>
+                  {!favorites && <><span>
                     {place.city} <i /> {place.category}
                   </span>
                   <small data-google={place.source.startsWith("Google") || undefined}>
@@ -160,10 +164,11 @@ function SavedItemsPage() {
                       <img src={googleMapsLogo} alt="" />
                     )}
                     {place.source}
-                  </small>
+                  </small></>}
                 </S.ItemText>
                 <BookmarkButton
                   active
+                  favorite={favorites}
                   label={`${place.name} 저장 해제`}
                   disabled={pendingId !== null}
                   onClick={() => { void setPlace(place.id, null); }}
@@ -174,17 +179,20 @@ function SavedItemsPage() {
         ) : (
           <S.List aria-label="저장한 코스">
             {filteredCourses.map((course) => (
-              <S.CourseRow key={course.id}>
+              <S.CourseRow key={course.id} data-kind="course">
                 <CourseThumbnail key={course.image} course={course} />
                 <S.ItemText>
-                  <em>{course.durationLabel}</em>
-                  <Link to={routes.courseDetail.replace(":courseId", course.id)}><strong>{course.title}</strong></Link>
-                  <span>
+                  {favorites ? <span><em>{course.city}</em><i /><em>{course.durationLabel} {course.placeCount}곳</em></span> : <em>{course.durationLabel}</em>}
+                  <Link to={routes.courseDetail.replace(":courseId", course.id)} state={{ savedItemsSearch: location.search, courseCatalogSearch: catalogSearch }}>
+                    <strong>{course.title}</strong>
+                  </Link>
+                  {favorites ? course.author && <small>{course.author}</small> : <span>
                     {course.city} <i /> 장소 {course.placeCount}곳
-                  </span>
+                  </span>}
                 </S.ItemText>
                 <BookmarkButton
                   active
+                  favorite={favorites}
                   label={`${course.title} 저장 해제`}
                   disabled={pendingId !== null}
                   onClick={() => { void setCourse(course.id, null); }}

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
-import { checkNickname, getMe, updateMyProfile } from "../api/auth";
+import { getMe, updateMyProfile } from "../api/auth";
 import { isApiEnabled } from "../api/config";
 import { ApiError } from "../api/client";
 import { hasAuthSession } from "../api/tokenStorage";
@@ -14,6 +14,7 @@ import { profileCharacter } from "../config/profileCharacters";
 import ProfileCharacterSheet from "../components/common/ProfileCharacterSheet";
 import SettingsConfirmDialog from "../components/common/SettingsConfirmDialog";
 import { routes } from "../config/routes";
+import useNicknameAvailability from "../hooks/useNicknameAvailability";
 import {
   readProfileSettings,
   profileAvatarId,
@@ -39,12 +40,14 @@ function ProfileEditPage() {
   const [loading, setLoading] = useState(liveProfile);
   const [saving, setSaving] = useState(false);
   const [serverError, setServerError] = useState("");
-  const [checkedNickname, setCheckedNickname] = useState<{ text: string; state: "available" | "taken" | "error" }>();
   const pendingSave = useRef(false);
   const nicknameText = nickname.trim();
   const nicknameChanged = nicknameText !== initialProfile.nickname;
   const format = nicknameChanged ? validateNicknameFormat(nicknameText) : { valid: true, tone: "default" as const, message: "" };
   const needsNicknameCheck = liveProfile && !loading && format.valid && nicknameChanged;
+  const { availability: checked, clear: clearNicknameCheck, markTaken } = useNicknameAvailability(
+    needsNicknameCheck ? nicknameText : undefined,
+  );
 
   useEffect(() => {
     if (!liveProfile) return;
@@ -79,25 +82,6 @@ function ProfileEditPage() {
     return () => controller.abort();
   }, [initialProfile.travelPreferences, liveProfile]);
 
-  useEffect(() => {
-    if (!needsNicknameCheck) return;
-    const controller = new AbortController();
-    const timer = window.setTimeout(() => {
-      void checkNickname(nicknameText, controller.signal).then(
-        (result) => {
-          if (!controller.signal.aborted) {
-            setCheckedNickname({ text: nicknameText, state: result.available ? "available" : "taken" });
-          }
-        },
-        () => {
-          if (!controller.signal.aborted) setCheckedNickname({ text: nicknameText, state: "error" });
-        },
-      );
-    }, 350);
-    return () => { window.clearTimeout(timer); controller.abort(); };
-  }, [needsNicknameCheck, nicknameText]);
-
-  const checked = checkedNickname?.text === nicknameText ? checkedNickname.state : undefined;
   const validation = !liveProfile ? validateNickname(nickname, initialProfile.nickname)
     : !needsNicknameCheck ? format
     : checked === "available" ? format
@@ -115,7 +99,7 @@ function ProfileEditPage() {
 
   function changeNickname(value: string) {
     setNickname(value);
-    if (value.trim() !== nicknameText) setCheckedNickname(undefined);
+    if (value.trim() !== nicknameText) clearNicknameCheck();
     setServerError("");
   }
 
@@ -152,7 +136,7 @@ function ProfileEditPage() {
         };
       } catch (reason) {
         if (reason instanceof ApiError && reason.code === "NICKNAME_TAKEN") {
-          setCheckedNickname({ text: nicknameText, state: "taken" });
+          markTaken(nicknameText);
         } else {
           setServerError(reason instanceof Error ? reason.message : "프로필을 저장하지 못했어요. 다시 시도해 주세요.");
         }

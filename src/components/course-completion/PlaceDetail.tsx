@@ -12,28 +12,36 @@ import { PlaceGallery } from "../common/PlacePhoto";
 import type { TripInteractions } from "../../api/interactions";
 import { getPlaceDetail, getPlaceHours, type PlaceDetailResponse, type PlaceHoursResponse } from "../../api/places";
 import type { CoursePlace } from "../../types/courseCompletion";
+import { isMapCoordinate } from "../../utils/googleMaps";
+import CourseRouteMap from "./CourseRouteMap";
 
 interface PlaceDetailProps {
   place: CoursePlace;
   onBack: () => void;
   onRemove: () => void;
+  onMove?: () => void;
+  onReplace?: () => void;
   server?: {
     tripId: number;
+    day?: number;
     itemId: string;
     placeId: string;
     interactions?: TripInteractions;
     loadError?: string;
     onRefresh: () => Promise<void>;
     currentUserId?: number;
+    currentCharacterId?: number | null;
     onChange: (update: (current: TripInteractions) => TripInteractions) => void;
   };
   removePending?: boolean;
   removeError?: string;
 }
 
-function PlaceDetail({ place, onBack, onRemove, server, removePending = false, removeError }: PlaceDetailProps) {
+function PlaceDetail({ place, onBack, onRemove, onMove, onReplace, server, removePending = false, removeError }: PlaceDetailProps) {
   const [detailsExpanded, setDetailsExpanded] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState(false);
+  const [showHours, setShowHours] = useState(false);
+  const [copyMessage, setCopyMessage] = useState("");
   const [hoursResult, setHoursResult] = useState<{
     key: string;
     value: PlaceHoursResponse | null;
@@ -70,17 +78,17 @@ function PlaceDetail({ place, onBack, onRemove, server, removePending = false, r
     return () => controller.abort();
   }, [serverTripId, serverPlaceId, hoursKey]);
   const isKuromon = !server && place.name === "구로몬 시장";
-  const showMap = () => {
-    if (livePlace?.googleMapsUri) {
-      window.open(livePlace.googleMapsUri, "_blank", "noopener,noreferrer");
-      return;
+  const coordinates = { latitude: livePlace?.latitude ?? place.latitude, longitude: livePlace?.longitude ?? place.longitude };
+  const mapQuery = isMapCoordinate(coordinates) ? `${coordinates.latitude},${coordinates.longitude}` : place.name;
+  const mapsUrl = livePlace?.googleMapsUri || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapQuery)}`;
+  const showMap = () => window.open(mapsUrl, "_blank", "noopener,noreferrer");
+  const copyAddress = async (address: string) => {
+    try {
+      await navigator.clipboard.writeText(address);
+      setCopyMessage("주소를 복사했어요.");
+    } catch {
+      setCopyMessage("주소를 복사하지 못했어요.");
     }
-    const latitude = livePlace?.latitude ?? place.latitude;
-    const longitude = livePlace?.longitude ?? place.longitude;
-    const query = latitude !== undefined && longitude !== undefined
-      ? `${latitude},${longitude}`
-      : place.name;
-    window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`, "_blank", "noopener,noreferrer");
   };
 
   return (
@@ -136,7 +144,7 @@ function PlaceDetail({ place, onBack, onRemove, server, removePending = false, r
         {!detailsExpanded && (server
           ? <><ServerCompanionOpinions tripId={server.tripId} itemId={server.itemId}
               interactions={server.interactions} loadError={server.loadError} onRefresh={server.onRefresh}
-              currentUserId={server.currentUserId} onChange={server.onChange} /></>
+              currentUserId={server.currentUserId} currentCharacterId={server.currentCharacterId} onChange={server.onChange} /></>
           : <CompanionOpinions placeName={place.name} />)}
 
         {detailsExpanded && (
@@ -173,15 +181,38 @@ function PlaceDetail({ place, onBack, onRemove, server, removePending = false, r
                 <div><dt>영업시간</dt><dd>
                   {hoursError ? "영업시간을 불러오지 못했어요." : hours === undefined ? "영업시간을 확인하고 있어요."
                     : hours === null ? "영업시간 정보가 없어요."
-                      : <><b>{hours.openNow ? "지금 영업 중" : "지금 영업 종료"}</b><br />
-                        {hours.open24h ? "24시간 영업" : hours.days.map(({ day, hours: periods }) => (
-                          <span key={day}>{({ MONDAY: "월", TUESDAY: "화", WEDNESDAY: "수", THURSDAY: "목", FRIDAY: "금", SATURDAY: "토", SUNDAY: "일" } as const)[day]}요일 {periods.length
-                            ? periods.map(({ open, close }) => `${open} - ${close}`).join(", ") : "휴무"}<br /></span>
-                        ))}</>}
+                      : <>
+                        <b>{hours.open24h ? "24시간 영업" : hours.openNow ? "지금 영업 중" : "지금 영업 종료"}</b>
+                        {!hours.open24h && hours.days.length > 0 && <>
+                          <button type="button" aria-expanded={showHours} aria-controls="place-weekday-hours" onClick={() => setShowHours((open) => !open)}>요일별 보기</button>
+                          <div hidden={!showHours} id="place-weekday-hours">
+                            {hours.days.map(({ day, hours: periods }) => (
+                              <div key={day}>{({ MONDAY: "월", TUESDAY: "화", WEDNESDAY: "수", THURSDAY: "목", FRIDAY: "금", SATURDAY: "토", SUNDAY: "일" } as const)[day]}요일 {periods.length
+                                ? periods.map(({ open, close }) => `${open} - ${close}`).join(", ") : "휴무"}</div>
+                            ))}
+                          </div>
+                        </>}
+                      </>}
                 </dd></div>
-                {livePlace?.address && <div><dt>주소</dt><dd>{livePlace.address}</dd></div>}
-                {livePlace?.googleMapsUri && <div><dt>위치</dt><dd><button type="button" onClick={showMap}>구글맵에서 열기</button></dd></div>}
+                {livePlace?.address && <div><dt>주소</dt><dd>
+                  {livePlace.address}<button type="button" onClick={() => void copyAddress(livePlace.address!)}>복사</button>
+                </dd></div>}
               </dl>
+              {copyMessage && <small role="status">{copyMessage}</small>}
+            </section>}
+
+            {server && <section>
+              <h2>위치</h2>
+              {isMapCoordinate(coordinates) && <div className="place-detail__live-map">
+                <CourseRouteMap places={[{ id: server.placeId, name: place.name, ...coordinates }]} city={place.name} live />
+              </div>}
+              <button className="place-detail__map-link" type="button" onClick={showMap}>구글맵에서 열기</button>
+            </section>}
+
+            {server && livePlace?.reviewCount != null && <section className="place-detail__review">
+              <h2>리뷰</h2>
+              <b>구글 리뷰 {livePlace.reviewCount.toLocaleString()}개</b>
+              <a href={mapsUrl} target="_blank" rel="noreferrer">리뷰 더 보기</a>
             </section>}
 
             {isKuromon && <section>
@@ -205,6 +236,10 @@ function PlaceDetail({ place, onBack, onRemove, server, removePending = false, r
                 <p>참치 꼬치랑 딸기 모찌가 제일 맛있었어요. 한 바퀴 도는 데 40분쯤 걸려요.</p>
               </article>
             </section>}
+            {(onReplace || onMove) && <div className="place-detail__quick-actions">
+              {onReplace && <button type="button" onClick={onReplace}>비슷한 곳으로 바꾸기</button>}
+              {onMove && <button type="button" onClick={onMove}>일차 옮기기</button>}
+            </div>}
 
           </>
         )}
@@ -216,7 +251,7 @@ function PlaceDetail({ place, onBack, onRemove, server, removePending = false, r
       {confirmRemove && <div className="place-detail__confirm-layer" role="presentation" onClick={() => setConfirmRemove(false)}>
         <section role="alertdialog" aria-modal="true" aria-labelledby="place-remove-title" onClick={(event) => event.stopPropagation()}>
           <h2 id="place-remove-title">{place.name}을 일정에서 뺄까요?</h2>
-          <p>{place.name}은 일정에서 빠지고<br />일행에게도 바로 반영돼요.</p>
+          <p>{server?.day ? `${server.day}일차 코스에서 빠지고` : "일정에서 빠지고"}<br />일행에게도 바로 반영돼요.</p>
           {removeError && <p role="alert">{removeError}</p>}
           <div>
             <button type="button" disabled={removePending} onClick={() => setConfirmRemove(false)}>취소</button>

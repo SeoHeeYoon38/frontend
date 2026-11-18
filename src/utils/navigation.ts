@@ -2,12 +2,14 @@ import { routes } from "../config/routes.ts";
 
 export const demoInviteId = "osaka-demo";
 export const demoInvitePath = routes.invite.replace(":inviteId", demoInviteId);
+export const courseFavoritesPath = `${routes.savedItems}?view=likes&tab=courses`;
 
 export function invitePath(token: string): string {
   return routes.invite.replace(":inviteId", encodeURIComponent(token));
 }
 
 const pendingInviteKey = "dotlo:auth:pending-invite";
+const pendingCourseKey = "dotlo:auth:pending-course";
 
 type InviteStorage = Pick<Storage, "getItem" | "setItem" | "removeItem">;
 
@@ -19,6 +21,19 @@ export function takePendingInvitePath(storage: InviteStorage): string | undefine
   const token = storage.getItem(pendingInviteKey);
   storage.removeItem(pendingInviteKey);
   return token ? invitePath(token) : undefined;
+}
+
+export function savePendingCourseLogin(storage: InviteStorage, courseId: number, importCourse: boolean) {
+  storage.setItem(pendingCourseKey, `${courseId}:${importCourse ? "import" : "view"}`);
+}
+
+export function takePendingLoginPath(storage: InviteStorage): string | undefined {
+  const invite = takePendingInvitePath(storage);
+  const course = storage.getItem(pendingCourseKey)?.match(/^([1-9]\d*):(import|view)$/);
+  storage.removeItem(pendingCourseKey);
+  if (invite) return invite;
+  if (!course) return undefined;
+  return `${travelerCoursePath(course[1])}${course[2] === "import" ? "?import=1" : ""}`;
 }
 
 export type PlanOrigin = "home" | "my-trips" | "courses" | "generated";

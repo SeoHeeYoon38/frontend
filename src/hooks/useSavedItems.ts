@@ -56,6 +56,7 @@ function toSavedCourse(course: CourseSummaryResponse): SavedCourse {
     city: course.city,
     placeCount: course.stopCount,
     image: course.coverImageUrl ?? "",
+    author: course.author.name ?? undefined,
   };
 }
 
@@ -81,7 +82,7 @@ function mergeItems<T extends { id: string }>(initial: T[], changes: Record<stri
   return [...items.values()];
 }
 
-export default function useSavedItems() {
+export default function useSavedItems(enabled = true) {
   const [live] = useState(() => apiMode === "live" || (isApiEnabled() && hasAuthSession()));
   const [changes, setChanges] = useState<Changes>(() => {
     try {
@@ -100,7 +101,7 @@ export default function useSavedItems() {
   const [pendingId, setPendingId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!live) return;
+    if (!live || !enabled) return;
     const controller = new AbortController();
     void getMySavedPlaces(controller.signal).then(
       (places) => {
@@ -129,7 +130,7 @@ export default function useSavedItems() {
       },
     );
     return () => controller.abort();
-  }, [live]);
+  }, [enabled, live]);
 
   function save<T extends keyof Changes>(kind: T, id: string, value: Changes[T][string]) {
     try {

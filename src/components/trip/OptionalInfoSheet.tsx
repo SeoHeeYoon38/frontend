@@ -1,5 +1,4 @@
 import { useEffect, useEffectEvent, useRef, useState, type ComponentProps } from "react";
-import { isServerTripId } from "../../api/adapters";
 import { shouldUseMockFallback } from "../../api/client";
 import { isApiEnabled } from "../../api/config";
 import { searchPlaces } from "../../api/places";
@@ -12,7 +11,7 @@ import searchIcon from "../../assets/icons/search-default.svg";
 import { mockFlights, mockHotels } from "../../data/mocks/tripData";
 import type { PrepareServerTrip } from "../../hooks/useServerTripDraft";
 import type { Flight, Stay, TripDraft } from "../../types/trip";
-import { addDays, basicError, changeDates, dateLabel, dayCount, rangeDates, toggleId, validDate, validateStays } from "../../utils/trip";
+import { addDays, changeDates, dateLabel, dayCount, rangeDates, toggleId, validDate, validateStays } from "../../utils/trip";
 import TripSheet from "../common/TripSheet";
 import DateRangePicker from "./DateRangePicker";
 import * as O from "./OptionalInfoSheet.styled";
@@ -35,6 +34,11 @@ type SearchResult = { query: string; places: SearchChoice[] } | { query: string;
 const flightNumber = /^(?:[A-Z][A-Z0-9]|\d[A-Z]|[A-Z]{3})\d{1,4}[A-Z]?$/;
 const hotelName = /호텔|모텔|호스텔|게스트하우스|여관|료칸|리조트|펜션|숙소|ホテル|旅館|民宿|khách sạn|khach san|โรงแรม|\b(hotel|hostel|resort|inn|lodging|stay|suites?|ryokan|homestay|guesthouse)\b/i;
 const weekLabels = ["일", "월", "화", "수", "목", "금", "토"];
+
+function reservationDraft(draft: TripDraft): TripDraft {
+  // Place search needs a server draft. The companion choice remains unset in the form.
+  return draft.companion ? draft : { ...draft, companion: "혼자", people: 1 };
+}
 
 function ReservationSearchField({ label, selected, ...input }: ComponentProps<"input"> & { label: string; selected?: boolean }) {
   return (
@@ -93,7 +97,7 @@ function ReservationDays({ start, end, selected, range, label, onSelect }: {
 function usePlaceSearch(draft: TripDraft, prepareServerTrip: PrepareServerTrip, query: string, active: boolean, lodging: boolean) {
   const [result, setResult] = useState<SearchResult>();
   const live = isApiEnabled() && hasAuthSession();
-  const prepare = useEffectEvent(() => prepareServerTrip(draft));
+  const prepare = useEffectEvent(() => prepareServerTrip(reservationDraft(draft)));
 
   useEffect(() => {
     if (!live || !active || !query) return;
@@ -200,9 +204,9 @@ function FlightSheet({ draft, onClose, onSave, prepareServerTrip }: ReservationS
         setError("오는 편 출발 시간이 도착 시간보다 빨라요. 항공편과 날짜를 확인해 주세요.");
         return;
       }
-      if (live && flight.apiFlight && (isServerTripId(draft.tripId) || !basicError(next))) {
+      if (live && flight.apiFlight) {
         try {
-          const tripId = await prepareServerTrip(next);
+          const tripId = await prepareServerTrip(reservationDraft(next));
           await saveFlights(tripId, next.outbound?.apiFlight ?? null, next.inbound?.apiFlight ?? null);
           onSave({ ...next, tripId: String(tripId) });
           return;
@@ -348,7 +352,7 @@ function StaySheet({ draft, onClose, onSave, prepareServerTrip }: ReservationShe
     setSaving(true);
     setError("");
     try {
-      const id = await prepareServerTrip(draft);
+      const id = await prepareServerTrip(reservationDraft(draft));
       const saved = await saveStays(id, input);
       onSave({ ...draft, tripId: String(id), stays: applyReservationsToDraft(draft, saved).stays });
     } catch (reason) {
@@ -469,7 +473,7 @@ function RentalSheet({ draft, onClose, onSave, prepareServerTrip }: ReservationS
     setSaving(true);
     setError("");
     try {
-      const id = await prepareServerTrip(draft);
+      const id = await prepareServerTrip(reservationDraft(draft));
       const saved = await saveRental(id, rental.days, placeId);
       onSave({ ...draft, tripId: String(id), rental: applyReservationsToDraft(draft, saved).rental });
     } catch (reason) {

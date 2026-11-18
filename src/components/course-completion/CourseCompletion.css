@@ -556,6 +556,18 @@ button.course-map__number-pin {
   gap: 12px;
 }
 
+.place-card__added {
+  align-self: flex-start;
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: #ddf7ff;
+  color: #0079c2;
+  font-size: 11px;
+  line-height: 15px;
+  font-weight: 700;
+}
+
 .place-stop__rail {
   display: flex;
   width: 26px;

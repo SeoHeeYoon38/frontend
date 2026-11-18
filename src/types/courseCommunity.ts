@@ -1,6 +1,7 @@
 export type CommunityStage =
   | "welcome"
   | "summary"
+  | "recommendation"
   | "poll"
   | "day-picker"
   | "applied";

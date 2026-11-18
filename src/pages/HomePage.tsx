@@ -11,8 +11,7 @@ import { getMe } from "../api/auth";
 import { isApiEnabled } from "../api/config";
 import { getCourses } from "../api/courses";
 import { getTripMembers } from "../api/members";
-import blueAvatar from "../assets/images/character-blue.webp";
-import purpleAvatar from "../assets/images/character-purple.webp";
+import { profileCharacter } from "../config/profileCharacters";
 import { courseSummaryToHomeCourse } from "../api/adapters";
 import { hasAuthSession } from "../api/tokenStorage";
 import { apiTripToSummary } from "../utils/serverTrip";
@@ -88,9 +87,7 @@ function HomePage() {
         if (signal.aborted) return;
         setTripAvatars({
           tripId: featuredTripId,
-          images: members.map((member) =>
-            member.profileImageUrl?.trim() || (member.characterId === 2 ? purpleAvatar : blueAvatar),
-          ),
+          images: members.map((member) => profileCharacter(member.characterId).image),
         });
       },
       () => {

@@ -114,13 +114,6 @@ export const LoginButtons = styled.div`
   gap: 10px;
 `;
 
-export const LoginNotice = styled.p`
-  margin: 0;
-  color: #5c5c63;
-  font-size: 13px;
-  text-align: center;
-`;
-
 export const ProviderButton = styled.button`
   position: relative;
   width: 100%;
@@ -184,17 +177,10 @@ export const TermsSheet = styled.section`
   --sheet-handle-color: #d1d1d6;
 
   > h2 {
-    margin: 0;
+    margin: 0 0 28px;
     font-size: 22px;
     line-height: 30px;
     letter-spacing: -0.11px;
-  }
-
-  > p {
-    margin: 6px 0 20px;
-    color: ${tertiary};
-    font-size: 14px;
-    line-height: 20px;
   }
 
   @media (max-height: 760px) {
@@ -454,7 +440,7 @@ export const CompleteScreen = styled.main`
 export const FeatureScreen = styled.main`
   ${screenBase}
   display: grid;
-  grid-template-rows: auto minmax(160px, 1fr) auto;
+  grid-template-rows: 32px minmax(160px, 1fr) auto;
   gap: 24px;
   padding: max(44px, env(safe-area-inset-top)) 20px 164px;
 `;
@@ -467,6 +453,7 @@ export const FeatureSkip = styled.button`
 `;
 
 export const FeatureIllustration = styled.div<{ $last: boolean }>`
+  grid-row: 2;
   display: grid;
   place-items: center;
   img {

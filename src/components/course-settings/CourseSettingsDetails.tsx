@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { MemberResponse } from "../../api/types";
 import avatar from "../../assets/course-settings-details/member-avatar.png";
+import { profileCharacter } from "../../config/profileCharacters";
 import backIcon from "../../assets/icons/nav-back.svg";
 import addBadge from "../../assets/course-settings-details/member-add.svg";
 import memberIcon from "../../assets/course-settings-details/menu-invite.svg";
@@ -38,7 +39,7 @@ export function CourseSettingsDetailView({ view, onBack, onInvite, members }: De
           <p>참여자 {members?.length ?? 1}명</p>
           {members ? members.map((member) => (
             <S.MemberCard key={member.userId}>
-              <img src={member.profileImageUrl || avatar} alt="" />
+              <img src={profileCharacter(member.characterId).image} alt="" />
               <div>
                 <strong>{member.name} {member.me && <span>(나)</span>}</strong>
                 <small>{member.role === "OWNER" ? "여행 생성자" : "참여자"}</small>

@@ -72,15 +72,25 @@ export function PlaceThumbnail(props: PhotoSource & { placeholder?: ReactNode })
 export function PlaceGallery(props: PhotoSource) {
   const [index, setIndex] = useState(0);
   const [count, setCount] = useState(0);
+  const visibleDots = Math.min(5, count);
+  const firstDot = Math.min(Math.max(index - 2, 0), count - visibleDots);
   return (
     <div className="place-gallery">
       <Photo key={index} {...props} index={index} onCount={setCount} />
       {count > 1 && (
-        <div className="place-gallery__navigation">
-          <button type="button" disabled={index === 0} onClick={() => setIndex(index - 1)} aria-label="이전 사진"><img className="place-gallery__previous" src={chevronIcon} alt="" /></button>
-          <span>{index + 1} / {count}</span>
-          <button type="button" disabled={index >= count - 1} onClick={() => setIndex(index + 1)} aria-label="다음 사진"><img src={chevronIcon} alt="" /></button>
-        </div>
+        <>
+          <span className="place-gallery__count" aria-live="polite">{index + 1} / {count}</span>
+          <div className="place-gallery__navigation">
+            <button type="button" disabled={index === 0} onClick={() => setIndex(index - 1)} aria-label="이전 사진"><img className="place-gallery__previous" src={chevronIcon} alt="" /></button>
+            <button type="button" disabled={index >= count - 1} onClick={() => setIndex(index + 1)} aria-label="다음 사진"><img src={chevronIcon} alt="" /></button>
+          </div>
+          <div className="place-gallery__dots" aria-label="장소 사진">
+            {Array.from({ length: visibleDots }, (_, offset) => firstDot + offset).map((page) => (
+              <button key={page} type="button" aria-label={`${page + 1}번째 사진 보기`} aria-current={page === index ? "true" : undefined}
+                onClick={() => setIndex(page)} />
+            ))}
+          </div>
+        </>
       )}
     </div>
   );
