@@ -161,6 +161,21 @@
   font-weight: 700;
 }
 
+.course-toast--undo {
+  min-height: 48px;
+}
+
+.course-toast--undo button {
+  padding: 8px 0;
+  color: #80daf5;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.course-toast--undo button:disabled {
+  opacity: .55;
+}
+
 .course-overlay {
   position: fixed;
   z-index: 30;
@@ -1287,47 +1302,6 @@
 .travel-mode-apply {
   color: #fff !important;
   text-align: center;
-}
-
-.course-history {
-  margin: 24px 20px;
-  padding: 16px;
-  border: 1px solid #e4e6ec;
-  border-radius: 16px;
-  background: #fff;
-}
-
-.course-history summary {
-  font-size: 15px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.course-history ul {
-  display: grid;
-  gap: 12px;
-  margin: 16px 0 0;
-  padding: 0;
-  list-style: none;
-}
-
-.course-history li {
-  display: grid;
-  gap: 8px;
-  padding: 12px;
-  border-radius: 12px;
-  background: #f3f5fa;
-  color: #5c5c63;
-  font-size: 13px;
-}
-
-.course-history li button {
-  justify-self: start;
-  padding: 5px 0;
-  background: transparent;
-  color: #5b4fe8;
-  font-size: 13px;
-  font-weight: 700;
 }
 
 .course-edit-preview {
