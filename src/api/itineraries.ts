@@ -7,6 +7,7 @@ import type {
   ItineraryVersionSummary,
   ItineraryVersionView,
   ValidationResult,
+  PlaceDaySuggestion,
 } from "./types";
 
 export function generateItinerary(tripId: number, signal?: AbortSignal) {
@@ -50,6 +51,12 @@ export function getLatestItinerary(tripId: number, signal?: AbortSignal) {
     `/api/trips/${tripId}/itineraries/latest`,
     { signal },
   );
+}
+
+export function suggestPlaceDay(tripId: number, placeId: string, signal?: AbortSignal) {
+  return apiRequest<PlaceDaySuggestion>(`/api/trips/${tripId}/itineraries/add-place/suggest`, {
+    method: "POST", json: { placeId }, signal,
+  });
 }
 
 export function addPlaceToItinerary(tripId: number, placeId: string, day: number) {

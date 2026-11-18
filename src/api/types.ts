@@ -160,6 +160,13 @@ export interface ItineraryDraft {
   days: ItineraryDayInput[];
 }
 
+export interface PlaceDaySuggestion {
+  placeId: string;
+  placeName: string;
+  recommendedDay: number | null;
+  days: Array<{ day: number; date: string; visitCount: number; recommended: boolean }>;
+}
+
 export interface TravelLeg {
   mode: "WALK" | "TRANSIT" | "DRIVE";
   minutes: number;
