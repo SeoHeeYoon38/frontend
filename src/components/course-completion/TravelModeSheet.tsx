@@ -56,7 +56,7 @@ export default function TravelModeSheet({ tripId, from, to, fromCoordinate, toCo
   }, [tripId, fromCoordinate, toCoordinate, departAt]);
 
   return (
-    <TripSheet title="이동 수단 선택" variant="course" onClose={onClose} closeDisabled={saving}
+    <TripSheet title="이동 수단 선택" variant="course" courseHeight={487} onClose={onClose} closeDisabled={saving}
       footer={<Primary className="travel-mode-apply" type="button" disabled={saving} onClick={() => onApply(selected, all)}>{saving ? "저장하고 있어요" : "적용하기"}</Primary>}>
       <p className="travel-mode-description">{from} → {to}</p>
       {optionsLoading && <p className="travel-mode-status" role="status">이동 시간을 확인하고 있어요.</p>}
