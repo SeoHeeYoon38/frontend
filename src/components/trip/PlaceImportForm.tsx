@@ -119,21 +119,21 @@ function PlaceImportForm({ onImport, onSkip, busy = false, enriching = false, im
         <p><img src={googleMapsLogo} alt="" />Google 지도에 저장해 둔 여행 장소를 도틀로로 가져와 보세요.</p>
       </I.Heading>
       <I.MethodList>
-        <I.MethodCard type="button" onClick={() => setView("guide")}>
-          <I.MethodIcon $tone="blue"><img src={zipIcon} alt="" /></I.MethodIcon>
-          <I.MethodContent>
-            <strong>Takeout 파일로 가져오기</strong>
-            <p>Google에서 내려받은 ZIP 또는 CSV 파일을 올려 저장 리스트를 한 번에 가져와요.</p>
-            <I.Badges><span>ZIP · CSV</span><span>최대 20MB</span><span>저장됨(Saved)만 지원</span></I.Badges>
-          </I.MethodContent>
-          <img src={chevronIcon} alt="" />
-        </I.MethodCard>
         <I.MethodCard type="button" onClick={() => { setError(""); setDismissedImportError(importError); setView("link"); }}>
           <I.MethodIcon $tone="purple"><img src={linkIcon} alt="" /></I.MethodIcon>
           <I.MethodContent>
             <strong>공유 리스트 링크로 가져오기</strong>
             <p>Google 지도에서 공유한 리스트 링크를 붙여넣어 가져와요.</p>
             <I.Badges><b>추천</b><span>공개 리스트만 가능</span></I.Badges>
+          </I.MethodContent>
+          <img src={chevronIcon} alt="" />
+        </I.MethodCard>
+        <I.MethodCard type="button" onClick={() => setView("guide")}>
+          <I.MethodIcon $tone="blue"><img src={zipIcon} alt="" /></I.MethodIcon>
+          <I.MethodContent>
+            <strong>Takeout 파일로 가져오기</strong>
+            <p>Google에서 내려받은 ZIP 또는 CSV 파일을 올려 저장 리스트를 한 번에 가져와요.</p>
+            <I.Badges><span>ZIP · CSV</span><span>최대 20MB</span><span>저장됨(Saved)만 지원</span></I.Badges>
           </I.MethodContent>
           <img src={chevronIcon} alt="" />
         </I.MethodCard>
@@ -193,9 +193,13 @@ function PlaceImportForm({ onImport, onSkip, busy = false, enriching = false, im
             <li>링크로 볼 수 있도록 공개 설정을 켜요</li>
             <li>링크를 복사하고 도틀로에 돌아와 붙여넣어요</li>
           </ol>
+<<<<<<< HEAD
+          <I.ExternalLink href="https://www.google.com/maps" target="_blank" rel="noreferrer">Google Maps로 이동하기</I.ExternalLink>
+=======
           <I.ExternalLink href="https://www.google.com/maps/@/data=!4m2!10m1!1e1?hl=ko" target="_blank" rel="noreferrer">
             구글맵으로 이동하기
           </I.ExternalLink>
+>>>>>>> 99bbe7ecb3665f12961a0704f42c861ecdbb1527
         </I.LinkGuide>}
         <I.InfoBox><img src={linkLock} alt="" /><p>공개 리스트는 링크를 가진 누구나 볼 수 있어요. 개인적인 장소가 포함되어 있지 않은지 확인해 주세요.</p></I.InfoBox>
         {visibleError && <I.ErrorBox role="alert"><img src={uploadErrorIcon} alt="" /><p>{visibleError}</p></I.ErrorBox>}

@@ -6,6 +6,10 @@ export function courseImportEndDate(startDate: string, dayCount: number) {
 }
 
 export function courseImportUncertain(reason: unknown) {
-  return reason instanceof TypeError || (reason !== null && typeof reason === "object" &&
-    (("status" in reason && reason.status === 408) || ("code" in reason && reason.code === "IMPORT_RESULT_UNKNOWN")));
+  if (reason instanceof TypeError) return true;
+  if (reason === null || typeof reason !== "object") return false;
+  if ("code" in reason && reason.code === "IMPORT_RESULT_UNKNOWN") return true;
+
+  const status = "status" in reason ? reason.status : undefined;
+  return typeof status === "number" && (status === 408 || (status >= 500 && status < 600));
 }

@@ -243,7 +243,7 @@ function PreferencesStep({ draft, onChange, onGenerate, error }: PreferencesStep
         <div>
           <P.AiBadge><img src={promptAi} alt="" />도틀로 AI</P.AiBadge>
           <S.Title>어떤 여행을 원하세요?</S.Title>
-          <S.Subtitle>하고 싶은 여행을 편하게 말해주세요</S.Subtitle>
+          <S.Subtitle>편하게 말해주면 AI가 코스에 맞게 정리해요</S.Subtitle>
         </div>
         <P.Prompt $active={Boolean(text)} $exceeded={excess > 0}>
           <textarea

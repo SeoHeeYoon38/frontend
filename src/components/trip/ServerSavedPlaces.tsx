@@ -164,7 +164,13 @@ function ServerSavedPlaces({
     !pickedPlaceIds?.has(place.placeId) && selectedIds.includes(place.id),
   );
   const canContinue = selection.length > 0;
+  const showRecommendedShortcut = tab === "saved" && places?.length === 0 && Boolean(recommendationCity);
   const allSelected = selectablePlaces.length > 0 && selectablePlaces.every((place) => selectedIds.includes(place.id));
+
+  function openRecommended() {
+    setError("");
+    setTab("recommended");
+  }
 
   function toggleAll(checked: boolean) {
     setSelectedIds(checked ? selectablePlaces.map((place) => place.id) : []);
@@ -181,7 +187,7 @@ function ServerSavedPlaces({
           latest = response.places;
           setPlaces(latest);
         }
-        if (onPickMany && !pickedPlaceIds?.has(id)) {
+        if ((isTripCreation || onPickMany) && !pickedPlaceIds?.has(id)) {
           const saved = latest.find((place) => place.placeId === id && place.matchStatus === "MATCHED");
           if (saved) setSelectedIds((current) => current.includes(saved.id) ? current : [...current, saved.id]);
         }
@@ -222,7 +228,7 @@ function ServerSavedPlaces({
           <button type="button" aria-pressed={tab === "saved"} disabled={busy} onClick={() => { setError(""); setTab("saved"); }}>
             저장 장소
           </button>
-          <button type="button" aria-pressed={tab === "recommended"} disabled={busy} onClick={() => { setError(""); setTab("recommended"); }}>
+          <button type="button" aria-pressed={tab === "recommended"} disabled={busy} onClick={openRecommended}>
             추천 코스
           </button>
         </P.PlaceTabs>
@@ -383,7 +389,19 @@ function ServerSavedPlaces({
           {places.length === 0 && <P.MatchButton type="button" disabled={busy} aria-expanded={showImport} onClick={() => setShowImport(!showImport)}>Google Maps에서 가져오기</P.MatchButton>}
         </>
       )}
-      {onContinue && <S.Footer><S.Primary type="button" disabled={busy || !canContinue} onClick={() => onContinue(selection)}>{selection.length ? `장소 ${selection.length}곳 선택 완료` : "장소를 선택해 주세요"}</S.Primary></S.Footer>}
+      {onContinue && (
+        <S.Footer>
+          {showRecommendedShortcut ? (
+            <S.Primary type="button" disabled={busy} onClick={openRecommended}>
+              추천 코스에서 장소 고르기
+            </S.Primary>
+          ) : (
+            <S.Primary type="button" disabled={busy || !canContinue} onClick={() => onContinue(selection)}>
+              {selection.length ? `장소 ${selection.length}곳 선택 완료` : "장소를 선택해 주세요"}
+            </S.Primary>
+          )}
+        </S.Footer>
+      )}
       {onPickMany && (
         <S.Footer><S.Primary type="button" disabled={busy || !selection.length} onClick={() => onPickMany(selection)}>
           {selection.length ? `${selection.length}곳을 ${pickDay}일차에 담기` : "담을 장소를 골라주세요"}
