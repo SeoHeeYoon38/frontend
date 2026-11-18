@@ -1,13 +1,11 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router";
 import { ApiError } from "../api/client";
-import { canRevertVersion, restoredPlan, revertErrorMessage } from "../utils/itineraryRevert";
 import {
   applyItineraryEdit,
   getItineraryHistory,
   getLatestItinerary,
   requestItineraryEdit,
-  revertItinerary,
   saveItinerary,
 } from "../api/itineraries";
 import { getTripInteractions, type TripInteractions } from "../api/interactions";
@@ -131,8 +129,6 @@ function ServerTripPlan({ tripId, userId }: { tripId: number; userId: number }) 
   const [editMessage, setEditMessage] = useState("");
   const [editPreview, setEditPreview] = useState<ItineraryEditPreview>();
   const [editPending, setEditPending] = useState(false);
-  const [undoEdit, setUndoEdit] = useState<{ previousVersion: number; appliedVersion: number }>();
-  const reverting = useRef(false);
   const [actionError, setActionError] = useState("");
   const [notice, setNotice] = useState(state?.courseImported === true ? "내 일정으로 가져왔어요" : "");
   const [inviteAccepted, setInviteAccepted] = useState(state?.inviteAccepted === true);
@@ -249,13 +245,6 @@ function ServerTripPlan({ tripId, userId }: { tripId: number; userId: number }) 
     : [...movementModes].map((mode) => travelModeLabels[mode]).join(" · ");
   const shared = (data?.members.length ?? 0) > 1;
   const memberFallbacks = [avatarBlue, avatarPurple, avatarYellow];
-  const undoAvailable = undoEdit && data?.itinerary?.version === undoEdit.appliedVersion;
-
-  useEffect(() => {
-    if (!undoAvailable || editPending) return;
-    const timeout = window.setTimeout(() => setUndoEdit(undefined), 10_000);
-    return () => window.clearTimeout(timeout);
-  }, [undoAvailable, editPending]);
 
   function openCourseMap() {
     courseReturnScroll.current = window.scrollY;
@@ -372,7 +361,6 @@ function ServerTripPlan({ tripId, userId }: { tripId: number; userId: number }) 
       setShowAiEdit(false);
       setActiveDay(0);
       setNotice("");
-      setUndoEdit({ previousVersion: editPreview.baseVersion, appliedVersion: itinerary.version });
       void reloadHistory().catch(() => undefined);
     } catch (reason) {
       if (reason instanceof ApiError && reason.status === 409) {
@@ -390,37 +378,6 @@ function ServerTripPlan({ tripId, userId }: { tripId: number; userId: number }) 
         setActionError(reason instanceof Error ? reason.message : "수정안을 적용하지 못했어요.");
       }
     } finally {
-      setEditPending(false);
-    }
-  };
-
-  const revert = async (version: number) => {
-    if (editPending || reverting.current || !data?.itinerary || !canRevertVersion(version, data.itinerary.version)) return;
-    reverting.current = true;
-    setEditPending(true);
-    setActionError("");
-    setNotice("");
-    try {
-      const itinerary = await revertItinerary(tripId, version);
-      setUndoEdit(undefined);
-      interactionRequest.current += 1;
-      setData((current) => current ? restoredPlan(current, itinerary) : current);
-      setEditPreview(undefined);
-      setTravelSelection(undefined);
-      setPhotoPlace(undefined);
-      setActiveDay(0);
-      setNotice(`${version}번 일정으로 되돌렸어요.`);
-      const [historyResult, interactionsResult] = await Promise.allSettled([reloadHistory(), refreshInteractions()]);
-      if (historyResult.status === "rejected") {
-        setActionError("일정은 복원했지만 변경 이력을 다시 불러오지 못했어요.");
-      }
-      if (interactionsResult.status === "rejected") {
-        setInteractionError("일정은 복원했지만 일행 의견을 불러오지 못했어요. 장소 상세에서 다시 조회해 주세요.");
-      }
-    } catch (reason) {
-      setActionError(revertErrorMessage(reason));
-    } finally {
-      reverting.current = false;
       setEditPending(false);
     }
   };
@@ -742,12 +699,7 @@ function ServerTripPlan({ tripId, userId }: { tripId: number; userId: number }) 
             if (imported) markImportedTripRegistered(tripId);
           }}
         />}
-        {undoAvailable && <div className="course-toast course-toast--undo">
-          <img src={checkIcon} alt="" />
-          <p role="status">수정한 일정을 적용했어요</p>
-          <button type="button" disabled={editPending} onClick={() => void revert(undoEdit.previousVersion)}>되돌리기</button>
-        </div>}
-        {imported && notice && !undoAvailable && <div className="course-toast" role="status"><img src={checkIcon} alt="" /><p>{notice}</p></div>}
+        {imported && notice && <div className="course-toast" role="status"><img src={checkIcon} alt="" /><p>{notice}</p></div>}
         {confirmation && (
           <div className="course-toast" role="status">
             <img src={checkIcon} alt="" />
