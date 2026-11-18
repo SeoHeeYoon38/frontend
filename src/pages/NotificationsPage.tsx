@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
-import { getNotifications, markAllNotificationsRead, markNotificationRead } from "../api/notifications";
+import { getNotifications, markNotificationRead } from "../api/notifications";
 import { isApiEnabled } from "../api/config";
 import { hasAuthSession } from "../api/tokenStorage";
 import { serverTripPlanPath } from "../utils/navigation";
@@ -89,20 +89,6 @@ function NotificationsPage() {
     }
   };
 
-  const readAll = async () => {
-    if (saving) return;
-    setSaving(true);
-    try {
-      await markAllNotificationsRead();
-      setNotifications((current) => current.map((item) => ({ ...item, unread: false })));
-      setError("");
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "알림을 읽음 처리하지 못했어요.");
-    } finally {
-      setSaving(false);
-    }
-  };
-
   const visible = useMemo(
     () =>
       filter === "all"
@@ -119,11 +105,6 @@ function NotificationsPage() {
           <img src={back} alt=""  />
         </button>
         <h1>알림</h1>
-        {live && notifications.some((item) => item.unread) && (
-          <S.ReadAll type="button" onClick={() => { void readAll(); }} disabled={saving}>
-            모두 읽음
-          </S.ReadAll>
-        )}
       </S.Navigation>
       {error && <S.Error role="alert">{error}</S.Error>}
       {hasNotifications && (
@@ -171,16 +152,16 @@ function NotificationsPage() {
                           {item.unread && <i aria-label="읽지 않음" />}
                         </S.Meta>
                         <p>{item.message}</p>
-                        {item.invitation && (
+                        {!live && item.invitation && (
                           <S.InvitationActions>
                             {invitationState === "pending" ? (
                               <>
-                                <button type="button" onClick={() => setInvitationState("accepted")}>수락 체험</button>
-                                <button type="button" onClick={() => setInvitationState("declined")}>거절 체험</button>
+                                <button type="button" onClick={() => setInvitationState("accepted")}>참여하기</button>
+                                <button type="button" onClick={() => setInvitationState("declined")}>거절</button>
                               </>
                             ) : (
                               <span role="status">
-                                {invitationState === "accepted" ? "샘플 초대 수락을 체험했어요" : "샘플 초대 거절을 체험했어요"}
+                                {invitationState === "accepted" ? "초대 참여를 선택했어요" : "초대 거절을 선택했어요"}
                               </span>
                             )}
                           </S.InvitationActions>

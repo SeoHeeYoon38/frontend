@@ -188,7 +188,7 @@ function InviteDetails({ inviteId }: { inviteId?: string }) {
         {error && <S.DisabledNotice role="alert">{error}</S.DisabledNotice>}
         {demo && <S.DemoNotice>공유 링크에는 샘플 여행만 표시돼요.</S.DemoNotice>}
         <button type="button" disabled={accepting} onClick={() => void joinTrip()}>
-          {accepting ? "참여하고 있어요" : demo ? "공동 계획 데모 보기" : "초대 수락하기"}
+          {accepting ? "참여하고 있어요" : demo ? "공동 계획 데모 보기" : "참여하기"}
         </button>
         <S.LaterButton type="button" disabled={accepting} onClick={() => navigate(routes.home)}>나중에 볼게요</S.LaterButton>
       </S.Actions>
