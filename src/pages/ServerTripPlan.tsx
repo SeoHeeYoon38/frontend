@@ -323,7 +323,8 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
         version: data.itinerary.version,
         initialDay: activeDay + 1,
         onSaved: (itinerary) => {
-          setData((current) => current ? { ...current, itinerary } : current);
+          setData((current) => current ? { ...current, itinerary, interactions: undefined } : current);
+          setEditPreview(undefined);
           setActiveDay(0);
           setNotice("직접 편집한 일정을 저장했어요.");
           void reloadHistory().catch(() => undefined);
@@ -333,7 +334,14 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
               : current);
           }).catch(() => undefined);
         },
-        onClose: () => setEditing(false),
+        onClose: () => {
+          setEditing(false);
+          void getLatestItinerary(tripId).then((itinerary) => {
+            setData((current) => current ? { ...current, itinerary } : current);
+          }).catch(() => setActionError("최신 일정을 불러오지 못했어요. 여행 일정을 다시 열어 주세요."));
+          void reloadHistory().catch(() => undefined);
+          void refreshInteractions().catch(() => setInteractionError("일행 의견을 불러오지 못했어요."));
+        },
       }} />
     );
   }
