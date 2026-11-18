@@ -51,6 +51,19 @@ export const Navigation = styled.header`
   }
 `;
 
+export const ReadAll = styled.button`
+  margin-left: auto;
+  color: #090738 !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+`;
+
+export const Error = styled.p`
+  margin: 8px 20px;
+  color: #b42318;
+  font-size: 13px;
+`;
+
 export const Filters = styled.nav`
   display: flex;
   gap: 8px;
@@ -96,12 +109,22 @@ export const Group = styled.section`
 `;
 
 export const Item = styled.article<{ $unread: boolean }>`
+  position: relative;
   display: flex;
   align-items: flex-start;
   gap: 12px;
   min-height: 68px;
   padding: 14px 20px;
   background: ${({ $unread }) => ($unread ? "#f3f5fa" : "#fff")};
+`;
+
+export const ItemTrigger = styled.button`
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
 `;
 
 export const Icon = styled.span`

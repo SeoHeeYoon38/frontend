@@ -87,6 +87,7 @@ export const Logo = styled(Link)`
   }
 `;
 export const NotificationButton = styled(Link)`
+  position: relative;
   display: grid;
   place-items: center;
   min-width: 44px;
@@ -96,6 +97,15 @@ export const NotificationButton = styled(Link)`
     width: 28px;
     height: 28px;
   }
+`;
+export const UnreadDot = styled.span`
+  position: absolute;
+  top: 8px;
+  right: 7px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #14d9f4;
 `;
 export const CourseHeader = styled.header`
   display: flex;
