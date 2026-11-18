@@ -1,5 +1,5 @@
 import { apiRequest, queryString } from "./client";
-import type { CourseDetailResponse, CourseSummaryResponse } from "./types";
+import type { CourseDetailResponse, CourseSummaryResponse, ItineraryVersionView } from "./types";
 
 export function getCourses(city?: string, signal?: AbortSignal) {
   return apiRequest<CourseSummaryResponse[]>(
@@ -34,7 +34,7 @@ export function unbookmarkCourse(courseId: number, signal?: AbortSignal) {
 }
 
 export function importCourse(courseId: number, startDate: string) {
-  return apiRequest<{ tripId: number }>(`/api/courses/${courseId}/import`, {
+  return apiRequest<{ tripId: number; itinerary: ItineraryVersionView }>(`/api/courses/${courseId}/import`, {
     method: "POST",
     json: { startDate },
     timeoutMs: 180_000,

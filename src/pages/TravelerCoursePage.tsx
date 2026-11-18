@@ -28,7 +28,8 @@ import CourseRouteMap from "../components/course-completion/CourseRouteMap";
 import DateRangePicker from "../components/trip/DateRangePicker";
 import * as ImportedSheet from "./ImportedTripPage.styled";
 import closeIcon from "../assets/icons/action-close.svg";
-import { addDays } from "../utils/trip";
+import { courseImportEndDate, courseImportUncertain } from "../utils/courseImport";
+import { ApiError } from "../api/client";
 
 const categoryLabels: Record<PlaceCategoryCode, string> = {
   FOOD: "맛집",
@@ -87,6 +88,7 @@ function TravelerCoursePage() {
     apiEnabled ? undefined : travelerCourse,
   );
   const [serverCoverImageUrl, setServerCoverImageUrl] = useState<string>();
+  const [courseDayCount, setCourseDayCount] = useState(0);
   const [loadError, setLoadError] = useState(() => apiEnabled && !liveCourseId ? "코스 주소를 확인해 주세요." : "");
   const [activeDay, setActiveDay] = useState(0);
   const [mapDay, setMapDay] = useState<number>();
@@ -99,6 +101,7 @@ function TravelerCoursePage() {
   const [importStartDate, setImportStartDate] = useState("");
   const [importPending, setImportPending] = useState(false);
   const [importError, setImportError] = useState("");
+  const [importUncertain, setImportUncertain] = useState(false);
   const importing = useRef(false);
 
   useEffect(() => {
@@ -108,6 +111,7 @@ function TravelerCoursePage() {
       (response) => {
         if (controller.signal.aborted) return;
         setCourse(courseView(response));
+        setCourseDayCount(response.dayCount);
         setServerCoverImageUrl(response.coverImageUrl || undefined);
         setActiveDay(0);
         setLoadError("");
@@ -156,8 +160,10 @@ function TravelerCoursePage() {
 
   const importCourse = () => {
     if (liveCourseId) {
-      setImportStartDate("");
-      setImportError("");
+      if (!importUncertain) {
+        setImportStartDate("");
+        setImportError("");
+      }
       setDateSheetOpen(true);
     } else {
       const trip = createImportedTrip(crypto.randomUUID());
@@ -170,18 +176,26 @@ function TravelerCoursePage() {
   };
 
   const submitImport = async () => {
-    if (!liveCourseId || !importStartDate || importing.current) return;
+    if (!liveCourseId || !courseImportEndDate(importStartDate, courseDayCount) || importing.current || importUncertain) return;
     importing.current = true;
     setImportPending(true);
     setImportError("");
     try {
       const result = await importApiCourse(liveCourseId, importStartDate);
+      if (!Number.isSafeInteger(result.tripId) || result.tripId <= 0) {
+        throw new ApiError(502, "IMPORT_RESULT_UNKNOWN", "생성한 여행 주소를 확인하지 못했어요.");
+      }
       navigate(serverTripPlanPath("my-trips", String(result.tripId)), {
         replace: true,
         state: { courseImported: true, importedCoverImageUrl: serverCoverImageUrl },
       });
     } catch (reason) {
-      setImportError(reason instanceof Error ? reason.message : "코스를 가져오지 못했어요. 다시 시도해 주세요.");
+      if (courseImportUncertain(reason)) {
+        setImportUncertain(true);
+        setImportError("가져오기 완료 여부를 확인하지 못했어요. 중복 생성을 피하려면 마이트립에서 생성된 여행을 먼저 확인해 주세요.");
+      } else {
+        setImportError(reason instanceof Error ? reason.message : "코스를 가져오지 못했어요. 다시 시도해 주세요.");
+      }
     } finally {
       importing.current = false;
       setImportPending(false);
@@ -309,13 +323,14 @@ function TravelerCoursePage() {
             <h2 id="course-import-date-title">언제 떠나세요?</h2>
             <p>코스 기간({course.duration})에 맞춰 날짜를 골라주세요</p>
           </div><button type="button" aria-label="닫기" disabled={importPending} onClick={() => setDateSheetOpen(false)}><img src={closeIcon} alt="" /></button></ImportedSheet.SheetHeader>
-          <DateRangePicker
+          <div inert={importPending} aria-busy={importPending}><DateRangePicker
             start={importStartDate}
-            end={importStartDate ? addDays(importStartDate, course.days.length - 1) : ""}
-            onChange={(startDate) => { setImportStartDate(startDate); setImportError(""); }}
-          />
+            end={courseImportEndDate(importStartDate, courseDayCount)}
+            onChange={(startDate) => { if (!importing.current) { setImportStartDate(startDate); if (!importUncertain) setImportError(""); } }}
+          /></div>
           {importError && <p role="alert">{importError}</p>}
-          <ImportedSheet.PrimaryButton type="button" disabled={!importStartDate || importPending} onClick={() => void submitImport()}>
+          {importUncertain && <button type="button" onClick={() => navigate(routes.myTrips)}>마이트립에서 확인</button>}
+          <ImportedSheet.PrimaryButton type="button" disabled={!courseImportEndDate(importStartDate, courseDayCount) || importPending || importUncertain} onClick={() => void submitImport()}>
             {importPending ? "코스를 가져오고 있어요" : "선택 완료"}
           </ImportedSheet.PrimaryButton>
         </ImportedSheet.Sheet>
