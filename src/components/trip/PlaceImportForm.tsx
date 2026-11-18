@@ -188,12 +188,18 @@ function PlaceImportForm({ onImport, onSkip, busy = false, enriching = false, im
         {!busy && <I.LinkGuide>
           <strong>리스트를 공개로 설정하는 방법</strong>
           <ol>
-            <li>Google 지도 앱에서 [저장됨] 탭을 열어요</li>
+            <li>지도 홈이 열리면 [나] 또는 [저장됨]을 눌러요</li>
             <li>가져올 리스트를 열고 [공유]를 눌러요</li>
             <li>링크로 볼 수 있도록 공개 설정을 켜요</li>
-            <li>링크를 복사해 여기에 붙여넣어요</li>
+            <li>링크를 복사하고 도틀로에 돌아와 붙여넣어요</li>
           </ol>
+<<<<<<< HEAD
           <I.ExternalLink href="https://www.google.com/maps" target="_blank" rel="noreferrer">Google Maps로 이동하기</I.ExternalLink>
+=======
+          <I.ExternalLink href="https://www.google.com/maps/@/data=!4m2!10m1!1e1?hl=ko" target="_blank" rel="noreferrer">
+            구글맵으로 이동하기
+          </I.ExternalLink>
+>>>>>>> 99bbe7ecb3665f12961a0704f42c861ecdbb1527
         </I.LinkGuide>}
         <I.InfoBox><img src={linkLock} alt="" /><p>공개 리스트는 링크를 가진 누구나 볼 수 있어요. 개인적인 장소가 포함되어 있지 않은지 확인해 주세요.</p></I.InfoBox>
         {visibleError && <I.ErrorBox role="alert"><img src={uploadErrorIcon} alt="" /><p>{visibleError}</p></I.ErrorBox>}
