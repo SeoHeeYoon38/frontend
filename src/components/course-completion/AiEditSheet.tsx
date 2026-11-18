@@ -42,9 +42,14 @@ function AiEditSheet({ value, onChange, onClose, onSubmit, error = "", pending =
         />
         <h3>자주 하는 요청</h3>
         <div className="ai-edit-sheet__chips">
-          {commonRequests.map((request) => (
-            <button type="button" disabled={pending} onClick={() => onChange(request)} key={request}>{request}</button>
-          ))}
+          {commonRequests.map((request) => {
+            const separator = value && !/\s$/.test(value) ? " " : "";
+            const nextValue = `${value}${separator}${request}`;
+
+            return (
+              <button type="button" disabled={pending || nextValue.length > 500} onClick={() => onChange(nextValue)} key={request}>{request}</button>
+            );
+          })}
         </div>
         {error && <p className="ai-edit-sheet__error" role="alert">{error}</p>}
         <button className="course-sheet__primary" type="button" onClick={onSubmit} disabled={!value.trim() || pending}>
