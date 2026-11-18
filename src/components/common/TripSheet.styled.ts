@@ -61,20 +61,21 @@ export const Grabber = styled.div`
 export const SheetHeader = styled.div<{
   $course: boolean;
   $compact: boolean;
+  $tripInfo: boolean;
   $basic?: "people" | "dates";
 }>`
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: ${({ $course, $compact, $basic }) => ($course ? "34px 0 10px" : $compact ? "44px 0 8px" : $basic === "people" ? "36px 0 20px" : "44px 0 24px")};
+  padding: ${({ $course, $compact, $basic, $tripInfo }) => ($course ? "34px 0 10px" : $tripInfo ? "30px 0 16px" : $compact ? "44px 0 8px" : $basic === "people" ? "36px 0 20px" : "44px 0 24px")};
   position: sticky;
   top: 0;
   z-index: 2;
   background: white;
   h2 {
     margin: 0;
-    font-size: ${({ $course, $basic }) => ($course ? "22px" : $basic ? "26px" : "24px")};
+    font-size: ${({ $course, $basic, $tripInfo }) => ($course || $tripInfo ? "22px" : $basic ? "26px" : "24px")};
     line-height: 1.4;
   }
   button {

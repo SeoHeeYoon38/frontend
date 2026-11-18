@@ -1,18 +1,25 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { checkNickname, getMe, updateMyProfile } from "../api/auth";
 import { isApiEnabled } from "../api/config";
+import { ApiError } from "../api/client";
 import { hasAuthSession } from "../api/tokenStorage";
-import cameraIcon from "../assets/course-settings/camera.svg";
+import avatarBackground from "../assets/figma/my-profile-avatar-bg.svg";
+import googleIcon from "../assets/onboarding/google.svg";
+import clearIcon from "../assets/figma/my-profile-clear.svg";
+import validIcon from "../assets/figma/my-profile-valid.svg";
+import invalidIcon from "../assets/figma/my-profile-invalid.svg";
 import backIcon from "../assets/icons/nav-back.svg";
 import { profileCharacter } from "../config/profileCharacters";
 import ProfileCharacterSheet from "../components/common/ProfileCharacterSheet";
+import SettingsConfirmDialog from "../components/common/SettingsConfirmDialog";
 import { routes } from "../config/routes";
 import {
   readProfileSettings,
   profileAvatarId,
   saveProfileSettings,
   validateNickname,
+  validateNicknameFormat,
   type ProfileAvatar,
 } from "../utils/mySettings";
 import * as S from "./ProfileEditPage.styled";
@@ -20,9 +27,10 @@ import * as S from "./ProfileEditPage.styled";
 function ProfileEditPage() {
   const navigate = useNavigate();
   const liveProfile = isApiEnabled() && hasAuthSession();
-  const [initialProfile, setInitialProfile] = useState(() =>
-    readProfileSettings(window.localStorage),
-  );
+  const [initialProfile, setInitialProfile] = useState(() => {
+    const stored = readProfileSettings(window.localStorage);
+    return liveProfile ? { ...stored, nickname: "", email: "", introduction: "" } : stored;
+  });
   const [nickname, setNickname] = useState(initialProfile.nickname);
   const [introduction, setIntroduction] = useState(initialProfile.introduction);
   const [avatar, setAvatar] = useState<ProfileAvatar>(initialProfile.avatar);
@@ -31,6 +39,12 @@ function ProfileEditPage() {
   const [loading, setLoading] = useState(liveProfile);
   const [saving, setSaving] = useState(false);
   const [serverError, setServerError] = useState("");
+  const [checkedNickname, setCheckedNickname] = useState<{ text: string; state: "available" | "taken" | "error" }>();
+  const pendingSave = useRef(false);
+  const nicknameText = nickname.trim();
+  const nicknameChanged = nicknameText !== initialProfile.nickname;
+  const format = nicknameChanged ? validateNicknameFormat(nicknameText) : { valid: true, tone: "default" as const, message: "" };
+  const needsNicknameCheck = liveProfile && !loading && format.valid && nicknameChanged;
 
   useEffect(() => {
     if (!liveProfile) return;
@@ -65,17 +79,45 @@ function ProfileEditPage() {
     return () => controller.abort();
   }, [initialProfile.travelPreferences, liveProfile]);
 
-  const validation = useMemo(
-    () => validateNickname(nickname, initialProfile.nickname),
-    [initialProfile.nickname, nickname],
-  );
+  useEffect(() => {
+    if (!needsNicknameCheck) return;
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => {
+      void checkNickname(nicknameText, controller.signal).then(
+        (result) => {
+          if (!controller.signal.aborted) {
+            setCheckedNickname({ text: nicknameText, state: result.available ? "available" : "taken" });
+          }
+        },
+        () => {
+          if (!controller.signal.aborted) setCheckedNickname({ text: nicknameText, state: "error" });
+        },
+      );
+    }, 350);
+    return () => { window.clearTimeout(timer); controller.abort(); };
+  }, [needsNicknameCheck, nicknameText]);
+
+  const checked = checkedNickname?.text === nicknameText ? checkedNickname.state : undefined;
+  const validation = !liveProfile ? validateNickname(nickname, initialProfile.nickname)
+    : !needsNicknameCheck ? format
+    : checked === "available" ? format
+    : checked === "taken" ? { valid: false, tone: "error" as const, message: "이미 다른 사람이 쓰고 있는 닉네임이에요" }
+    : checked === "error" ? { valid: false, tone: "error" as const, message: "닉네임을 확인하지 못했어요. 다시 입력해 주세요" }
+    : { valid: false, tone: "default" as const, message: "닉네임을 확인하고 있어요" };
   const dirty =
     nickname !== initialProfile.nickname ||
     introduction !== initialProfile.introduction ||
     avatar !== initialProfile.avatar;
   const canSave =
-    dirty && validation.valid && introduction.length <= 30 && !loading && !saving;
+    dirty && validation.valid && introduction.length <= 30 && !loading && !saving && Boolean(nicknameText);
   const avatarImage = profileCharacter(avatar).image;
+  const introductionAtLimit = introduction.length >= 30;
+
+  function changeNickname(value: string) {
+    setNickname(value);
+    if (value.trim() !== nicknameText) setCheckedNickname(undefined);
+    setServerError("");
+  }
 
   const requestBack = () => {
     if (dirty) setShowLeaveDialog(true);
@@ -83,7 +125,7 @@ function ProfileEditPage() {
   };
 
   const save = async () => {
-    if (!canSave) return;
+    if (!canSave || pendingSave.current) return;
     setServerError("");
     let profile = {
       ...initialProfile,
@@ -93,15 +135,9 @@ function ProfileEditPage() {
     };
 
     if (liveProfile) {
+      pendingSave.current = true;
       setSaving(true);
       try {
-        if (profile.nickname !== initialProfile.nickname) {
-          const nicknameCheck = await checkNickname(profile.nickname);
-          if (!nicknameCheck.available) {
-            setServerError("이미 사용 중인 닉네임이에요.");
-            return;
-          }
-        }
         const user = await updateMyProfile({
           nickname: profile.nickname,
           bio: profile.introduction || null,
@@ -115,15 +151,16 @@ function ProfileEditPage() {
           avatar: profileAvatarId(user.characterId),
         };
       } catch (reason) {
-        setServerError(
-          reason instanceof Error
-            ? reason.message
-            : "프로필을 저장하지 못했어요. 다시 시도해 주세요.",
-        );
-        setSaving(false);
+        if (reason instanceof ApiError && reason.code === "NICKNAME_TAKEN") {
+          setCheckedNickname({ text: nicknameText, state: "taken" });
+        } else {
+          setServerError(reason instanceof Error ? reason.message : "프로필을 저장하지 못했어요. 다시 시도해 주세요.");
+        }
         return;
+      } finally {
+        pendingSave.current = false;
+        setSaving(false);
       }
-      setSaving(false);
     }
 
     saveProfileSettings(window.localStorage, profile);
@@ -142,25 +179,36 @@ function ProfileEditPage() {
       <S.Body>
         <S.AvatarButton
           type="button"
-          aria-label="프로필 사진 변경"
+          aria-label="프로필 캐릭터 변경"
+          disabled={loading || saving}
           onClick={() => setShowPhotoSheet(true)}
         >
-          <img src={avatarImage} alt="" />
-          <span><img src={cameraIcon} alt="" /></span>
+          <img className="profile-avatar-background" src={avatarBackground} alt="" />
+          <img className="profile-avatar-character" src={avatarImage} alt="" />
         </S.AvatarButton>
 
         <S.Field $tone={validation.tone}>
           <label htmlFor="profile-nickname">닉네임</label>
-          <S.InputWrap>
+          <S.InputWrap $tone={validation.tone}>
             <input
               id="profile-nickname"
               value={nickname}
               maxLength={12}
-              onChange={(event) => setNickname(event.target.value)}
+              disabled={loading || saving}
+              aria-invalid={validation.tone === "error"}
+              aria-describedby="profile-nickname-status"
+              onChange={(event) => changeNickname(event.target.value)}
             />
+            {nicknameChanged && nickname && !loading && (
+              <button type="button" aria-label="닉네임 지우기" disabled={saving} onClick={() => changeNickname("")}>
+                <img src={clearIcon} alt="" />
+              </button>
+            )}
             <span>{nickname.length}/12</span>
           </S.InputWrap>
-          <small>
+          <small id="profile-nickname-status" aria-live="polite">
+            {validation.tone === "success" && <img src={validIcon} alt="" />}
+            {validation.tone === "error" && <img src={invalidIcon} alt="" />}
             {validation.message || "동행자의 채팅방에 이 이름으로 보여요"}
           </small>
         </S.Field>
@@ -169,22 +217,25 @@ function ProfileEditPage() {
           <label htmlFor="profile-email">이메일</label>
           <S.DisabledInput>
             <input id="profile-email" value={initialProfile.email} readOnly />
-            <span>{liveProfile ? "Google 계정" : "데모 프로필"}</span>
+            <span>{liveProfile ? <><img src={googleIcon} alt="" />Google 연동</> : "데모 프로필"}</span>
           </S.DisabledInput>
           <small>로그인 계정의 이메일이라 여기서는 바꿀 수 없어요</small>
         </S.Field>
 
-        <S.Field>
+        <S.Field $tone={introductionAtLimit ? "error" : "default"}>
           <label htmlFor="profile-introduction">한 줄 소개</label>
-          <S.InputWrap>
+          <S.InputWrap $tone={introductionAtLimit ? "error" : "default"}>
             <input
               id="profile-introduction"
               value={introduction}
               maxLength={30}
+              disabled={loading || saving}
+              aria-describedby={introductionAtLimit ? "profile-introduction-limit" : undefined}
               onChange={(event) => setIntroduction(event.target.value)}
             />
             <span>{introduction.length}/30</span>
           </S.InputWrap>
+          {introductionAtLimit && <small id="profile-introduction-limit">30자까지 쓸 수 있어요</small>}
         </S.Field>
         {serverError && <S.ErrorNotice role="alert">{serverError}</S.ErrorNotice>}
       </S.Body>
@@ -196,22 +247,17 @@ function ProfileEditPage() {
       </S.Cta>
 
       {showPhotoSheet && (
-        <ProfileCharacterSheet current={avatar} title="프로필 사진 변경"
+        <ProfileCharacterSheet current={avatar} title="프로필 사진 변경" confirmLabel="이 캐릭터로 변경"
           onClose={() => setShowPhotoSheet(false)}
           onApply={(value) => { setAvatar(value); setShowPhotoSheet(false); }} />
       )}
 
       {showLeaveDialog && (
-        <S.Overlay role="presentation">
-          <S.Dialog role="alertdialog" aria-modal="true">
-            <strong>저장하지 않고 나갈까요?</strong>
-            <p>수정한 프로필 정보가 저장되지 않아요</p>
-            <div>
-              <button type="button" onClick={() => setShowLeaveDialog(false)}>계속 수정</button>
-              <button type="button" data-danger onClick={() => navigate(routes.my)}>나가기</button>
-            </div>
-          </S.Dialog>
-        </S.Overlay>
+        <SettingsConfirmDialog title={<>수정한 내용을<br />저장하지 않고 나갈까요?</>}
+          description={nicknameChanged ? "나가면 바꾼 닉네임이 사라져요" : "나가면 수정한 내용이 사라져요"}
+          cancelLabel="나가기" confirmLabel="계속 수정"
+          onCancel={() => navigate(routes.my)} onConfirm={() => setShowLeaveDialog(false)}
+          onDismiss={() => setShowLeaveDialog(false)} />
       )}
     </S.Page>
   );

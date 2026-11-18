@@ -82,6 +82,7 @@ function TravelerCoursePage() {
   const navigate = useNavigate();
   const location = useLocation();
   const catalogSearch: unknown = location.state?.courseCatalogSearch;
+  const settingsSearch: unknown = location.state?.courseSettingsSearch;
   const { courseId } = useParams();
   const apiEnabled = isApiEnabled();
   const liveCourseId = courseId && /^\d+$/.test(courseId) && apiEnabled
@@ -243,8 +244,9 @@ function TravelerCoursePage() {
       <S.Hero>
         {course.hero && <img src={course.hero} alt={course.title.replace("\n", " ")} />}
         <S.Navigation aria-label="여행자 코스 탐색">
-          <button type="button" aria-label="코스 목록으로 돌아가기" onClick={() => navigate({
-            pathname: routes.courses, search: typeof catalogSearch === "string" ? catalogSearch : "",
+          <button type="button" aria-label={typeof settingsSearch === "string" ? "코스 설정으로 돌아가기" : "코스 목록으로 돌아가기"} onClick={() => navigate({
+            pathname: typeof settingsSearch === "string" ? routes.tripSettings : routes.courses,
+            search: typeof settingsSearch === "string" ? settingsSearch : typeof catalogSearch === "string" ? catalogSearch : "",
           })}>
             <img src={backIcon} alt="" />
           </button>

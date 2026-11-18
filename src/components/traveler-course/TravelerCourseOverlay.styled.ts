@@ -53,32 +53,33 @@ export const MapHeader = styled.header`
 
 export const MapTabs = styled.div`
   display: flex;
-  gap: 8px;
-  margin-top: 8px;
+  gap: 20px;
+  border-bottom: 1px solid #e4e6ec;
   overflow-x: auto;
   scrollbar-width: none;
 
   button {
-    display: grid;
-    place-items: center;
+    display: flex;
+    align-items: center;
+    gap: 5px;
     width: auto;
     flex-shrink: 0;
-    min-width: 54px;
-    height: 34px;
-    padding: 0 15px;
-    border: 1px solid #e4e6ec;
-    border-radius: 17px;
-    background: #fff;
-    color: #5c5c63;
-    font-size: 13px;
+    min-height: 45px;
+    padding: 0 0 1px;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    background: transparent;
+    color: #8a8a8e;
+    font-size: 15px;
+    white-space: nowrap;
   }
 
   button[aria-pressed="true"] {
-    border-color: #090738;
-    background: #090738;
-    color: #fff;
+    border-bottom-color: #1a1a1a;
+    color: #1a1a1a;
     font-weight: 700;
   }
+  button small { color: #8a8a8e; font-size: 12px; font-weight: 400; }
 `;
 
 export const MapCanvas = styled.div<{ $selected: boolean }>`

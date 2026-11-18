@@ -17,7 +17,6 @@ import checkIcon from "../assets/onboarding/check.svg";
 import clearIcon from "../assets/onboarding/clear.svg";
 import googleIcon from "../assets/onboarding/google.svg";
 import profileRing from "../assets/onboarding/profile-ring.svg";
-import camera from "../assets/onboarding/camera.svg";
 import introOne from "../assets/onboarding/intro-1.png";
 import introTwo from "../assets/onboarding/intro-2.png";
 import introThree from "../assets/onboarding/intro-3.png";
@@ -280,12 +279,9 @@ function OnboardingPage() {
         <S.FlowBody>
           <S.Progress aria-label="온보딩 1단계"><i /><i /></S.Progress>
           <h1>어떻게 불러드릴까요?</h1>
-          <S.Avatar>
+          <S.Avatar type="button" aria-label="프로필 캐릭터 선택" disabled={savingProfile} onClick={() => setShowCharacterSheet(true)}>
             <img className="ring" src={profileRing} alt="" />
-            <img className="photo" src={profileCharacter(avatar).image} alt="프로필 캐릭터" />
-            <button type="button" aria-label="프로필 사진 선택" disabled={savingProfile} onClick={() => setShowCharacterSheet(true)}>
-              <img src={camera} alt="" />
-            </button>
+            <img className="photo" src={profileCharacter(avatar).image} alt="" />
           </S.Avatar>
           <S.FieldLabel htmlFor="onboarding-nickname">닉네임</S.FieldLabel>
           <S.NicknameField $valid={!nicknameInvalid}>

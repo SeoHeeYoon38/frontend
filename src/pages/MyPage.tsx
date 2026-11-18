@@ -10,13 +10,14 @@ import noticeIcon from "../assets/figma/my-flag.svg";
 import faqIcon from "../assets/figma/my-search.svg";
 import feedbackIcon from "../assets/figma/my-pen.svg";
 import { profileCharacter } from "../config/profileCharacters";
-import googleMapsLogo from "../assets/images/brand-google-maps.webp";
+import googleMapsLogo from "../assets/figma/course-map-google.png";
 import checkIcon from "../assets/icons/status-selected-check.svg";
 import { getMe, getMyStats } from "../api/auth";
 import { isApiEnabled } from "../api/config";
 import { hasAuthSession } from "../api/tokenStorage";
 import { routes } from "../config/routes";
 import { myProfile } from "../data/mocks/myData";
+import useImportedGooglePlaces from "../hooks/useImportedGooglePlaces";
 import {
   countEnabledNotifications,
   profileAvatarId,
@@ -28,6 +29,7 @@ import * as S from "./MyPage.styled";
 function MyPage() {
   const location = useLocation();
   const liveProfile = isApiEnabled() && hasAuthSession();
+  const imported = useImportedGooglePlaces();
   const [profile, setProfile] = useState(() => {
     const stored = readProfileSettings(window.localStorage);
     return liveProfile
@@ -128,11 +130,11 @@ function MyPage() {
           <img src={googleMapsLogo} alt="Google Maps" />
         </S.GoogleLogo>
         <span>
-          <strong>Google Maps 장소 가져오기</strong>
-          <small>Takeout 파일 또는 공개 목록 링크</small>
+          <strong>{imported.count ? "Google Maps 저장 장소" : "Google Maps 장소 가져오기"}</strong>
+          <small>{imported.count ? "저장 장소 " + imported.count + "곳을 불러왔어요" : "공개 목록 링크 또는 Takeout 파일"}</small>
         </span>
         <b>
-          가져오기 안내
+          {imported.count ? "관리" : "가져오기"}
         </b>
       </S.GoogleLink>
 

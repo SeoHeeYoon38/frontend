@@ -8,7 +8,7 @@ interface TripSheetProps {
   footer?: ReactNode;
   minHeight?: number;
   courseHeight?: number;
-  variant?: "default" | "course" | "people" | "dates";
+  variant?: "default" | "course" | "people" | "dates" | "trip-info";
   contentGap?: number;
   compactHeader?: boolean;
   closeDisabled?: boolean;
@@ -43,14 +43,15 @@ function TripSheet({
       ref={ref}
       aria-labelledby={id}
       onCancel={(event) => {
-        if (closeDisabled) event.preventDefault();
-        else onClose();
+        event.preventDefault();
+        if (!closeDisabled) onClose();
       }}
     >
       <S.Grabber />
       <S.SheetHeader
         $course={variant === "course"}
         $compact={compactHeader}
+        $tripInfo={variant === "trip-info"}
         $basic={
           variant === "people" || variant === "dates" ? variant : undefined
         }

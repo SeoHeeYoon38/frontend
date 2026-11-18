@@ -326,33 +326,18 @@ export const Progress = styled.div<{ $complete?: boolean }>`
   i:last-child { background: ${({ $complete }) => ($complete ? "#00e1ff" : "#e4e6ec")}; }
 `;
 
-export const Avatar = styled.div`
+export const Avatar = styled.button`
   position: relative;
+  display: block;
   width: 96px;
   height: 96px;
-  margin: 52px auto 32px;
+  && { margin: 52px auto 32px; }
 
   .ring { position: absolute; inset: 0; width: 96px; height: 96px; }
   .photo { position: absolute; top: 8px; left: 8px; width: 80px; height: 80px; border-radius: 50%; object-fit: cover; }
 
-  button {
-    position: absolute;
-    right: 0;
-    bottom: 0;
-    width: 30px;
-    height: 30px;
-    display: grid;
-    place-items: center;
-    border: 1px solid #e4e6ec;
-    border-radius: 50%;
-    background: #ffffff;
-  }
-
-  button img { width: 16px; height: 16px; }
-
   @media (max-height: 760px) {
-    margin-top: 24px;
-    margin-bottom: 20px;
+    && { margin-top: 24px; margin-bottom: 20px; }
   }
 `;
 

@@ -3,7 +3,7 @@ import { importLibrary, setOptions } from "@googlemaps/js-api-loader";
 import googleIcon from "../../assets/figma/course-map-google.png";
 import locateIcon from "../../assets/figma/course-map-locate.svg";
 import { googleMapsBrowserKey } from "../../api/config";
-import { courseMapViewport, googleMapsEmbedUrl, googleMapsViewUrl, isMapCoordinate } from "../../utils/googleMaps";
+import { courseMapViewport, googleMapsDirectionsUrl, googleMapsEmbedUrl, googleMapsViewUrl, isMapCoordinate } from "../../utils/googleMaps";
 import type { RouteMapPlace } from "./CourseRouteMap";
 
 const authFailureListeners = new Set<() => void>();
@@ -40,7 +40,10 @@ export default function GoogleCourseMap({ places, label, interactive, selectedId
   const [embedRevision, setEmbedRevision] = useState(0);
   const located = useMemo(() => places.filter(isMapCoordinate), [places]);
   const viewport = useMemo(() => courseMapViewport(located, size.width, size.height), [located, size]);
-  const useSdk = interactive && Boolean(googleMapsBrowserKey) && !sdkFailed;
+  const directionsUrl = new Set(located.map((place) => place.group)).size === 1
+    ? googleMapsDirectionsUrl(located)
+    : undefined;
+  const useSdk = Boolean(googleMapsBrowserKey) && !sdkFailed;
   const hasCoordinates = Boolean(viewport);
 
   useEffect(() => {
@@ -69,7 +72,8 @@ export default function GoogleCourseMap({ places, label, interactive, selectedId
       const map = new Map(element, {
         disableDefaultUI: true,
         clickableIcons: false,
-        gestureHandling: "greedy",
+        gestureHandling: interactive ? "greedy" : "none",
+        keyboardShortcuts: interactive,
       });
       setSdk({ map, Polyline, Marker });
     }).catch(failed);
@@ -77,7 +81,7 @@ export default function GoogleCourseMap({ places, label, interactive, selectedId
       active = false;
       authFailureListeners.delete(failed);
     };
-  }, [useSdk, hasCoordinates]);
+  }, [useSdk, hasCoordinates, interactive]);
 
   useEffect(() => {
     if (!sdk || !viewport) return;
@@ -98,11 +102,11 @@ export default function GoogleCourseMap({ places, label, interactive, selectedId
         map: sdk.map,
         position,
         title: place.name,
-        label: { text: String(place.order ?? index + 1), color: selected ? "#fff" : "#090738", fontWeight: "700" },
+          label: { text: String(place.order ?? index + 1), color: "#fff", fontWeight: "700" },
         icon: {
           path: google.maps.SymbolPath.CIRCLE,
           scale: selected ? 16 : 12,
-          fillColor: selected ? "#090738" : "#00e1ff",
+          fillColor: selected ? "#090738" : "#80daf5",
           fillOpacity: 1,
           strokeColor: "#fff",
           strokeWeight: 2,
@@ -112,7 +116,7 @@ export default function GoogleCourseMap({ places, label, interactive, selectedId
       return { marker, listener };
     });
     const routes = [...paths.values()].filter((path) => path.length > 1).map((path) => new sdk.Polyline({
-      map: sdk.map, path, strokeColor: "#00c6df", strokeWeight: 3, strokeOpacity: 0.85,
+      map: sdk.map, path, strokeColor: "#80daf5", strokeWeight: 4, strokeOpacity: 0.9,
     }));
     return () => {
       markers.forEach(({ marker, listener }) => { listener?.remove(); marker.setMap(null); });
@@ -135,7 +139,7 @@ export default function GoogleCourseMap({ places, label, interactive, selectedId
             referrerPolicy="strict-origin-when-cross-origin"
           />}
         {interactive && <div className="course-map__controls">
-          <a href={googleMapsViewUrl(viewport)} target="_blank" rel="noopener noreferrer"><img src={googleIcon} alt="" />구글맵으로 보기</a>
+          <a href={directionsUrl ?? googleMapsViewUrl(viewport)} target="_blank" rel="noopener noreferrer"><img src={googleIcon} alt="" />구글맵으로 보기</a>
           <button type="button" aria-label="코스 지도 중심으로" onClick={() => {
             if (sdk && useSdk) {
               sdk.map.setCenter({ lat: viewport.latitude, lng: viewport.longitude });

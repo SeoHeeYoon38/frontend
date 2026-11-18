@@ -54,45 +54,26 @@ export const Body = styled.main`
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 12px 20px 140px;
+  padding: 30px 20px 140px;
 `;
 
 export const AvatarButton = styled.button`
   position: relative;
   align-self: center;
   width: 96px;
-  height: 112px;
+  height: 96px;
+  margin-bottom: 16px;
   display: grid;
   place-items: center;
-  padding-bottom: 16px !important;
+  .profile-avatar-background { position: absolute; inset: 0; }
 
-  > img {
+  .profile-avatar-character {
+    position: relative;
     width: 77px;
     height: 77px;
-    padding: 7px;
-    border-radius: 50%;
     object-fit: contain;
-    background: #ddf9fd;
   }
 
-  span {
-    position: absolute;
-    right: -2px;
-    bottom: 14px;
-    width: 32px;
-    height: 32px;
-    display: grid;
-    place-items: center;
-    border: 2px solid #ffffff;
-    border-radius: 50%;
-    background: #090738;
-  }
-
-  span img {
-    width: 16px;
-    height: 16px;
-    filter: brightness(0) invert(1);
-  }
 `;
 
 export const Field = styled.div<{ $tone?: "default" | "success" | "error" }>`
@@ -108,11 +89,15 @@ export const Field = styled.div<{ $tone?: "default" | "success" | "error" }>`
   }
 
   small {
+    display: flex;
+    align-items: center;
+    gap: 5px;
     color: ${({ $tone }) =>
       $tone === "error" ? "#e5484d" : $tone === "success" ? "#0079c2" : "#8a8a8e"};
     font-size: 12px;
     line-height: 17px;
   }
+  small > img { flex: none; }
 `;
 
 export const ErrorNotice = styled.p`
@@ -123,18 +108,18 @@ export const ErrorNotice = styled.p`
   text-align: center;
 `;
 
-export const InputWrap = styled.div`
+export const InputWrap = styled.div<{ $tone?: "default" | "success" | "error" }>`
   height: 50px;
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 0 12px 0 16px;
-  border: 1px solid #e4e6ec;
+  border: 1px solid ${({ $tone }) => $tone === "error" ? "#e5484d" : $tone === "success" ? "#00b9d4" : "#e4e6ec"};
   border-radius: 12px;
   background: #ffffff;
 
   &:focus-within {
-    border: 1.5px solid #090738;
+    border-color: ${({ $tone }) => $tone === "error" ? "#e5484d" : $tone === "success" ? "#00b9d4" : "#090738"};
   }
 
   input {
@@ -152,6 +137,8 @@ export const InputWrap = styled.div`
     font-size: 12px;
     line-height: 17px;
   }
+  button { flex: none; display: grid; place-items: center; min-width: 22px; height: 30px; }
+  [aria-describedby="profile-introduction-limit"] + span { color: #e5484d; }
 `;
 
 export const DisabledInput = styled(InputWrap)`
@@ -176,14 +163,14 @@ export const DisabledInput = styled(InputWrap)`
     background: #ffffff;
     font-size: 11px;
     font-weight: 700;
+    flex: none;
+    white-space: nowrap;
   }
 
-  i {
+  img {
     width: 12px;
     height: 12px;
-    border: 3px solid #fee500;
-    border-radius: 50%;
-    background: #1a1a1a;
+    object-fit: contain;
   }
 `;
 
@@ -195,7 +182,7 @@ export const Cta = styled.footer`
   left: 0;
   width: min(100%, 402px);
   margin: 0 auto;
-  padding: 12px 20px 0;
+  padding: 12px 20px max(20px, env(safe-area-inset-bottom));
   background: #ffffff;
 
   > button {

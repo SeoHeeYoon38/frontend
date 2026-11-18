@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import backIcon from "../assets/course-settings/back.svg";
 import googleMapsLogo from "../assets/images/brand-google-maps.webp";
@@ -8,9 +8,11 @@ import sortChevron from "../assets/my/sort-chevron.svg";
 import emptyPin from "../assets/direct-trip/empty-pin.svg";
 import { PlaceThumbnail } from "../components/common/PlacePhoto";
 import { isApiEnabled } from "../api/config";
+import { getCourse } from "../api/courses";
 import { routes } from "../config/routes";
 import { savedRegions } from "../data/mocks/myData";
 import useSavedItems from "../hooks/useSavedItems";
+import type { SavedCourse } from "../types/my";
 import * as S from "./SavedItemsPage.styled";
 
 type SavedTab = "places" | "courses";
@@ -30,6 +32,38 @@ function BookmarkButton({ active, label, onClick, disabled }: BookmarkButtonProp
   );
 }
 
+function CourseThumbnail({ course }: { course: SavedCourse }) {
+  const preview = useRef<HTMLSpanElement>(null);
+  const [brokenCover, setBrokenCover] = useState(false);
+  const [placeId, setPlaceId] = useState<string>();
+  const courseId = Number(course.id);
+  const hasCover = Boolean(course.image && !brokenCover);
+
+  useEffect(() => {
+    if (hasCover || !Number.isSafeInteger(courseId) || courseId <= 0 || !isApiEnabled()) return;
+    const controller = new AbortController();
+    const load = () => {
+      void getCourse(courseId, controller.signal).then(({ days }) => {
+        if (!controller.signal.aborted) setPlaceId(days.find((day) => day.stops.length)?.stops[0]?.placeId);
+      }).catch(() => {});
+    };
+    const element = preview.current;
+    const observer = element && typeof IntersectionObserver !== "undefined" ? new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting) return;
+      observer?.disconnect();
+      load();
+    }) : undefined;
+    if (element && observer) observer.observe(element);
+    else load();
+    return () => { observer?.disconnect(); controller.abort(); };
+  }, [courseId, hasCover]);
+
+  if (hasCover) return <img src={course.image} alt="" loading="lazy" onError={() => setBrokenCover(true)} />;
+  if (placeId) return <PlaceThumbnail placeId={placeId} courseId={courseId} name={course.title}
+    placeholder={<img src={emptyPin} width={22} height={22} alt="" />} />;
+  return <S.ImageFallback ref={preview}><img src={emptyPin} alt="" /></S.ImageFallback>;
+}
+
 function SavedItemsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const tab = (searchParams.get("tab") === "courses" ? "courses" : "places") as SavedTab;
@@ -40,19 +74,20 @@ function SavedItemsPage() {
   } = useSavedItems();
   const loading = tab === "places" ? placesLoading : coursesLoading;
   const loadError = tab === "places" ? placesLoadError : coursesLoadError;
+  const isPlaces = tab === "places";
   const regions = new Set([
     ...(isApiEnabled() ? ["전체"] : savedRegions),
-    ...places.map((place) => place.city),
-    ...courses.map((course) => course.city),
+    ...(isPlaces ? places : courses).map((item) => item.city),
   ]);
-  const filteredPlaces = places.filter((place) => region === "전체" || place.city === region);
-  const filteredCourses = courses.filter((course) => region === "전체" || course.city === region);
+  const activeRegion = regions.has(region) ? region : "전체";
+  const filteredPlaces = places.filter((place) => activeRegion === "전체" || place.city === activeRegion);
+  const filteredCourses = courses.filter((course) => activeRegion === "전체" || course.city === activeRegion);
 
   const selectTab = (nextTab: SavedTab) => {
+    setRegion("전체");
     setSearchParams(nextTab === "courses" ? { tab: "courses" } : { tab: "places" });
   };
 
-  const isPlaces = tab === "places";
   const visibleCount = isPlaces ? `${filteredPlaces.length}곳` : `${filteredCourses.length}개`;
 
   return (
@@ -89,7 +124,7 @@ function SavedItemsPage() {
             <button
               type="button"
               key={item}
-              aria-pressed={region === item}
+              aria-pressed={activeRegion === item}
               onClick={() => setRegion(item)}
             >
               {item}
@@ -99,7 +134,7 @@ function SavedItemsPage() {
 
         <S.ListHeader>
           <strong>
-            {region} {visibleCount}
+            {activeRegion} {visibleCount}
           </strong>
           <span>최근 저장순 {isPlaces && <img src={sortChevron} alt="" />}</span>
         </S.ListHeader>
@@ -140,9 +175,7 @@ function SavedItemsPage() {
           <S.List aria-label="저장한 코스">
             {filteredCourses.map((course) => (
               <S.CourseRow key={course.id}>
-                {course.image ? <img src={course.image} alt="" /> : (
-                  <S.ImageFallback><img src={emptyPin} alt="" /></S.ImageFallback>
-                )}
+                <CourseThumbnail key={course.image} course={course} />
                 <S.ItemText>
                   <em>{course.durationLabel}</em>
                   <Link to={routes.courseDetail.replace(":courseId", course.id)}><strong>{course.title}</strong></Link>
@@ -162,7 +195,11 @@ function SavedItemsPage() {
         )}
 
         {!loading && !loadError && (isPlaces ? filteredPlaces.length : filteredCourses.length) === 0 && (
-          <S.Empty>해당 지역에 저장한 항목이 없어요.</S.Empty>
+          <S.Empty>
+            {activeRegion !== "전체" ? "이 지역에 저장한 항목이 없어요."
+              : isPlaces ? "아직 저장한 장소가 없어요." : "아직 저장한 코스가 없어요."}
+            {!isPlaces && activeRegion === "전체" && <S.BrowseLink to={routes.courses}>코스 둘러보기</S.BrowseLink>}
+          </S.Empty>
         )}
       </S.Content>
     </S.Page>

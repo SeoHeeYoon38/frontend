@@ -1,3 +1,4 @@
+import { Link } from "react-router";
 import styled from "styled-components";
 
 export const Page = styled.div`
@@ -207,6 +208,13 @@ export const CourseRow = styled(ItemRow)`
     width: 72px;
     height: 72px;
   }
+
+  a {
+    display: block;
+    max-width: 100%;
+  }
+
+  a strong { display: block; }
 `;
 
 export const ImageFallback = styled.span`
@@ -309,4 +317,12 @@ export const Empty = styled.p`
   font-size: 14px;
   line-height: 22px;
   text-align: center;
+`;
+
+export const BrowseLink = styled(Link)`
+  display: block;
+  width: fit-content;
+  margin: 6px auto 0;
+  color: #090738 !important;
+  font-weight: 700;
 `;

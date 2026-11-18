@@ -92,7 +92,7 @@ function PrivacyPolicyPage() {
           <p>개인정보 처리에 관한 문의는 위 이메일로 접수할 수 있습니다.</p>
         </S.Section>
 
-        <S.EffectiveDate>시행일 2026년 4월 2일</S.EffectiveDate>
+        <S.EffectiveDate>시행일 2026년 11월 20일</S.EffectiveDate>
       </S.Document>
 
       {fromLogin && (

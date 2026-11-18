@@ -51,13 +51,6 @@ export const Navigation = styled.header`
   }
 `;
 
-export const ReadAll = styled.button`
-  margin-left: auto;
-  color: #090738 !important;
-  font-size: 12px !important;
-  font-weight: 700 !important;
-`;
-
 export const Error = styled.p`
   margin: 8px 20px;
   color: #b42318;
