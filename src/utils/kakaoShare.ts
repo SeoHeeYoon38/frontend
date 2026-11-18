@@ -18,10 +18,19 @@ declare global {
 }
 
 let pendingShare: Promise<KakaoShare> | undefined;
+const appKey = import.meta.env.VITE_KAKAO_JS_KEY?.trim();
+export const kakaoShareConfigured = Boolean(appKey);
+
+export function reportKakaoShareError(stage: "load" | "share" | "device", reason: unknown) {
+  const description = reason instanceof Error ? reason.message : String(reason);
+  console.warn("[Kakao Talk sharing]", stage, description
+    .replace(/https?:\/\/\S+/g, "[URL]")
+    .replace(/[a-z\d_-]{24,}/gi, "[value]")
+    .slice(0, 160));
+}
 
 export function prepareKakaoShare() {
-  const key = import.meta.env.VITE_KAKAO_JS_KEY?.trim();
-  if (!key) return;
+  if (!appKey) return;
   if (pendingShare) return pendingShare;
 
   pendingShare = new Promise<KakaoShare>((resolve, reject) => {
@@ -30,14 +39,14 @@ export function prepareKakaoShare() {
       try {
         const sdk = window.Kakao;
         if (!sdk?.Share) throw new Error("카카오톡 공유를 준비하지 못했어요.");
-        if (!sdk.isInitialized()) sdk.init(key);
+        if (!sdk.isInitialized()) sdk.init(appKey);
         resolve(sdk.Share);
       } catch (reason) {
         script.remove();
         reject(reason);
       }
     };
-    if (window.Kakao) {
+    if (window.Kakao?.Share) {
       initialize();
       return;
     }
