@@ -12,7 +12,7 @@ declare global {
     Kakao?: {
       init(key: string): void;
       isInitialized(): boolean;
-      Share: KakaoShare;
+      Share?: KakaoShare;
     };
   }
 }
@@ -38,15 +38,16 @@ export function prepareKakaoShare() {
     const initialize = () => {
       try {
         const sdk = window.Kakao;
-        if (!sdk?.Share) throw new Error("카카오톡 공유를 준비하지 못했어요.");
+        if (!sdk) throw new Error("카카오톡 SDK를 불러오지 못했어요.");
         if (!sdk.isInitialized()) sdk.init(appKey);
+        if (!sdk.Share) throw new Error("카카오톡 공유를 준비하지 못했어요.");
         resolve(sdk.Share);
       } catch (reason) {
         script.remove();
         reject(reason);
       }
     };
-    if (window.Kakao?.Share) {
+    if (typeof window.Kakao?.init === "function") {
       initialize();
       return;
     }
