@@ -13,6 +13,7 @@ import { getTripInteractions, type TripInteractions } from "../api/interactions"
 import { getSavedPlaces } from "../api/places";
 import { getTripMembers } from "../api/members";
 import { confirmTrip, getTrip } from "../api/trips";
+import { getPlacePhoto } from "../api/placePhotos";
 import type {
   ItineraryEditPreview,
   ItineraryVersionSummary,
@@ -33,7 +34,10 @@ import TravelModeSheet from "../components/course-completion/TravelModeSheet";
 import type { TravelLeg } from "../api/types";
 import { travelModeLabels } from "../utils/trip";
 import TripSummary from "../components/course-completion/TripSummary";
+import ImportedTripRegistration from "../components/course-completion/ImportedTripRegistration";
 import TripSheet from "../components/common/TripSheet";
+import { RegisterBanner } from "./ImportedTripPage.styled";
+import calendarIcon from "../assets/course-completion/icon-calendar.svg";
 import backIcon from "../assets/icons/nav-back.svg";
 import settingsIcon from "../assets/course-completion/settings.svg";
 import heroPhoto from "../assets/course-completion/hero-photo.png";
@@ -107,6 +111,12 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
     state?.confirmation,
   );
   const [confirming, setConfirming] = useState(false);
+  const [registrationOpen, setRegistrationOpen] = useState(false);
+  const [registrationComplete, setRegistrationComplete] = useState(() => {
+    try { return localStorage.getItem(`dotlo:imported-trip-registered:${tripId}`) === "true"; }
+    catch { return false; }
+  });
+  const [importedPhoto, setImportedPhoto] = useState<string | undefined>(state?.importedCoverImageUrl);
   const confirmationPending = useRef(false);
 
   useEffect(() => {
@@ -150,6 +160,25 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
 
   const summary = data && apiTripToSummary(data.trip);
   const days = data?.itinerary?.validation.days ?? [];
+  const imported = data?.itinerary?.source === "COURSE_ADD" ||
+    data?.history.some((item) => item.source === "COURSE_ADD") || state?.courseImported === true;
+  const importedPlaceId = data?.itinerary?.draft.days.flatMap((item) => item.visits)[0]?.placeId;
+
+  useEffect(() => {
+    if (!imported || !importedPlaceId) return;
+    let active = true;
+    void getPlacePhoto(importedPlaceId, 0).then((photo) => {
+      if (active && photo?.photoUrl) setImportedPhoto((current) => current || photo.photoUrl);
+    }, () => undefined);
+    return () => { active = false; };
+  }, [imported, importedPlaceId]);
+
+  useEffect(() => {
+    if (!imported || !notice) return;
+    const timeout = window.setTimeout(() => setNotice(""), 4_000);
+    return () => window.clearTimeout(timeout);
+  }, [imported, notice]);
+
   const day = days[activeDay];
   const origin = readPlanOrigin(search);
   const backPath = origin === "generated" ? routes.myTrips : tripPlanBackPath(search);
@@ -323,13 +352,13 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
     <div className="course-page-shell">
       <main className="course-page">
         {data && summary && (
-          <header className="course-hero">
-            {(summary.city === "오사카" || summary.coverImage) && <img className="course-hero__photo"
-              src={summary.city === "오사카" ? heroPhoto : summary.coverImage} alt={`${summary.city} 여행`} />}
+          <header className={`course-hero${imported ? " course-hero--imported" : ""}`}>
+            {(imported ? importedPhoto : summary.city === "오사카" ? heroPhoto : summary.coverImage) && <img className="course-hero__photo"
+              src={imported ? importedPhoto : summary.city === "오사카" ? heroPhoto : summary.coverImage} alt={`${summary.city} 여행`} />}
             <div className="course-hero__scrim" />
             <nav className="course-navigation" aria-label="코스 화면 탐색">
               <Link to={backPath} aria-label="뒤로 가기"><img src={backIcon} alt="" /></Link>
-              <strong>{shared ? "함께하는 여행" : "AI 여행 코스"}</strong>
+              <strong>{imported ? "내 여행" : shared ? "함께하는 여행" : "AI 여행 코스"}</strong>
               {shared && (
                 <Link to={tripCommunityPath(origin, undefined, tripId, activeDay + 1)} aria-label="함께하는 여행 채팅">
                   <img src={chatIcon} alt="" />
@@ -342,7 +371,7 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
             <div className="course-hero__title">
               <span>{summary.city}</span>
               <h1>{summary.title}</h1>
-              <p>{summary.dateLabel}</p>
+              {(!imported || registrationComplete) && <p>{summary.dateLabel}</p>}
             </div>
             {!shared && (
               <Link className="course-hero__invite" to={`${tripSettingsPath(origin, undefined, tripId)}&panel=invite&day=${activeDay + 1}`}>
@@ -364,7 +393,7 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
           {!data && <Link to={backPath}>여행 목록으로 돌아가기</Link>}
           {error && <p role="alert">{error}</p>}
           {actionError && <p role="alert">{actionError}</p>}
-          {notice && <p role="status">{notice}</p>}
+          {notice && !imported && <p role="status">{notice}</p>}
           {inviteAccepted && summary && (
             <div className="course-toast course-toast--invite" role="status">
               <img src={checkIcon} alt="" />
@@ -373,9 +402,14 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
             </div>
           )}
           {!data && !error && <p role="status">여행 일정을 불러오고 있어요.</p>}
+          {data && summary && imported && !registrationComplete && <RegisterBanner>
+            <span><img src={calendarIcon} alt="" /></span>
+            <strong>여행 날짜와 동행을 알려주세요</strong>
+            <button type="button" onClick={() => setRegistrationOpen(true)}>등록하기</button>
+          </RegisterBanner>}
           {data && summary && (
             <section className="course-section">
-              <section className="ai-summary" aria-label="도틀로 AI 일정 구성 설명">
+              {!imported && <section className="ai-summary" aria-label="도틀로 AI 일정 구성 설명">
                 <img src={aiAvatar} alt="도틀로 AI" />
                 <div className="ai-summary__bubble">
                   <b>도틀로 AI의 일정 구성</b>
@@ -383,7 +417,7 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
                     ? `${summary.durationLabel ?? "여행 기간"} 동안 ${placeCount}곳을 방문하는 일정이에요.`
                     : "일정을 만들면 여행 동선을 확인할 수 있어요."}</p>
                 </div>
-              </section>
+              </section>}
               {data.itinerary ? (
                 <>
                   {confirmation === null && (
@@ -575,6 +609,19 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
             )}
           </div>
         )}
+        {registrationOpen && data && <ImportedTripRegistration
+          trip={data.trip}
+          onClose={() => setRegistrationOpen(false)}
+          onSaved={(trip) => {
+            setData((current) => current ? { ...current, trip } : current);
+            setRegistrationComplete(true);
+            setRegistrationOpen(false);
+            setNotice("여행 정보를 저장했어요");
+            try { localStorage.setItem(`dotlo:imported-trip-registered:${tripId}`, "true"); }
+            catch { /* The server save still succeeds when browser storage is unavailable. */ }
+          }}
+        />}
+        {imported && notice && <div className="course-toast" role="status"><img src={checkIcon} alt="" /><p>{notice}</p></div>}
         {confirmation && (
           <div className="course-toast" role="status">
             <img src={checkIcon} alt="" />
