@@ -161,21 +161,6 @@
   font-weight: 700;
 }
 
-.course-toast--undo {
-  min-height: 48px;
-}
-
-.course-toast--undo button {
-  padding: 8px 0;
-  color: #80daf5;
-  white-space: nowrap;
-  cursor: pointer;
-}
-
-.course-toast--undo button:disabled {
-  opacity: .55;
-}
-
 .course-overlay {
   position: fixed;
   z-index: 30;
