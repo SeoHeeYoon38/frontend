@@ -1,4 +1,9 @@
-import styled from "styled-components";
+import styled, { keyframes } from "styled-components";
+
+const generationPulse = keyframes`
+  0%, 100% { opacity: 0.65; transform: scale(1); }
+  50% { opacity: 0.96; transform: scale(1.23); }
+`;
 
 export const LoadWarning = styled.p`
   margin: 0 20px 12px;
@@ -118,6 +123,14 @@ export const GenerationSteps = styled.ol`
   .halo {
     position: absolute;
     inset: -1px;
+  }
+
+  li[data-status="current"] > span {
+    animation: ${generationPulse} 1.5s ease-in-out infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    li[data-status="current"] > span { animation: none; }
   }
 `;
 

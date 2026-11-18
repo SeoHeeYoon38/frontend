@@ -144,6 +144,7 @@ export default function DirectPlaceSearch({
   const [showImport, setShowImport] = useState(false);
   const [demoLinked, setDemoLinked] = useState(!demoGoogleUnlinked);
   const [busy, setBusy] = useState(false);
+  const [enriching, setEnriching] = useState(false);
   const [loadError, setLoadError] = useState("");
   const [searchError, setSearchError] = useState("");
   const [saveError, setSaveError] = useState("");
@@ -246,6 +247,7 @@ export default function DirectPlaceSearch({
     try {
       if (input.method === "file") await uploadTakeout(tripId, input.file);
       else await importSharedList(tripId, input.link);
+      setEnriching(true);
       const response = await enrichSavedPlaces(tripId);
       setSaved(response.places);
       setTab("saved");
@@ -255,6 +257,7 @@ export default function DirectPlaceSearch({
     } finally {
       savePending.current = false;
       setBusy(false);
+      setEnriching(false);
     }
   }
 
@@ -303,7 +306,7 @@ export default function DirectPlaceSearch({
       {showImport ? (
         <>
           <S.ImportBack type="button" onClick={() => setShowImport(false)} aria-label="장소 검색으로 돌아가기"><img src={backIcon} alt="" /></S.ImportBack>
-          <S.ImportContent><PlaceImportForm onImport={importPlaces} onSkip={() => setShowImport(false)} busy={busy} importError={saveError} /></S.ImportContent>
+          <S.ImportContent><PlaceImportForm onImport={importPlaces} onSkip={() => setShowImport(false)} busy={busy} enriching={enriching} importError={saveError} /></S.ImportContent>
         </>
       ) : (
         <>

@@ -1,39 +1,30 @@
-import { Step } from "./Trip.styled";
+import { Primary, Step } from "./Trip.styled";
 import styled, { keyframes } from "styled-components";
 
 const rotate = keyframes`
   to { transform: rotate(360deg); }
 `;
 
-export const AnalysisProgress = styled(Step)`
+export const AnalysisStatus = styled.span`
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: 16px;
-  padding: 24px 0;
-  text-align: center;
-  color: #090738;
-  font-weight: 700;
-
-  span {
-    width: 36px;
-    height: 36px;
-    border: 3px solid #e2e1ee;
-    border-top-color: currentColor;
+  gap: 8px;
+  &::after {
+    content: "";
+    width: 14px;
+    height: 14px;
+    border: 2px solid #e2e1ee;
+    border-top-color: #090738;
     border-radius: 50%;
     animation: ${rotate} 0.8s linear infinite;
-
-    @media (prefers-reduced-motion: reduce) {
-      animation: none;
-    }
   }
-
-  p { margin: 0; }
+  @media (prefers-reduced-motion: reduce) { &::after { animation: none; } }
 `;
 export const Prompt = styled.div<{ $active: boolean; $exceeded: boolean }>`
   position: relative;
-  margin-top: 35px;
+  margin-top: 6px;
   min-height: ${({ $exceeded }) => ($exceeded ? "236px" : "132px")};
-  border: 1.5px solid ${({ $active, $exceeded }) => ($exceeded ? "#ef4444" : $active ? "#090738" : "#d1d1d6")};
+  border: 1.5px solid ${({ $active, $exceeded }) => ($exceeded ? "#ef4444" : $active ? "#090738" : "#e8eaf0")};
   border-radius: 20px;
   background: white;
   box-shadow: 0 8px 20px rgb(9 7 56 / 5%);
@@ -54,9 +45,10 @@ export const Prompt = styled.div<{ $active: boolean; $exceeded: boolean }>`
     color: #a8a8ae;
   }
 
+  textarea:focus-visible { outline: none; }
+
   &:focus-within {
-    border-color: #090738;
-    box-shadow: 0 0 0 1px #090738;
+    border-color: ${({ $exceeded }) => $exceeded ? "#ef4444" : "#090738"};
   }
   span {
     position: absolute;
@@ -87,12 +79,14 @@ export const AiBadge = styled.span`
   font-weight: 700;
 `;
 export const Analysis = styled.div`
-  border: 1px solid #e2e1ee;
-  border-radius: 16px;
+  border: 1px solid #e4e6ec;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 8px 20px rgb(9 7 56 / 5%);
   padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
   header {
     display: flex;
     align-items: center;
@@ -108,13 +102,13 @@ export const Analysis = styled.div`
   }
   section > span {
     font-size: 13px;
-    color: #8a8a8e;
+    color: #5c5c63;
     width: 40px;
     flex-shrink: 0;
   }
 `;
 export const Preferences = styled(Step)`
-  gap: 16px;
+  gap: 20px;
   header {
     min-width: 0;
   }
@@ -144,6 +138,8 @@ export const Example = styled.button`
   border: 1px solid #e4e6ec;
   border-radius: 14px;
   background: #fff;
+  text-align: left;
+  color: #1a1a1a;
   font-size: 14px;
 
   span { display: grid; height: 32px; place-items: center; border-radius: 10px; background: #f1f2f8; }
@@ -153,7 +149,6 @@ export const TasteNumber = styled.span`
   place-items: center;
   width: 16px;
   height: 16px;
-  margin-right: 5px;
   border-radius: 50%;
   background: #090738;
   color: white;
@@ -163,11 +158,41 @@ export const TasteNumber = styled.span`
 export const AnalysisChip = styled.span`
   display: inline-flex;
   align-items: center;
+  gap: 8px;
   padding: 6px 10px;
   border-radius: 14px;
-  background: #f3f4f7;
+  background: #f3f5fa;
   color: #090738;
   font-size: 13px;
   line-height: 1.25;
   font-weight: 700;
+
+  button {
+    display: grid;
+    place-items: center;
+    border: 0;
+    background: transparent;
+    padding: 2px;
+  }
+`;
+
+export const ChipChoice = styled.label`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+  padding: 6px 10px;
+  border: 1px dashed #c9ccd6;
+  border-radius: 14px;
+  color: #5c5c63;
+  font-size: 13px;
+  font-weight: 500;
+
+  img { transform: rotate(-45deg); }
+  select { position: absolute; inset: 0; width: 100%; opacity: 0; cursor: pointer; }
+  &:focus-within { outline: 2px solid #090738; outline-offset: 2px; }
+`;
+
+export const MakeCourse = styled(Primary)`
+  &:disabled { background: #e4e6ec; color: #8a8a8e; }
 `;

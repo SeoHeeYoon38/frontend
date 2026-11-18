@@ -57,11 +57,12 @@ interface ServerSavedPlacesProps {
   pickedLabel?: string;
   importView?: PlaceImportView;
   onImportViewChange?: (view: PlaceImportView) => void;
+  onLoadingChange?: (loading: boolean) => void;
 }
 
 function ServerSavedPlaces({
   tripId, recommendationCity, onContinue, onPick, onPickMany, pickDay, pickedPlaceIds,
-  pickLabel = "일정에 담기", pickedLabel = "이날 일정에 담았어요", importView, onImportViewChange,
+  pickLabel = "일정에 담기", pickedLabel = "이날 일정에 담았어요", importView, onImportViewChange, onLoadingChange,
 }: ServerSavedPlacesProps) {
   const isTripCreation = Boolean(onContinue);
   const [places, setPlaces] = useState<SavedPlaceResponse[]>();
@@ -73,6 +74,7 @@ function ServerSavedPlaces({
   const [matchId, setMatchId] = useState<number>();
   const [showImport, setShowImport] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [enriching, setEnriching] = useState(false);
   const [error, setError] = useState("");
   const [importNotice, setImportNotice] = useState("");
   const request = useRef<AbortController | null>(null);
@@ -121,14 +123,21 @@ function ServerSavedPlaces({
       const imported = input.method === "file"
         ? await uploadTakeout(tripId, input.file, signal)
         : await importSharedList(tripId, input.link, signal);
-      const response = await enrichSavedPlaces(tripId, signal);
-      if (!signal.aborted) {
-        setPlaces(response.places);
-        setImportNotice(imported.totalNewCount > 0
-          ? `새 장소 ${imported.totalNewCount}곳을 가져왔어요.`
-          : "가져오기를 완료했어요. 새로 추가된 장소는 없어요.");
-        onImportViewChange?.("method");
-        setShowImport(false);
+      setEnriching(true);
+      onLoadingChange?.(true);
+      try {
+        const response = await enrichSavedPlaces(tripId, signal);
+        if (!signal.aborted) {
+          setPlaces(response.places);
+          setImportNotice(imported.totalNewCount > 0
+            ? `새 장소 ${imported.totalNewCount}곳을 가져왔어요.`
+            : "가져오기를 완료했어요. 새로 추가된 장소는 없어요.");
+          onImportViewChange?.("method");
+          setShowImport(false);
+        }
+      } finally {
+        setEnriching(false);
+        onLoadingChange?.(false);
       }
     });
   }
@@ -185,11 +194,12 @@ function ServerSavedPlaces({
 
   if (showImport) {
     return (
-      <P.ConnectStep aria-busy={busy}>
+      <P.ConnectStep>
         <PlaceImportForm
           onImport={importPlaces}
           onSkip={() => { onImportViewChange?.("method"); setShowImport(false); }}
           busy={busy}
+          enriching={enriching}
           importError={error}
           view={importView}
           onViewChange={onImportViewChange}

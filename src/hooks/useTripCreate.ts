@@ -208,9 +208,9 @@ function useTripCreate(
       setPreparingTrip(false);
     }
   }
-  async function generate() {
+  async function generate(tripDraft = draft) {
     if (!requestLock.current.acquire()) return;
-    const validation = basicError(draft) || placesError(draft);
+    const validation = basicError(tripDraft) || placesError(tripDraft);
     if (validation) {
       setError(validation);
       requestLock.current.release();
@@ -225,8 +225,8 @@ function useTripCreate(
     let completed = false;
     try {
       if (isApiEnabled() && hasAuthSession()) {
-        if (!isServerTripId(draft.tripId)) throw new Error("여행 정보를 먼저 저장해 주세요.");
-        const tripId = Number(draft.tripId);
+        if (!isServerTripId(tripDraft.tripId)) throw new Error("여행 정보를 먼저 저장해 주세요.");
+        const tripId = Number(tripDraft.tripId);
         const finish = async (excludedPlaceIds?: string[]) => {
           clearGenerationAttempt(tripId);
           const confirmation = await confirmTrip(tripId, controller.signal).catch(() => null);
@@ -237,7 +237,7 @@ function useTripCreate(
           } catch {
             // 저장소를 사용할 수 없어도 생성한 일정으로 이동합니다.
           }
-          navigate(serverTripPlanPath("generated", draft.tripId), {
+          navigate(serverTripPlanPath("generated", tripDraft.tripId), {
             replace: true,
             state: { excludedPlaceIds, confirmation },
           });
@@ -295,13 +295,13 @@ function useTripCreate(
       if (controller.signal.aborted) return;
       completed = true;
       setProgress(4);
-      saveMockTrip(createGeneratedTrip(draft));
+      saveMockTrip(createGeneratedTrip(tripDraft));
       try {
         sessionStorage.removeItem(DRAFT_KEY);
       } catch {
         // 저장소를 사용할 수 없어도 현재 여행 결과로 이동합니다.
       }
-      navigate(tripPlanPath("generated", draft.tripId), { replace: true });
+      navigate(tripPlanPath("generated", tripDraft.tripId), { replace: true });
     } catch (reason) {
       if (!controller.signal.aborted)
         setError(

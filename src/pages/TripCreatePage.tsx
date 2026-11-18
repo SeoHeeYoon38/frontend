@@ -144,6 +144,7 @@ function AiTripCreatePage({
         recommendationCity={draft.city}
         importView={importView}
         onImportViewChange={setImportView}
+        onLoadingChange={setImporting}
         onContinue={(saved) => {
           setImportView("method");
           const places = saved.map((place) => savedPlaceToTripPlace(place, draft.city));
@@ -215,7 +216,7 @@ function AiTripCreatePage({
         }
       }}
       hideProgress={generating || importing}
-      backDisabled={generating}
+      backDisabled={generating || importing}
       tripGradient={step === 3 && !generating}
     >
       {initialLoadWarning && <S.LoadWarning role="alert">{initialLoadWarning}</S.LoadWarning>}
