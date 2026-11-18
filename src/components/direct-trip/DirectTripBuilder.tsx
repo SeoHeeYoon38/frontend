@@ -14,7 +14,7 @@ import { editedItineraryDays, moveVisit, reorderVisit } from "../../utils/itiner
 import type { ItineraryDayInput, ItineraryVersionView, ItineraryVisitInput, SavedPlaceResponse } from "../../api/types";
 import { useItineraryCheck } from "../../hooks/useItineraryCheck";
 import { createGeneratedTrip, mockTripStatus, placeIcon, saveMockTrip, tripStorageNotice } from "../../data/mocks/mockTripService";
-import { dateLabel, durationLabel, emptyDraft, rangeDates } from "../../utils/trip";
+import { dateLabel, durationLabel, emptyDraft, rangeDates, tripDateStatus } from "../../utils/trip";
 import type { TripDraft } from "../../types/trip";
 import { mockTripPlaces } from "../../data/mocks/tripData";
 import searchIcon from "../../assets/direct-trip/search.svg";
@@ -306,10 +306,16 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
           existing.onClose();
         } else {
           const confirmation = await confirmTrip(Number(draft.tripId)).catch(() => null);
-          navigate(serverTripPlanPath("generated", draft.tripId), {
-            replace: true,
-            state: { confirmation },
-          });
+          if (confirmation === null) {
+            navigate(serverTripPlanPath("generated", draft.tripId), {
+              replace: true,
+              state: { confirmation },
+            });
+          } else {
+            const params = new URLSearchParams({ toast: "saved", savedTripId: draft.tripId });
+            if (tripDateStatus(draft.startDate, draft.endDate).status === "past") params.set("tab", "past");
+            navigate(`${routes.myTrips}?${params.toString()}`, { replace: true });
+          }
         }
       } catch (reason) {
         if (reason instanceof ApiError && reason.status === 409) {
