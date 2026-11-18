@@ -9,9 +9,18 @@ import { createInvite, getTripMembers } from "../../api/members";
 import { createTripShare } from "../../api/trips";
 import type { MemberResponse } from "../../api/types";
 import { routes } from "../../config/routes";
+import { inviteSmsUrl } from "../../utils/inviteSharing";
+import { prepareKakaoShare, type KakaoShare } from "../../utils/kakaoShare";
 import { invitePath } from "../../utils/navigation";
 import TripSheet from "../common/TripSheet";
 import * as S from "./CourseSettings.styled";
+
+const shareActions = [
+  { label: "AirDrop", icon: airDropIcon, method: "native" },
+  { label: "메시지", icon: messagesIcon, method: "sms" },
+  { label: "카카오톡", icon: kakaoIcon, method: "kakao" },
+  { label: "메일", icon: mailIcon, method: "mail" },
+] as const;
 
 export default function ServerInviteSheet({ tripId, onClose, publicShare = false }: {
   tripId: number;
@@ -26,6 +35,15 @@ export default function ServerInviteSheet({ tripId, onClose, publicShare = false
   const [message, setMessage] = useState("");
   const [actionError, setActionError] = useState("");
   const [members, setMembers] = useState<MemberResponse[]>([]);
+  const [kakaoShare, setKakaoShare] = useState<KakaoShare>();
+
+  useEffect(() => {
+    const sdk = prepareKakaoShare();
+    if (!sdk) return;
+    let active = true;
+    void sdk.then((share) => { if (active) setKakaoShare(share); }, () => undefined);
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -55,18 +73,38 @@ export default function ServerInviteSheet({ tripId, onClose, publicShare = false
 
   const link = path ? new URL(path, window.location.origin).href : "";
 
-  async function shareLink(method: "copy" | "native" | "mail") {
+  async function shareLink(method: "copy" | typeof shareActions[number]["method"]) {
     setMessage("");
     setActionError("");
     try {
-      if (method === "mail") {
-        window.location.href = `mailto:?subject=${encodeURIComponent(`도틀로 ${title}`)}&body=${encodeURIComponent(link)}`;
-      } else if (method === "native" && typeof navigator.share === "function") {
-        await navigator.share({ title: `도틀로 ${title}`, url: link });
-      } else {
+      if (method === "copy") {
         await navigator.clipboard.writeText(link);
         setMessage(`${linkLabel}를 복사했어요. 원하는 앱에 붙여 넣어 주세요.`);
+        return;
       }
+      if (method === "mail") {
+        window.location.href = `mailto:?subject=${encodeURIComponent(`도틀로 ${title}`)}&body=${encodeURIComponent(link)}`;
+        return;
+      }
+      if (method === "sms") {
+        window.location.href = inviteSmsUrl(link, navigator);
+        return;
+      }
+      if (method === "kakao" && kakaoShare) {
+        await kakaoShare.sendDefault({
+          objectType: "text",
+          text: `도틀로 ${title}`,
+          link: { webUrl: link, mobileWebUrl: link },
+          buttonTitle: publicShare ? "일정 보기" : "참여하기",
+        });
+        return;
+      }
+      const data = { title: `도틀로 ${title}`, url: link };
+      if (typeof navigator.share !== "function" || navigator.canShare?.(data) === false) {
+        setActionError("이 브라우저에서는 공유창을 열 수 없어요. Safari 또는 Chrome에서 다시 열어 주세요.");
+        return;
+      }
+      await navigator.share(data);
     } catch (reason) {
       if (reason instanceof DOMException && reason.name === "AbortError") return;
       setActionError("링크를 공유하지 못했어요. 링크를 직접 복사해 주세요.");
@@ -95,13 +133,8 @@ export default function ServerInviteSheet({ tripId, onClose, publicShare = false
             <S.ShareSection>
               <h3>공유하기</h3>
               <S.ShareList>
-                {[
-                  { label: "AirDrop", icon: airDropIcon, method: "native" },
-                  { label: "메시지", icon: messagesIcon, method: "native" },
-                  { label: "카카오톡", icon: kakaoIcon, method: "native" },
-                  { label: "메일", icon: mailIcon, method: "mail" },
-                ].map(({ label, icon, method }) => <li key={label}>
-                  <button type="button" aria-label={`${label}로 공유`} onClick={() => void shareLink(method as "native" | "mail")}>
+                {shareActions.map(({ label, icon, method }) => <li key={label}>
+                  <button type="button" aria-label={`${label}로 공유`} onClick={() => void shareLink(method)}>
                     <img src={icon} alt="" /><span>{label}</span>
                   </button>
                 </li>)}
