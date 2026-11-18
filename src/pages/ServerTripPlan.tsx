@@ -255,6 +255,7 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
     setEditPending(true);
     setActionError("");
     setNotice("");
+    setEditPreview(undefined);
     try {
       setEditPreview(await requestItineraryEdit(tripId, message));
     } catch (reason) {
@@ -269,7 +270,7 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
     setEditPending(true);
     setActionError("");
     try {
-      const itinerary = await applyItineraryEdit(tripId, editPreview.baseVersion);
+      const itinerary = await applyItineraryEdit(tripId, editPreview.editRequestId);
       setData((current) => current ? { ...current, itinerary } : current);
       setEditPreview(undefined);
       setEditMessage("");
@@ -277,7 +278,20 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
       setNotice("수정한 일정을 적용했어요.");
       await reloadHistory();
     } catch (reason) {
-      setActionError(reason instanceof Error ? reason.message : "수정안을 적용하지 못했어요.");
+      if (reason instanceof ApiError && reason.status === 409) {
+        setEditPreview(undefined);
+        setActionError("일정이 변경되어 수정안을 적용하지 못했어요. 최신 일정을 확인하고 수정안을 다시 만들어 주세요.");
+        try {
+          const itinerary = await getLatestItinerary(tripId);
+          setData((current) => current ? { ...current, itinerary } : current);
+          setActiveDay(0);
+          await reloadHistory();
+        } catch {
+          setActionError("최신 일정을 불러오지 못했어요. 여행 일정을 다시 열고 수정안을 만들어 주세요.");
+        }
+      } else {
+        setActionError(reason instanceof Error ? reason.message : "수정안을 적용하지 못했어요.");
+      }
     } finally {
       setEditPending(false);
     }
