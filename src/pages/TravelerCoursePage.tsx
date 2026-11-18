@@ -191,7 +191,7 @@ function TravelerCoursePage() {
     setImportError("");
     try {
       const result = await importApiCourse(liveCourseId, importStartDate);
-      if (!Number.isSafeInteger(result.tripId) || result.tripId <= 0) {
+      if (!result || !Number.isSafeInteger(result.tripId) || result.tripId <= 0) {
         throw new ApiError(502, "IMPORT_RESULT_UNKNOWN", "생성한 여행 주소를 확인하지 못했어요.");
       }
       navigate(serverTripPlanPath("my-trips", String(result.tripId)), {

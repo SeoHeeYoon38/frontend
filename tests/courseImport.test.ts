@@ -15,6 +15,8 @@ test("전체 코스 기간으로 종료일을 계산하고 빈 일차·월말·�
 test("완료 여부가 불확실한 통신 오류와 명확한 거절 응답을 구분한다", () => {
   assert.equal(courseImportUncertain(new TypeError("Failed to fetch")), true);
   assert.equal(courseImportUncertain({ status: 408 }), true);
+  assert.equal(courseImportUncertain({ status: 500 }), true);
+  assert.equal(courseImportUncertain({ status: 504 }), true);
   assert.equal(courseImportUncertain({ code: "IMPORT_RESULT_UNKNOWN" }), true);
   assert.equal(courseImportUncertain({ status: 400, code: "INVALID_INPUT" }), false);
   assert.equal(courseImportUncertain({ status: 401 }), false);
