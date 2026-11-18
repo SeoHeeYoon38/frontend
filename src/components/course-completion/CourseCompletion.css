@@ -197,6 +197,24 @@
   padding: 24px 20px;
 }
 
+.course-plan-error {
+  display: grid;
+  gap: 20px;
+  min-height: 50dvh;
+  align-content: center;
+  text-align: center;
+}
+
+.course-plan-error a {
+  display: grid;
+  min-height: 52px;
+  place-items: center;
+  border-radius: 16px;
+  color: #fff;
+  background: #090738;
+  text-decoration: none;
+}
+
 .ai-summary {
   display: flex;
   gap: 10px;
@@ -272,7 +290,8 @@
 .course-fact strong {
   font-size: 15px;
   line-height: 1.4;
-  white-space: nowrap;
+  text-align: center;
+  overflow-wrap: anywhere;
 }
 
 .course-fact span {

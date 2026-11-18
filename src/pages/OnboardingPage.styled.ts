@@ -527,16 +527,3 @@ export const CompleteContent = styled.section`
   h1 { margin: 16px 0 0; font-size: 26px; line-height: 35px; letter-spacing: -0.26px; }
   p { margin: 12px 0 0; color: #5c5c63; font-size: 15px; line-height: 22px; }
 `;
-
-export const HomeIndicator = styled.div`
-  position: absolute;
-  z-index: 5;
-  right: 0;
-  bottom: 8px;
-  left: 0;
-  width: 134px;
-  height: 5px;
-  margin: 0 auto;
-  border-radius: 3px;
-  background: #000000;
-`;

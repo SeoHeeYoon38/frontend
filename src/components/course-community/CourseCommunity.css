@@ -578,15 +578,6 @@
   cursor: default;
 }
 
-.community-chat__home-indicator {
-  display: block;
-  width: 134px;
-  height: 5px;
-  margin: 12px auto 8px;
-  border-radius: 3px;
-  background: #000;
-}
-
 .community-day-picker {
   position: absolute;
   z-index: 20;

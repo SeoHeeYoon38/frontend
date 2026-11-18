@@ -39,6 +39,27 @@ export interface PlaceHoursResponse {
   }>;
 }
 
+export interface PlaceDetailResponse {
+  placeId: string;
+  name: string;
+  category: PlaceCategoryCode | null;
+  rating: number | null;
+  reviewCount: number | null;
+  summary: string | null;
+  address: string | null;
+  latitude: number;
+  longitude: number;
+  googleMapsUri: string | null;
+  savedPlaceId: number | null;
+}
+
+export function getPlaceDetail(tripId: number, placeId: string, signal?: AbortSignal) {
+  return apiRequest<PlaceDetailResponse>(
+    `/api/places/${encodeURIComponent(placeId)}${queryString({ tripId })}`,
+    { signal },
+  );
+}
+
 export function getNearbyPlaces(
   tripId: number,
   lat: number,

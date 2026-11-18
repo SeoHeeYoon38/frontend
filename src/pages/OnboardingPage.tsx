@@ -110,10 +110,6 @@ function Logo() {
   );
 }
 
-function HomeIndicator() {
-  return <S.HomeIndicator aria-hidden="true" />;
-}
-
 function LoginBackdrop({ withTagline = false }: { withTagline?: boolean }) {
   return (
     <S.LoginScreen>
@@ -332,7 +328,6 @@ function OnboardingPage() {
         >
           {savingProfile ? "저장하고 있어요" : "다음"}
         </S.BottomButton>
-        <HomeIndicator />
         {showCharacterSheet && (
           <ProfileCharacterSheet current={avatar} title="프로필 사진" onClose={() => setShowCharacterSheet(false)}
             onApply={(value) => { setAvatar(value); setShowCharacterSheet(false); }} />
@@ -421,7 +416,6 @@ function OnboardingPage() {
         >
           {savingPreferences ? "취향을 저장하고 있어요" : "선택 완료"}
         </S.BottomButton>
-        <HomeIndicator />
       </S.FlowScreen>
     );
   }
@@ -463,7 +457,6 @@ function OnboardingPage() {
           <S.BottomButton type="button" onClick={last ? finishIntroduction : () => setFeatureIndex(featureIndex + 1)}>
             {last ? "시작하기" : "다음"}
           </S.BottomButton>
-          <HomeIndicator />
         </S.FeatureScreen>
       );
     }
@@ -476,7 +469,6 @@ function OnboardingPage() {
           {error && <S.ValidText $error role="alert">{error}</S.ValidText>}
         </S.CompleteContent>
         <S.BottomButton type="button" onClick={finishOnboarding}>시작하기</S.BottomButton>
-        <HomeIndicator />
       </S.CompleteScreen>
     );
   }
@@ -571,7 +563,6 @@ function OnboardingPage() {
           </S.TermsSheet>
         </>
       )}
-      <HomeIndicator />
     </S.LoginShell>
   );
 }

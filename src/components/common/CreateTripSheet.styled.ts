@@ -123,19 +123,3 @@ export const OptionText = styled.span`
     line-height: 18px;
   }
 `;
-
-export const HomeIndicator = styled.div`
-  display: grid;
-  height: max(54px, env(safe-area-inset-bottom));
-  justify-items: center;
-  align-items: end;
-  padding-bottom: 13px;
-
-  &::after {
-    width: 134px;
-    height: 5px;
-    border-radius: 3px;
-    background: #1a1a1a;
-    content: "";
-  }
-`;

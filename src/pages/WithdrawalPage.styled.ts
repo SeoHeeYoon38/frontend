@@ -57,7 +57,6 @@ export const Cta = styled.footer`
   > button { width: 100%; min-height: 56px; border-radius: 14px; color: #ffffff; background: #090738; text-align: center; font-size: 16px; font-weight: 700; }
   > button:disabled { background: #e4e6ec; cursor: default; }
 `;
-export const HomeIndicator = styled.div`width: 134px; height: 5px; margin: 18px auto 8px; border-radius: 3px; background: #000000;`;
 export const Overlay = styled.div`position: fixed; z-index: 10; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.5);`;
 export const Dialog = styled.div`
   width: min(calc(100% - 80px), 322px); padding: 28px 24px 20px; border-radius: 24px; background: #ffffff; text-align: center;

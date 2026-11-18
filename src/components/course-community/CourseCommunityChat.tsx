@@ -240,7 +240,6 @@ function CourseCommunityChat({ onBack, onViewCourse, onApplyToCourse }: CourseCo
           </label>
           <button type="submit" disabled={!message.trim()} aria-label="메시지 보내기"><img src={sendIcon} alt="" /></button>
         </form>
-        <span className="community-chat__home-indicator" aria-hidden="true" />
       </footer>
 
       {stage === "day-picker" && (

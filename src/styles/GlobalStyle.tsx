@@ -4,7 +4,7 @@ import PretendardVariable from "../assets/fonts/PretendardVariable.woff2";
 export const GlobalStyle = createGlobalStyle`
   @font-face {
     font-family: "Pretendard";
-    src: url(${PretendardVariable}) format("woff2-variations");
+    src: url(${PretendardVariable}) format("woff2");
     font-weight: 100 900;
     font-style: normal;
     font-display: swap;
@@ -37,6 +37,47 @@ input,
 textarea,
 select {
   font: inherit;
+}
+
+.auth-gate {
+  display: flex;
+  min-height: 100dvh;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  background: #ffffff;
+  text-align: center;
+}
+
+.auth-gate img {
+  width: min(200px, 55vw);
+  height: auto;
+}
+
+.auth-gate__sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.auth-gate--error p {
+  margin: 0;
+  color: #5c5c63;
+  font-size: 15px;
+}
+
+.auth-gate--error button {
+  min-width: 180px;
+  min-height: 48px;
+  border: 0;
+  border-radius: 12px;
+  background: #090738;
+  color: #ffffff;
+  font-weight: 700;
 }
 
 `;

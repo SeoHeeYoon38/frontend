@@ -139,16 +139,3 @@ export const Submit = styled.button`
 
   &:disabled { background: #d1d1d6 !important; }
 `;
-
-export const HomeIndicator = styled.div`
-  position: fixed;
-  z-index: 14;
-  right: 0;
-  bottom: 8px;
-  left: 0;
-  width: 134px;
-  height: 5px;
-  margin: auto;
-  border-radius: 3px;
-  background: #000000;
-`;

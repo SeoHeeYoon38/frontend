@@ -266,18 +266,6 @@ export const LiveRegion = styled.p`
   text-align: center;
 `;
 
-export const HomeIndicator = styled.div`
-  position: absolute;
-  z-index: 5;
-  left: 50%;
-  bottom: 8px;
-  width: 134px;
-  height: 5px;
-  border-radius: 999px;
-  background: #000000;
-  transform: translateX(-50%);
-`;
-
 export const SheetLayer = styled.div`
   position: fixed;
   z-index: 20;
@@ -391,6 +379,9 @@ export const CoverGrid = styled.div`
 export const SheetPrimaryButton = styled.button`
   width: 100%;
   height: 56px;
+  display: grid;
+  place-items: center;
+  text-align: center;
   margin-top: 24px;
   border-radius: 14px !important;
   background: #090738 !important;
@@ -850,6 +841,8 @@ export const LinkBox = styled.div`
 
   button {
     height: 35px;
+    display: grid;
+    place-items: center;
     padding: 0 12px !important;
     border-radius: 8px !important;
     background: #5b4fe8 !important;

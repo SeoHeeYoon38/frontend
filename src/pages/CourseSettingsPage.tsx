@@ -263,7 +263,6 @@ function ServerCourseSettings({ tripId }: { tripId: number }) {
                 </>
               )}
             </S.SettingsContent>
-            <S.HomeIndicator />
           </>
         )}
         {activeSheet && trip && summary && (
@@ -421,7 +420,6 @@ function DemoCourseSettings() {
           onOpenOrigin={() => navigate("/courses/kyoto-walk")}
         />
         <S.LiveRegion aria-live="polite">{notice}</S.LiveRegion>
-        <S.HomeIndicator />
         </> : (
           <CourseSettingsDetailView view={view} onBack={() => setView("menu")} onInvite={openInviteFromMembers} />
         )}

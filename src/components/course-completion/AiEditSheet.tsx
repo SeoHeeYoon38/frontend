@@ -7,6 +7,7 @@ interface AiEditSheetProps {
   onClose: () => void;
   onSubmit: () => void;
   error?: string;
+  pending?: boolean;
 }
 
 const commonRequests = [
@@ -18,12 +19,12 @@ const commonRequests = [
   "이동 동선 줄이기",
 ];
 
-function AiEditSheet({ value, onChange, onClose, onSubmit, error = "" }: AiEditSheetProps) {
+function AiEditSheet({ value, onChange, onClose, onSubmit, error = "", pending = false }: AiEditSheetProps) {
   return (
     <div className="course-overlay" role="presentation">
       <section className="course-sheet ai-edit-sheet" aria-label="AI 일정 수정 요청">
         <div className="course-sheet__handle" />
-        <button className="course-sheet__close" type="button" onClick={onClose} aria-label="닫기"><img src={closeIcon} alt="" /></button>
+        <button className="course-sheet__close" type="button" disabled={pending} onClick={onClose} aria-label="닫기"><img src={closeIcon} alt="" /></button>
         <div className="ai-edit-sheet__title">
           <img src={aiSparkle} alt="" />
           <div>
@@ -33,6 +34,8 @@ function AiEditSheet({ value, onChange, onClose, onSubmit, error = "" }: AiEditS
         </div>
         <textarea
           value={value}
+          maxLength={500}
+          disabled={pending}
           onChange={(event) => onChange(event.target.value)}
           aria-label="AI 수정 요청 내용"
           placeholder="첫날은 좀 여유롭게, 카페는 빼도 괜찮아요"
@@ -40,12 +43,12 @@ function AiEditSheet({ value, onChange, onClose, onSubmit, error = "" }: AiEditS
         <h3>자주 하는 요청</h3>
         <div className="ai-edit-sheet__chips">
           {commonRequests.map((request) => (
-            <button type="button" onClick={() => onChange(request)} key={request}>{request}</button>
+            <button type="button" disabled={pending} onClick={() => onChange(request)} key={request}>{request}</button>
           ))}
         </div>
         {error && <p className="ai-edit-sheet__error" role="alert">{error}</p>}
-        <button className="course-sheet__primary" type="button" onClick={onSubmit} disabled={!value.trim()}>
-          수정 요청하기
+        <button className="course-sheet__primary" type="button" onClick={onSubmit} disabled={!value.trim() || pending}>
+          {pending ? "수정안을 만들고 있어요" : "수정 요청하기"}
         </button>
       </section>
     </div>

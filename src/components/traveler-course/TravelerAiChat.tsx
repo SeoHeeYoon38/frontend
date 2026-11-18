@@ -50,7 +50,6 @@ function TravelerAiChat({ place, onBack }: TravelerAiChatProps) {
           <button type="submit" aria-label="질문 보내기"><img src={sendIcon} alt="" /></button>
         </form>
       </S.AiComposer>
-      <S.HomeIndicator />
     </S.AiScreen>
   );
 }

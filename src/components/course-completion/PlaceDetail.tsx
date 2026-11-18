@@ -10,7 +10,7 @@ import CompanionOpinions from "../course-community/CompanionOpinions";
 import ServerCompanionOpinions from "../course-community/ServerCompanionOpinions";
 import { PlaceGallery } from "../common/PlacePhoto";
 import type { TripInteractions } from "../../api/interactions";
-import { getPlaceHours, type PlaceHoursResponse } from "../../api/places";
+import { getPlaceDetail, getPlaceHours, type PlaceDetailResponse, type PlaceHoursResponse } from "../../api/places";
 import type { CoursePlace } from "../../types/courseCompletion";
 
 interface PlaceDetailProps {
@@ -39,11 +39,18 @@ function PlaceDetail({ place, onBack, onRemove, server, removePending = false, r
     value: PlaceHoursResponse | null;
     error: boolean;
   }>();
+  const [placeResult, setPlaceResult] = useState<{
+    key: string;
+    value: PlaceDetailResponse | null;
+    error: boolean;
+  }>();
   const serverTripId = server?.tripId;
   const serverPlaceId = server?.placeId;
   const hoursKey = `${serverTripId ?? ""}:${serverPlaceId ?? ""}`;
   const hours = hoursResult?.key === hoursKey ? hoursResult.value : undefined;
   const hoursError = hoursResult?.key === hoursKey && hoursResult.error;
+  const livePlace = placeResult?.key === hoursKey ? placeResult.value : undefined;
+  const placeError = placeResult?.key === hoursKey && placeResult.error;
   useEffect(() => {
     if (!detailsExpanded || serverTripId === undefined || !serverPlaceId) return;
     const controller = new AbortController();
@@ -53,10 +60,25 @@ function PlaceDetail({ place, onBack, onRemove, server, removePending = false, r
     );
     return () => controller.abort();
   }, [detailsExpanded, serverTripId, serverPlaceId, hoursKey]);
+  useEffect(() => {
+    if (serverTripId === undefined || !serverPlaceId) return;
+    const controller = new AbortController();
+    void getPlaceDetail(serverTripId, serverPlaceId, controller.signal).then(
+      (result) => { if (!controller.signal.aborted) setPlaceResult({ key: hoursKey, value: result, error: false }); },
+      () => { if (!controller.signal.aborted) setPlaceResult({ key: hoursKey, value: null, error: true }); },
+    );
+    return () => controller.abort();
+  }, [serverTripId, serverPlaceId, hoursKey]);
   const isKuromon = !server && place.name === "구로몬 시장";
   const showMap = () => {
-    const query = place.latitude !== undefined && place.longitude !== undefined
-      ? `${place.latitude},${place.longitude}`
+    if (livePlace?.googleMapsUri) {
+      window.open(livePlace.googleMapsUri, "_blank", "noopener,noreferrer");
+      return;
+    }
+    const latitude = livePlace?.latitude ?? place.latitude;
+    const longitude = livePlace?.longitude ?? place.longitude;
+    const query = latitude !== undefined && longitude !== undefined
+      ? `${latitude},${longitude}`
       : place.name;
     window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`, "_blank", "noopener,noreferrer");
   };
@@ -83,14 +105,20 @@ function PlaceDetail({ place, onBack, onRemove, server, removePending = false, r
       <div className="place-detail__body">
         <div className="place-detail__chips">
           <span>{place.category}</span>
-          <span>내가 저장</span>
+          {(!server || livePlace?.savedPlaceId != null) && <span>내가 저장</span>}
         </div>
-        <h1>{place.name}</h1>
+        <h1>{livePlace?.name ?? place.name}</h1>
         {isKuromon && <p className="place-detail__english">Kuromon Ichiba Market</p>}
         {isKuromon && <div className="place-detail__rating">
           <strong>★ 4.2</strong>
           <span>리뷰 8,500</span>
           <span>오사카 난바</span>
+          <button type="button" onClick={showMap}>지도 보기</button>
+        </div>}
+        {server && livePlace && (livePlace.rating !== null || livePlace.address) && <div className="place-detail__rating">
+          {livePlace.rating !== null && <strong>★ {livePlace.rating.toFixed(1)}</strong>}
+          {livePlace.reviewCount !== null && <span>리뷰 {livePlace.reviewCount.toLocaleString()}</span>}
+          {livePlace.address && <span>{livePlace.address}</span>}
           <button type="button" onClick={showMap}>지도 보기</button>
         </div>}
 
@@ -115,7 +143,9 @@ function PlaceDetail({ place, onBack, onRemove, server, removePending = false, r
           <>
             <section>
               <h2>소개</h2>
-              <p>{isKuromon
+              <p>{server
+                ? placeError ? "장소 정보를 불러오지 못했어요." : livePlace === undefined ? "장소 정보를 확인하고 있어요." : livePlace?.summary || place.description || "장소 소개가 없어요."
+                : isKuromon
                 ? "190년 넘게 이어진 오사카의 부엌이에요. 해산물 꼬치, 와규 꼬치, 제철 과일을 가게 앞에서 바로 먹을 수 있어요. 지붕이 있는 아케이드라 비가 와도 다니기 좋아요."
                 : place.description || place.detail || "장소 정보가 아직 없어요."}</p>
               {isKuromon && <div className="place-detail__tags">
@@ -149,6 +179,8 @@ function PlaceDetail({ place, onBack, onRemove, server, removePending = false, r
                             ? periods.map(({ open, close }) => `${open} - ${close}`).join(", ") : "휴무"}<br /></span>
                         ))}</>}
                 </dd></div>
+                {livePlace?.address && <div><dt>주소</dt><dd>{livePlace.address}</dd></div>}
+                {livePlace?.googleMapsUri && <div><dt>위치</dt><dd><button type="button" onClick={showMap}>구글맵에서 열기</button></dd></div>}
               </dl>
             </section>}
 

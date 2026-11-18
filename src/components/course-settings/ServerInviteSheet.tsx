@@ -1,8 +1,13 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router";
 import linkIcon from "../../assets/course-settings/link.svg";
-import { createInvite } from "../../api/members";
+import airDropIcon from "../../assets/course-settings/share-airdrop.png";
+import messagesIcon from "../../assets/course-settings/share-messages.png";
+import kakaoIcon from "../../assets/course-settings/share-kakao.png";
+import mailIcon from "../../assets/course-settings/share-mail.png";
+import memberAvatar from "../../assets/course-settings-details/member-avatar.png";
+import { createInvite, getTripMembers } from "../../api/members";
 import { createTripShare } from "../../api/trips";
+import type { MemberResponse } from "../../api/types";
 import { routes } from "../../config/routes";
 import { invitePath } from "../../utils/navigation";
 import TripSheet from "../common/TripSheet";
@@ -20,6 +25,7 @@ export default function ServerInviteSheet({ tripId, onClose, publicShare = false
   const [loadFailed, setLoadFailed] = useState(false);
   const [message, setMessage] = useState("");
   const [actionError, setActionError] = useState("");
+  const [members, setMembers] = useState<MemberResponse[]>([]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -37,16 +43,29 @@ export default function ServerInviteSheet({ tripId, onClose, publicShare = false
     return () => controller.abort();
   }, [attempt, publicShare, tripId]);
 
+  useEffect(() => {
+    if (publicShare) return;
+    const controller = new AbortController();
+    void getTripMembers(tripId, controller.signal).then(
+      (result) => { if (!controller.signal.aborted) setMembers(result); },
+      () => undefined,
+    );
+    return () => controller.abort();
+  }, [publicShare, tripId]);
+
   const link = path ? new URL(path, window.location.origin).href : "";
 
-  async function shareLink(share: boolean) {
+  async function shareLink(method: "copy" | "native" | "mail") {
     setMessage("");
     setActionError("");
     try {
-      if (share) await navigator.share({ title: `도틀로 ${title}`, url: link });
-      else {
+      if (method === "mail") {
+        window.location.href = `mailto:?subject=${encodeURIComponent(`도틀로 ${title}`)}&body=${encodeURIComponent(link)}`;
+      } else if (method === "native" && typeof navigator.share === "function") {
+        await navigator.share({ title: `도틀로 ${title}`, url: link });
+      } else {
         await navigator.clipboard.writeText(link);
-        setMessage(`${linkLabel}를 복사했어요.`);
+        setMessage(`${linkLabel}를 복사했어요. 원하는 앱에 붙여 넣어 주세요.`);
       }
     } catch (reason) {
       if (reason instanceof DOMException && reason.name === "AbortError") return;
@@ -71,12 +90,33 @@ export default function ServerInviteSheet({ tripId, onClose, publicShare = false
             <S.LinkBox>
               <img src={linkIcon} alt="" />
               <span title={link}>{link}</span>
-              <button type="button" onClick={() => void shareLink(false)}>링크 복사</button>
+              <button type="button" onClick={() => void shareLink("copy")}>링크 복사</button>
             </S.LinkBox>
-            {typeof navigator.share === "function" && (
-              <S.SheetPrimaryButton type="button" onClick={() => void shareLink(true)}>공유하기</S.SheetPrimaryButton>
-            )}
-            <Link to={path}>{publicShare ? "공개 일정 미리보기" : "초대장 미리보기"}</Link>
+            <S.ShareSection>
+              <h3>공유하기</h3>
+              <S.ShareList>
+                {[
+                  { label: "AirDrop", icon: airDropIcon, method: "native" },
+                  { label: "메시지", icon: messagesIcon, method: "native" },
+                  { label: "카카오톡", icon: kakaoIcon, method: "native" },
+                  { label: "메일", icon: mailIcon, method: "mail" },
+                ].map(({ label, icon, method }) => <li key={label}>
+                  <button type="button" aria-label={`${label}로 공유`} onClick={() => void shareLink(method as "native" | "mail")}>
+                    <img src={icon} alt="" /><span>{label}</span>
+                  </button>
+                </li>)}
+              </S.ShareList>
+            </S.ShareSection>
+            {!publicShare && members.length > 0 && <S.MemberSection>
+              <h3>함께하는 사람</h3>
+              <S.MemberList>
+                {members.map((member) => <li key={member.userId}>
+                  <img src={member.profileImageUrl || memberAvatar} alt="" />
+                  <strong>{member.name}{member.me && <small> (나)</small>}</strong>
+                  <span>{member.role === "OWNER" ? "여행 생성자" : "참여자"}</span>
+                </li>)}
+              </S.MemberList>
+            </S.MemberSection>}
             {message && <p role="status">{message}</p>}
             {actionError && <p role="alert">{actionError}</p>}
           </>

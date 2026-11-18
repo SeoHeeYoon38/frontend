@@ -217,14 +217,6 @@ export const Cta = styled.footer`
   }
 `;
 
-export const HomeIndicator = styled.div`
-  width: 134px;
-  height: 5px;
-  margin: 21px auto 8px;
-  border-radius: 3px;
-  background: #000000;
-`;
-
 export const Overlay = styled.div`
   position: fixed;
   z-index: 10;

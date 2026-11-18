@@ -165,7 +165,6 @@ function WithdrawalPage() {
             }
           }}
         >다음</button>
-        <S.HomeIndicator />
       </S.Cta>
 
       {showFinalDialog && (
@@ -197,7 +196,7 @@ export function WithdrawalCompletePage() {
         <h1>탈퇴가 완료됐어요</h1>
         <p>그동안 도틀로와 함께해 주셔서 고마워요<br />다음 여행에서 다시 만나요</p>
       </S.Done>
-      <S.Cta><button type="button" onClick={() => navigate(routes.login, { replace: true })}>처음으로</button><S.HomeIndicator /></S.Cta>
+      <S.Cta><button type="button" onClick={() => navigate(routes.login, { replace: true })}>처음으로</button></S.Cta>
     </S.Page>
   );
 }

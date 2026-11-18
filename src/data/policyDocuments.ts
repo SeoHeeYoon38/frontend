@@ -25,7 +25,7 @@ export const policyDocuments: Record<PolicyDocumentId, PolicyDocument> = {
       { heading: "제2조 서비스 이용", paragraphs: ["회원은 본인 계정으로 서비스를 이용하며, 생성하거나 공유한 여행 정보가 다른 사람의 권리를 침해하지 않도록 주의해야 합니다."], bullets: ["여행 장소 저장 및 일정 생성", "동행자 초대와 공동 편집", "여행 코스 저장·복제·공유"] },
       { heading: "제3조 회원의 의무", paragraphs: ["계정 정보는 정확하게 유지해야 하며, 타인의 계정을 사용하거나 서비스 운영을 방해해서는 안 됩니다."] },
       { heading: "제4조 서비스 변경", paragraphs: ["더 나은 서비스 제공을 위해 기능의 일부가 변경될 수 있습니다. 중요한 변경은 앱 내 공지사항을 통해 안내합니다."] },
-      { heading: "제5조 문의", paragraphs: ["서비스 이용과 관련한 문의는 앱의 ‘의견 보내기’를 통해 접수할 수 있습니다."] },
+      { heading: "제5조 문의", paragraphs: ["서비스 이용과 관련한 문의는 contact.dotlo.team@gmail.com으로 접수할 수 있습니다."] },
     ],
   },
   privacy: {
@@ -39,6 +39,7 @@ export const policyDocuments: Record<PolicyDocumentId, PolicyDocument> = {
       { heading: "3. 보유 기간", paragraphs: ["회원 탈퇴 시 개인정보를 지체 없이 파기합니다. 다만 관련 법령에 따라 일정 기간 보관이 필요한 정보는 해당 기간 동안 분리 보관합니다."] },
       { heading: "4. 외부 서비스 연동", paragraphs: ["Google Maps 연동은 사용자가 직접 선택하며 언제든 계정 관리에서 해제할 수 있습니다."] },
       { heading: "5. 이용자의 권리", paragraphs: ["회원은 자신의 개인정보를 조회·수정하거나 처리 정지와 삭제를 요청할 수 있습니다."] },
+      { heading: "6. 문의", paragraphs: ["개인정보 처리에 관한 문의는 contact.dotlo.team@gmail.com으로 접수할 수 있습니다."] },
     ],
   },
   location: {

@@ -62,9 +62,6 @@ export const Disconnect = styled.button`
   strong { color: #e5484d; font-size: 15px; line-height: 22px; }
   small { color: #8a8a8e; font-size: 12px; line-height: 17px; }
 `;
-export const HomeIndicator = styled.div`
-  position: fixed; right: 0; bottom: 8px; left: 0; width: 134px; height: 5px; margin: auto; border-radius: 3px; background: #000000;
-`;
 export const Overlay = styled.div`
   position: fixed; z-index: 10; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.5);
 `;

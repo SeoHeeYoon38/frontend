@@ -31,7 +31,6 @@ function GoogleMapsSettingsPage() {
         {!isApiEnabled() && <p>데모에서는 파일과 링크 형식을 확인한 뒤 샘플 장소를 표시해요.</p>}
         <Link to={routes.createTrip}>AI 맞춤 여행 만들기 →</Link>
       </S.ListSection>
-      <S.HomeIndicator />
     </S.Page>
   );
 }

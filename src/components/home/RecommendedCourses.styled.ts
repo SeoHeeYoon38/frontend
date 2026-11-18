@@ -24,7 +24,7 @@ export const Card = styled.div`
   border-radius: 20px;
   scroll-snap-align: start;
   color: white;
-  background: black;
+  background: #d9e9ee;
   cursor: pointer;
 `;
 export const Badges = styled.div`

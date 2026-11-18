@@ -125,18 +125,6 @@ export const AccountActions = styled.div`
   }
 `;
 
-export const HomeIndicator = styled.div`
-  position: fixed;
-  right: 0;
-  bottom: 8px;
-  left: 0;
-  width: 134px;
-  height: 5px;
-  margin: 0 auto;
-  border-radius: 3px;
-  background: #000000;
-`;
-
 export const Overlay = styled.div`
   position: fixed;
   z-index: 10;

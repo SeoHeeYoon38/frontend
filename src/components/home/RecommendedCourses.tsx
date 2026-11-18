@@ -40,16 +40,16 @@ function RecommendedCourses({ courses }: RecommendedCoursesProps) {
                 aria-label={`${course.title.replace("\n", " ")} 코스 둘러보기`}
                 key={course.id}
               >
-                <C.Cover
+                {course.coverImage && <C.Cover
                   loading="lazy"
                   decoding="async"
                   src={course.coverImage}
                   alt=""
-                />
+                />}
                 <C.Scrim />
                 <S.Badges>
                   <span>{course.category}</span>
-                  <span>코스 {course.courseCount}개</span>
+                  <span>장소 {course.courseCount}곳</span>
                 </S.Badges>
                 <S.Text>
                   <h3>{course.title}</h3>

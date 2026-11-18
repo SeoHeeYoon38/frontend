@@ -88,8 +88,8 @@ function PrivacyPolicyPage() {
           <p>
             이용자는 마이 &gt; 계정 관리 &gt; 회원탈퇴를 통해 동의를 철회할 수 있으며, 개인정보의 열람, 정정·삭제 및 처리정지를 요청할 수 있습니다.
           </p>
-          <S.ContactBox>문의: 도틀로 앱 내 마이 &gt; 의견 보내기</S.ContactBox>
-          <p>개인정보 처리에 관한 자세한 문의도 위 경로를 통해 접수할 수 있습니다.</p>
+          <S.ContactBox>문의: <a href="mailto:contact.dotlo.team@gmail.com">contact.dotlo.team@gmail.com</a></S.ContactBox>
+          <p>개인정보 처리에 관한 문의는 위 이메일로 접수할 수 있습니다.</p>
         </S.Section>
 
         <S.EffectiveDate>시행일 2026년 4월 2일</S.EffectiveDate>

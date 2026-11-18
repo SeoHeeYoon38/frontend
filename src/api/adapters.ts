@@ -144,7 +144,21 @@ function courseInterest(tags: string[]): CourseInterest[] {
 }
 
 function courseCover(course: CourseSummaryResponse) {
-  return course.coverImageUrl || "";
+  if (course.coverImageUrl) return course.coverImageUrl;
+  return cityCoverImages[course.city] ?? "";
+}
+
+const cityCoverImages: Record<string, string> = {
+  오사카: new URL("../assets/images/city-osaka.webp", import.meta.url).href,
+  교토: new URL("../assets/images/city-kyoto.webp", import.meta.url).href,
+  도쿄: new URL("../assets/images/city-tokyo.webp", import.meta.url).href,
+  후쿠오카: new URL("../assets/images/city-fukuoka.webp", import.meta.url).href,
+  방콕: new URL("../assets/images/city-bangkok.webp", import.meta.url).href,
+  다낭: new URL("../assets/images/city-danang.webp", import.meta.url).href,
+};
+
+function courseTitle(title: string) {
+  return title.replace(/^\[테스트용\]\s*/, "");
 }
 
 export function courseSummaryToTravelCourse(
@@ -152,7 +166,7 @@ export function courseSummaryToTravelCourse(
 ): TravelCourse {
   return {
     id: String(course.id),
-    title: course.title,
+    title: courseTitle(course.title),
     city: course.city,
     country: course.country,
     duration: `${course.nightCount}박 ${course.dayCount}일`,
@@ -169,7 +183,7 @@ export function courseSummaryToHomeCourse(
 ): CourseSummary {
   return {
     id: String(course.id),
-    title: course.title,
+    title: courseTitle(course.title),
     description: course.transportSummary,
     category: course.tags[0] ?? course.city,
     courseCount: course.stopCount,
