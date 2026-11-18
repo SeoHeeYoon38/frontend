@@ -10,6 +10,8 @@ import { isApiEnabled } from "../../api/config";
 import { hasAuthSession } from "../../api/tokenStorage";
 import { confirmTrip, createTrip, updateTrip } from "../../api/trips";
 import { saveItinerary } from "../../api/itineraries";
+import { ApiError } from "../../api/client";
+import { editedItineraryDays, moveVisit, reorderVisit } from "../../utils/itineraryEditing";
 import type { ItineraryDayInput, ItineraryVersionView, ItineraryVisitInput, SavedPlaceResponse } from "../../api/types";
 import { useItineraryCheck } from "../../hooks/useItineraryCheck";
 import { createGeneratedTrip, mockTripStatus, placeIcon, saveMockTrip, tripStorageNotice } from "../../data/mocks/mockTripService";
@@ -24,7 +26,6 @@ import closeIcon from "../../assets/icons/action-close.svg";
 import addIcon from "../../assets/direct-trip/add.svg";
 import cityPinIcon from "../../assets/direct-trip/city-pin.svg";
 import emptyPinIcon from "../../assets/direct-trip/empty-pin.svg";
-import dragHandleIcon from "../../assets/course-completion/drag-handle.svg";
 import selectedCheckIcon from "../../assets/icons/status-selected-check.svg";
 import { routes } from "../../config/routes";
 import { serverTripPlanPath, tripSettingsPath } from "../../utils/navigation";
@@ -86,6 +87,8 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
   const [changed, setChanged] = useState(false);
   const [preparingTrip, setPreparingTrip] = useState(false);
   const [savingItinerary, setSavingItinerary] = useState(false);
+  const [saveConflict, setSaveConflict] = useState(false);
+  const savePending = useRef(false);
   const preparingRequest = useRef<AbortController | null>(null);
   useEffect(() => () => preparingRequest.current?.abort(), []);
   const { validation, checking, checkError, resetCheck, validate } = useItineraryCheck(Number(draft.tripId));
@@ -217,14 +220,16 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
   const movePlace = (placeId: string, nextDay: number) => {
     resetCheck();
     setChanged(true);
-    setDayPlaces((current) => {
-      const next: Record<number, string[]> = {};
-      Object.entries(current).forEach(([day, ids]) => {
-        next[Number(day)] = ids.filter((id) => id !== placeId);
-      });
-      next[nextDay] = [...(next[nextDay] ?? []), placeId];
-      return next;
-    });
+    setDayPlaces((current) => moveVisit(current, placeId, nextDay));
+  };
+
+  const reorderPlace = (itemId: string, offset: -1 | 1) => {
+    resetCheck();
+    setChanged(true);
+    setDayPlaces((current) => ({
+      ...current,
+      [selectedDay]: reorderVisit(current[selectedDay] ?? [], itemId, offset),
+    }));
   };
 
   const removePlace = (placeId: string) => {
@@ -318,10 +323,9 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
     </S.PlainScreen>
   );
 
-  const liveDays = useMemo(() => rangeDates(draft.startDate, draft.endDate).map((date, index) => ({
-    date,
-    visits: (dayPlaces[index + 1] ?? []).flatMap((id) => livePlaces[id] ? [livePlaces[id].visit] : []),
-  })), [draft.startDate, draft.endDate, dayPlaces, livePlaces]);
+  const liveDays = useMemo(() => live ? editedItineraryDays(
+    rangeDates(draft.startDate, draft.endDate), dayPlaces, livePlaces,
+  ) : [], [live, draft.startDate, draft.endDate, dayPlaces, livePlaces]);
 
   useEffect(() => {
     if (!live || stage !== "itinerary" || !hasAnyPlace || (existing && !changed)) return;
@@ -331,7 +335,8 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
 
   const saveTrip = async () => {
     if (live) {
-      if (savingItinerary || checking || !validation?.summary.valid) return;
+      if (savePending.current || saveConflict || checking || !validation?.summary.valid) return;
+      savePending.current = true;
       setSavingItinerary(true);
       setNotice("");
       try {
@@ -352,8 +357,14 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
           });
         }
       } catch (reason) {
-        setNotice(reason instanceof Error ? reason.message : "일정을 저장하지 못했어요.");
+        if (reason instanceof ApiError && reason.status === 409) {
+          setSaveConflict(true);
+          setNotice("다른 구성원이 일정을 변경했어요. 편집 내용은 유지됩니다. 변경 내용을 확인한 뒤 편집을 나가 최신 일정을 다시 열어 주세요.");
+        } else {
+          setNotice(reason instanceof Error ? reason.message : "일정을 저장하지 못했어요.");
+        }
       } finally {
+        savePending.current = false;
         setSavingItinerary(false);
       }
       return;
@@ -474,6 +485,7 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
                       <label>
                         <span className="sr-only">{place.name} 이동 일자</span>
                         <select
+                          disabled={savingItinerary}
                           value={selectedDay}
                           onChange={(event) =>
                             movePlace(place.id, Number(event.target.value))
@@ -488,8 +500,9 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
                       </label>
                     </div>
                     <div>
-                      <img src={dragHandleIcon} alt="순서 변경" />
-                      <button type="button" onClick={() => removePlace(place.id)} aria-label={`${place.name} 삭제`}>
+                      <button type="button" disabled={savingItinerary || index === 0} onClick={() => reorderPlace(place.id, -1)} aria-label={`${place.name} 위로 이동`}>↑</button>
+                      <button type="button" disabled={savingItinerary || index === placesForDay.length - 1} onClick={() => reorderPlace(place.id, 1)} aria-label={`${place.name} 아래로 이동`}>↓</button>
+                      <button type="button" disabled={savingItinerary} onClick={() => removePlace(place.id)} aria-label={`${place.name} 삭제`}>
                         <img src={closeIcon} alt="" />
                       </button>
                     </div>
@@ -515,7 +528,7 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
       <S.BottomAction $floating>
         <button
           type="button"
-          disabled={!hasAnyPlace || checking || savingItinerary || (live && !validation?.summary.valid)}
+          disabled={!hasAnyPlace || checking || savingItinerary || saveConflict || (live && !validation?.summary.valid)}
           onClick={() => void saveTrip()}
         >
           {savingItinerary
