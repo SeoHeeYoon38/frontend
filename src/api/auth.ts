@@ -1,4 +1,4 @@
-import { apiRequest, queryString } from "./client";
+import { ApiError, apiRequest, queryString, waitForPendingTokenRefresh } from "./client";
 import { googleOAuthConfig } from "./config";
 import {
   clearAuthTokens,
@@ -101,14 +101,28 @@ export async function loginWithGoogleCode(code: string) {
 }
 
 export async function logout() {
-  const tokens = getAuthTokens();
   try {
-    if (tokens) {
-      await apiRequest<void>("/api/auth/logout", {
-        method: "POST",
-        auth: false,
-        json: { refreshToken: tokens.refreshToken },
-      });
+    // 다른 요청의 401 갱신이 끝나야 서버에 현재 유효한 refresh 토큰을 보낼 수 있습니다.
+    await waitForPendingTokenRefresh().catch(() => undefined);
+    const tokens = getAuthTokens();
+    if (!tokens) return;
+    const revoke = (refreshToken: string) => apiRequest<void>("/api/auth/logout", {
+      method: "POST",
+      auth: false,
+      json: { refreshToken },
+    });
+    try {
+      await revoke(tokens.refreshToken);
+    } catch (reason) {
+      if (reason instanceof ApiError && reason.status === 401 && reason.code === "INVALID_TOKEN") {
+        await waitForPendingTokenRefresh().catch(() => undefined);
+        const newer = getAuthTokens();
+        if (newer && newer.refreshToken !== tokens.refreshToken) {
+          await revoke(newer.refreshToken);
+          return;
+        }
+      }
+      throw reason;
     }
   } finally {
     clearAuthTokens();

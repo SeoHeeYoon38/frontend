@@ -51,6 +51,10 @@ interface ApiRequestOptions extends Omit<RequestInit, "body"> {
 
 let refreshRequest: Promise<AuthTokens> | null = null;
 
+export async function waitForPendingTokenRefresh() {
+  if (refreshRequest) await refreshRequest;
+}
+
 async function readResponse(response: Response) {
   if (response.status === 204) return undefined;
   const contentType = response.headers.get("content-type") ?? "";
