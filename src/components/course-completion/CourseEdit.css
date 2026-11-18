@@ -184,15 +184,15 @@
   box-shadow: 0 -10px 30px rgb(9 7 56 / 12%);
 }
 
-.course-sheet__handle {
+.course-sheet .course-sheet__handle {
   position: sticky;
-  z-index: 2;
   top: 0;
-  width: 36px;
-  height: 5px;
-  margin: 10px auto 0;
-  border-radius: 999px;
-  background: #d0d0d8;
+  left: auto;
+  display: block;
+  margin: 0 auto -17px;
+  transform: none;
+  --sheet-handle-top: 10px;
+  --sheet-handle-color: #d0d0d8;
 }
 
 .course-sheet__close {

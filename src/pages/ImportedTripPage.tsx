@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router";
+import SheetHandle from "../components/common/SheetHandle";
 import backIcon from "../assets/course-completion/back.svg";
 import calendarIcon from "../assets/course-completion/icon-calendar.svg";
 import pinIcon from "../assets/course-completion/icon-pin.svg";
@@ -212,7 +213,7 @@ function ImportedTrip({ tripId }: { tripId: string }) {
         {sheet && (
           <S.Overlay role="presentation" onMouseDown={() => setSheet(null)}>
             <S.Sheet role="dialog" aria-modal="true" onMouseDown={(event) => event.stopPropagation()}>
-              <S.Handle />
+              <SheetHandle onClose={() => setSheet(null)} />
               {sheet === "info" && (
                 <>
                   <S.SheetHeader><h2>여행 정보 수정</h2><button type="button" aria-label="닫기" onClick={() => setSheet(null)}><img src={closeIcon} alt="" /></button></S.SheetHeader>

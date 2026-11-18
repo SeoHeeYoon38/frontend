@@ -327,13 +327,15 @@ export const DayOverlay = styled.div`
 `;
 
 export const DaySheet = styled.section`
+  position: relative;
   width: 100%;
   max-height: 70%;
   overflow-y: auto;
-  padding: 0 20px 30px;
+  padding: 38px 20px 30px;
   border-radius: 22px 22px 0 0;
   background: #fff;
-  .grabber { display: block; width: 36px; height: 5px; margin: 9px auto 24px; border-radius: 3px; background: #d1d1d6; }
+  --sheet-handle-top: 9px;
+  --sheet-handle-color: #d1d1d6;
   header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
   h2 { margin: 0; font-size: 17px; line-height: 24px; }
   header button { width: 24px; height: 24px; display: grid; place-items: center; }

@@ -427,27 +427,28 @@ export const DetailMap = styled(RouteImage)<{ $expanded: boolean }>`
 
 export const EmptyState = styled(CenterState)`
   gap: 0;
-  padding: 24px 0 100px;
+  min-height: 238px;
+  padding: 12px 0 44px;
   h2 {
     font-size: 24px;
-    margin-top: 24px;
+    line-height: 32px;
+    letter-spacing: -0.24px;
+    margin-top: 22px;
   }
   p {
-    margin-top: 8px;
+    margin-top: 12px;
     line-height: 20px;
+    font-weight: 500;
   }
 `;
 export const EmptyArt = styled.div`
-  position: relative;
-  width: 120px;
-  height: 120px;
-  isolation: isolate;
-  > img:first-child {
-    position: absolute;
-    left: -141px;
-    top: -55px;
-    z-index: -1;
-  }
+  display: grid;
+  width: 96px;
+  height: 96px;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 50%;
+  background: #f3f5fa;
 `;
 export const CourseMap = styled.div`
   position: relative;

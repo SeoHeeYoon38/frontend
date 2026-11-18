@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from "react-router";
-import backIcon from "../assets/course-settings/back.svg";
+import backIcon from "../assets/icons/nav-back.svg";
 import shareIcon from "../assets/course-settings/link.svg";
 import memberIcon from "../assets/course-settings-details/menu-members.svg";
 import inviteIcon from "../assets/course-settings-details/menu-invite.svg";

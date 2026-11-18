@@ -14,6 +14,7 @@ import type { CityResponse, PlaceCandidate, SavedPlaceResponse } from "../../api
 import { isMapCoordinate } from "../../utils/googleMaps";
 import { savedPlacesForTripCity } from "../../utils/tripPlaces";
 import PlaceImportForm, { type PlaceImportInput, type PlaceImportView } from "./PlaceImportForm";
+import SavedPlacesEmptyState from "./SavedPlacesEmptyState";
 import ServerRecommendedCourses from "./ServerRecommendedCourses";
 import { PlaceThumbnail } from "../common/PlacePhoto";
 import googleMapsLogo from "../../assets/images/brand-google-maps.webp";
@@ -185,7 +186,7 @@ function ServerSavedPlaces({
     category === "ALL" || place.category === category);
   const selection = selectablePlaces.filter((place) => selectedIds.includes(place.id));
   const canContinue = selection.length > 0;
-  const showRecommendedShortcut = tab === "saved" && places?.length === 0 && Boolean(recommendationCity);
+  const emptySavedList = tab === "saved" && cityPlaces?.length === 0;
   const allSelected = selectablePlaces.length > 0 && selectablePlaces.every((place) => selectedIds.includes(place.id));
 
   function openRecommended() {
@@ -225,7 +226,11 @@ function ServerSavedPlaces({
       <P.ConnectStep>
         <PlaceImportForm
           onImport={importPlaces}
-          onSkip={() => { onImportViewChange?.("method"); setShowImport(false); }}
+          onSkip={() => {
+            if (cityPlaces?.length === 0) setTab("saved");
+            onImportViewChange?.("method");
+            setShowImport(false);
+          }}
           busy={busy}
           enriching={enriching}
           importError={error}
@@ -237,7 +242,7 @@ function ServerSavedPlaces({
   }
 
   return (
-    <P.PlacesStep $empty={false} aria-busy={busy}>
+    <P.PlacesStep $empty={emptySavedList} aria-busy={busy}>
       {onContinue && (
         <P.PlacesLead>
           <h1>여행에 담을 장소를 골라주세요</h1>
@@ -283,7 +288,9 @@ function ServerSavedPlaces({
       )}
       {cityPlaces && tab === "saved" && (
         <>
-          {cityPlaces.length === 0 && <p>{recommendationCity ? `${recommendationCity}에 저장한 장소가 없어요.` : "저장된 장소가 없어요."}</p>}
+          {emptySavedList && (isTripCreation && recommendationCity
+            ? <SavedPlacesEmptyState city={recommendationCity} />
+            : <p>{recommendationCity ? `${recommendationCity}에 저장한 장소가 없어요.` : "저장된 장소가 없어요."}</p>)}
           {cityPlaces.length > 0 && (
             <>
               <P.PlacesSummary>
@@ -422,7 +429,7 @@ function ServerSavedPlaces({
       )}
       {onContinue && (
         <S.Footer>
-          {showRecommendedShortcut ? (
+          {emptySavedList && recommendationCity ? (
             <S.Primary type="button" disabled={busy} onClick={openRecommended}>
               추천 코스에서 장소 고르기
             </S.Primary>

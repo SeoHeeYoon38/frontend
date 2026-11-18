@@ -232,21 +232,15 @@ export const Overlay = styled.div`
 `;
 
 export const Sheet = styled.section`
+  position: relative;
   width: min(100%, 402px);
   max-height: min(86dvh, 760px);
   overflow-y: auto;
-  padding: 8px 20px max(28px, env(safe-area-inset-bottom));
+  padding: 28px 20px max(28px, env(safe-area-inset-bottom));
   border-radius: 24px 24px 0 0;
   background: #fff;
-`;
-
-export const Handle = styled.span`
-  display: block;
-  width: 44px;
-  height: 4px;
-  margin: 0 auto 16px;
-  border-radius: 99px;
-  background: #d9d9de;
+  --sheet-handle-width: 44px;
+  --sheet-handle-height: 4px;
 `;
 
 export const SheetHeader = styled.header`

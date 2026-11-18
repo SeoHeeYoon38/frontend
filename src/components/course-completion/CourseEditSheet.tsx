@@ -1,5 +1,6 @@
 import { useRef } from "react";
 import dragHandle from "../../assets/course-completion/drag-handle.svg";
+import SheetHandle from "../common/SheetHandle";
 import closeIcon from "../../assets/icons/action-close.svg";
 import addIcon from "../../assets/icons/action-add.svg";
 import removeIcon from "../../assets/course-completion/remove.svg";
@@ -26,7 +27,7 @@ function CourseEditSheet({ days, activeDay, places, onDayChange, onReorder, onAd
   return (
     <div className="course-overlay" role="presentation">
       <section className="course-sheet schedule-edit-sheet" aria-label="일정 편집">
-        <div className="course-sheet__handle" />
+        <SheetHandle className="course-sheet__handle" onClose={onClose} />
         <header><h2>일정 편집</h2><button type="button" onClick={onClose} aria-label="닫기"><img src={closeIcon} alt="" /></button></header>
         <div className="schedule-edit-sheet__days">
           {days.map((day, index) => (

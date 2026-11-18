@@ -26,9 +26,8 @@ import {
   uploadTakeout,
 } from "../../api/places";
 import type { PlaceCandidate } from "../../api/types";
-import emptyImage from "../../assets/images/character-empty-places.webp";
 import routeImage from "../../assets/images/map-course-preview.png";
-import emptyGlow from "../../assets/icons/effect-empty-places-glow.svg";
+import SavedPlacesEmptyState from "./SavedPlacesEmptyState";
 import food from "../../assets/icons/category-food.svg";
 import cafe from "../../assets/icons/category-cafe.svg";
 import camera from "../../assets/icons/category-sightseeing.svg";
@@ -307,7 +306,6 @@ function SavedPlacesStep({
               onChange({
                 ...draft,
                 source: "manual",
-                places: mergePlaces(draft.places, catalog),
               });
               setTab("saved");
             }}
@@ -388,16 +386,7 @@ function SavedPlacesStep({
                 </P.PlaceList>
               </>
             ) : (
-              <P.EmptyState>
-                <P.EmptyArt>
-                  <img src={emptyGlow} alt="" />
-                  <P.LoadingCharacter src={emptyImage} alt="" />
-                </P.EmptyArt>
-                <h2>{draft.city} 저장 장소가 없어요</h2>
-                <p>
-                  {draft.city} 인기 장소나 추천 코스에서 바로 담을 수 있어요
-                </p>
-              </P.EmptyState>
+              <SavedPlacesEmptyState city={draft.city} />
             )
           ) : (
             <>

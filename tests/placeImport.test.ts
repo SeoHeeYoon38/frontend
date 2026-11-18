@@ -22,6 +22,7 @@ test("Google Maps 공유 링크의 주소 형식을 검사한다", () => {
 
 test("Google Maps 공유 텍스트에서 목록 URL만 추출한다", () => {
   const url = "https://maps.app.goo.gl/sample?g_st=ic";
+  assert.equal(extractMapsListLink(`즐겨찾는 장소 · 예빈 ${url}`), url);
   assert.equal(extractMapsListLink(`즐겨찾는 장소 · 예빈\n${url}\nGoogle 지도`), url);
   assert.equal(extractMapsListLink(`즐겨찾는 장소 · 예빈 (${url})`), url);
   assert.equal(extractMapsListLink(`${url} 즐겨찾는 장소 · 예빈`), url);
@@ -34,8 +35,14 @@ test("휴대폰과 iPad에서는 지도 앱이 지원하는 지도 열기 주소
   const iphone = { userAgent: "iPhone", platform: "iPhone", maxTouchPoints: 5 };
   const ipad = { userAgent: "Macintosh", platform: "MacIntel", maxTouchPoints: 5 };
   for (const device of [android, iphone, ipad]) {
-    assert.equal(googleMapsImportTarget(device), "https://www.google.com/maps/@?api=1&map_action=map");
+    assert.deepEqual(googleMapsImportTarget(device), {
+      href: "https://www.google.com/maps/@?api=1&map_action=map",
+      opensSavedList: false,
+    });
   }
   const desktop = { userAgent: "Windows NT", platform: "Win32", maxTouchPoints: 0 };
-  assert.equal(googleMapsImportTarget(desktop), "https://www.google.com/maps/@/data=!4m2!10m1!1e1?hl=ko");
+  assert.deepEqual(googleMapsImportTarget(desktop), {
+    href: "https://www.google.com/maps/@/data=!4m2!10m1!1e1?hl=ko",
+    opensSavedList: true,
+  });
 });

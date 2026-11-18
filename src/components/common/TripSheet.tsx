@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, type ReactNode } from "react";
 import close from "../../assets/icons/action-close.svg";
+import SheetHandle from "./SheetHandle";
 import * as S from "./TripSheet.styled";
 interface TripSheetProps {
   title: string;
@@ -47,7 +48,7 @@ function TripSheet({
         if (!closeDisabled) onClose();
       }}
     >
-      <S.Grabber />
+      <SheetHandle onClose={onClose} closeDisabled={closeDisabled} />
       <S.SheetHeader
         $course={variant === "course"}
         $compact={compactHeader}

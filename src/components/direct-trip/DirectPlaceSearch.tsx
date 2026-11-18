@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { addSavedPlace, enrichSavedPlaces, getNearbyPlaces, getPopularPlaces, getSavedPlaces, importSharedList, searchPlaces, uploadTakeout } from "../../api/places";
 import type { PlaceCandidate, PlaceCategoryCode, PopularPlaceResponse, SavedPlaceResponse } from "../../api/types";
 import { PlaceThumbnail } from "../common/PlacePhoto";
+import SheetHandle from "../common/SheetHandle";
 import PlaceImportForm, { type PlaceImportInput } from "../trip/PlaceImportForm";
 import type { DirectTripPlace } from "../../types/directTrip";
 import googleMapsLogo from "../../assets/images/brand-google-maps.webp";
@@ -381,7 +382,8 @@ export default function DirectPlaceSearch({
           </S.Footer>
           {showDays && <S.DayOverlay onMouseDown={() => setShowDays(false)}>
             <S.DaySheet role="dialog" aria-modal="true" aria-label="장소를 담을 날 선택" onMouseDown={(event) => event.stopPropagation()}>
-              <span className="grabber" /><header><h2>어느 날에 담을까요?</h2><button type="button" onClick={() => setShowDays(false)} aria-label="닫기"><img src={sheetCloseIcon} alt="" /></button></header>
+              <SheetHandle onClose={() => setShowDays(false)} />
+              <header><h2>어느 날에 담을까요?</h2><button type="button" onClick={() => setShowDays(false)} aria-label="닫기"><img src={sheetCloseIcon} alt="" /></button></header>
               {days.map((item) => <button type="button" className="day-row" key={item.day} aria-pressed={item.day === selectedDay} onClick={() => { onSelectDay(item.day); setShowDays(false); }}>
                 <span><strong>{item.day}일차 <em>{item.date} {item.weekday}</em></strong><small>{item.placeCount ? `담은 장소 ${item.placeCount}곳` : "아직 담은 장소가 없어요"}</small></span>
                 <S.SelectIndicator $checked={item.day === selectedDay}>{item.day === selectedDay && <img src={selectedIcon} alt="" />}</S.SelectIndicator>

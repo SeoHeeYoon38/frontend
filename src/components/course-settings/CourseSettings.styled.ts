@@ -55,11 +55,6 @@ export const Navigation = styled.nav`
     place-items: center;
   }
 
-  button img {
-    width: 24px;
-    height: 24px;
-  }
-
   h1 {
     margin: 0;
     text-align: center;
@@ -280,6 +275,7 @@ export const BottomSheet = styled.section`
   position: relative;
   width: 100%;
   max-width: 402px;
+  max-height: calc(100dvh - 72px);
   height: min(527px, calc(100dvh - 72px));
   padding: 0 20px max(24px, env(safe-area-inset-bottom));
   overflow-y: auto;
@@ -288,6 +284,9 @@ export const BottomSheet = styled.section`
   background: #ffffff;
   color: #0a0a1a;
   box-shadow: 0 -8px 30px rgba(10, 10, 26, 0.08);
+  --sheet-handle-top: 9px;
+  --sheet-handle-width: 39px;
+  --sheet-handle-height: 4px;
 
   &::-webkit-scrollbar {
     display: none;
@@ -455,10 +454,11 @@ export const DetailNavigation = styled.nav`
   align-items: center;
   gap: 14px;
 
-  button,
-  button img {
+  button {
     width: 22px;
     height: 22px;
+    display: grid;
+    place-items: center;
   }
 
   h1 {
@@ -689,17 +689,6 @@ export const ConfirmDialog = styled.section`
   button[data-danger] {
     background: #ef4752 !important;
   }
-`;
-
-export const Grabber = styled.div`
-  position: absolute;
-  top: 9px;
-  left: 50%;
-  width: 39px;
-  height: 4px;
-  transform: translateX(-50%);
-  border-radius: 4px;
-  background: #d9d9de;
 `;
 
 export const SheetHeader = styled.header`
