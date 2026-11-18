@@ -513,13 +513,13 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
                   </div>
                   {day && (mapPlaces.length ? (
                     <>
-                      <CourseRouteMap places={mapPlaces} city={summary.city} day={activeDay + 1} schematic />
+                      <CourseRouteMap places={mapPlaces} city={summary.city} day={activeDay + 1} schematic liveTiles={manuallyCreated} hideCaption={manuallyCreated} />
                       <button type="button" className="course-inline-edit" onClick={() => setMapExpanded(true)}>지도 확대</button>
                     </>
                   ) : <p>이날 지도에 표시할 장소 좌표가 없어요.</p>)}
                   {mapExpanded && mapPlaces.length > 0 && (
                     <TripSheet title={`${activeDay + 1}일차 지도`} onClose={() => setMapExpanded(false)}>
-                      <CourseRouteMap places={mapPlaces} city={summary.city} day={activeDay + 1} schematic expanded />
+                      <CourseRouteMap places={mapPlaces} city={summary.city} day={activeDay + 1} schematic liveTiles={manuallyCreated} hideCaption={manuallyCreated} expanded />
                     </TripSheet>
                   )}
                    <TripTimeline day={activeDay + 1} shared={shared} onEdit={() => setEditing(true)} onOpenPlace={(itemId, placeId, name) => setPhotoPlace({ itemId, placeId, name })} visits={(day?.visits ?? []).map((visit, index, visits) => {
