@@ -510,10 +510,12 @@ function ServerTripPlan({ tripId, userId }: { tripId: number; userId: number }) 
             </div>
           )}
           {!data && !error && <p className="course-live-region" role="status">여행 일정을 불러오고 있어요.</p>}
-          {data && summary && needsRegistration && <RegisterBanner>
+          {data && summary && (needsRegistration || data.itinerary) && <RegisterBanner>
             <span><img src={calendarIcon} alt="" /></span>
             <strong>여행 날짜와 동행을 알려주세요</strong>
-            <button type="button" onClick={() => setRegistrationOpen(true)}>등록하기</button>
+            <button type="button" onClick={() => setRegistrationOpen(true)}>
+              {needsRegistration ? "등록하기" : "수정하기"}
+            </button>
           </RegisterBanner>}
           {data && summary && (
             <section className="course-section">
@@ -538,10 +540,7 @@ function ServerTripPlan({ tripId, userId }: { tripId: number; userId: number }) 
                       </button>
                     </div>
                   )}
-                  <div className="course-summary-heading">
-                    <h2>일정</h2>
-                    {!needsRegistration && <button type="button" onClick={() => setRegistrationOpen(true)}>수정하기</button>}
-                  </div>
+                  <h2>일정</h2>
                   <TripSummary
                     duration={summary.durationLabel ?? durationLabel(data.trip.startDate, data.trip.endDate)}
                     placeCount={placeCount}

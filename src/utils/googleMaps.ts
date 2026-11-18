@@ -33,43 +33,52 @@ export function courseMapViewport(points: MapCoordinate[], width: number, height
   };
 }
 
-export function groupCourseMapPins<T extends MapCoordinate & { order?: number }>(points: T[], zoom: number) {
-  const worldSize = 256 * 2 ** zoom;
-  const groups = points.map((place, index) => ({
-    position: place,
-    ...projectMapCoordinate(place),
-    stops: [{ place, index }],
-    label: String(place.order ?? index + 1),
-    halfWidth: 12,
-  }));
+interface MapPixel {
+  x: number;
+  y: number;
+}
 
-  for (let index = 0; index < groups.length;) {
-    const anchor = groups[index];
-    const overlappingIndex = groups.findIndex((other, candidate) => {
-      if (candidate <= index) return false;
-      const longitudeDelta = Math.abs(anchor.x - other.x);
-      const dx = Math.min(longitudeDelta, 1 - longitudeDelta) * worldSize;
-      const dy = Math.abs(anchor.y - other.y) * worldSize;
-      const extraWidth = Math.max(0, anchor.halfWidth - 12) + Math.max(0, other.halfWidth - 12);
-      const radii = (anchor.stops.length > 1 ? 12 : 16) + (other.stops.length > 1 ? 12 : 16);
-      return Math.hypot(Math.max(0, dx - extraWidth), dy) < radii + 2;
-    });
-    if (overlappingIndex === -1) {
-      index += 1;
-      continue;
+const pinGap = 2;
+const maxPinSpacing = 34;
+const diagonal = Math.SQRT1_2;
+const pinDirections = [
+  [1, 0], [-1, 0], [0, -1], [0, 1],
+  [diagonal, -diagonal], [-diagonal, -diagonal], [diagonal, diagonal], [-diagonal, diagonal],
+];
+
+function findFreePin(
+  anchor: MapPixel,
+  radius: number,
+  placed: (MapPixel & { radius: number })[],
+  width: number,
+  height: number,
+) {
+  const free = ({ x, y }: MapPixel) =>
+    placed.every((pin) => (pin.x - x) ** 2 + (pin.y - y) ** 2 >= (radius + pin.radius + pinGap) ** 2);
+  if (free(anchor)) return anchor;
+
+  const visible = anchor.x >= 0 && anchor.x <= width && anchor.y >= 0 && anchor.y <= height;
+  const searchLimit = visible ? Math.max(maxPinSpacing, Math.hypot(width, height)) : maxPinSpacing * (placed.length + 1);
+  let nearestOutside: MapPixel | undefined;
+  for (let distance = 2; distance <= searchLimit; distance += 2) {
+    for (const [dx, dy] of pinDirections) {
+      const candidate = { x: anchor.x + dx * distance, y: anchor.y + dy * distance };
+      if (!free(candidate)) continue;
+      if (!visible || (candidate.x >= radius && candidate.x <= width - radius &&
+        candidate.y >= radius && candidate.y <= height - radius)) return candidate;
+      nearestOutside ??= candidate;
     }
-    const [overlapping] = groups.splice(overlappingIndex, 1);
-    anchor.stops.push(...overlapping.stops);
-    anchor.stops.sort((a, b) => a.index - b.index);
-    const orders = anchor.stops.map(({ place, index: orderIndex }) => place.order ?? orderIndex + 1);
-    anchor.label = orders.length <= 3 ? orders.join("·") : `${orders[0]} +${orders.length - 1}`;
-    anchor.halfWidth = Math.max(12, Math.ceil(anchor.label.length * 3.6 + 5));
-    index = 0;
   }
+  return nearestOutside ?? { x: Math.max(anchor.x, ...placed.map((pin) => pin.x)) + maxPinSpacing, y: anchor.y };
+}
 
-  return groups.map(({ position, stops, label, halfWidth }) => ({
-    position, places: stops.map(({ place }) => place), label, halfWidth,
-  }));
+export function layoutCourseMapPins(anchors: (MapPixel & { radius?: number })[], width: number, height: number) {
+  const placed: (MapPixel & { radius: number })[] = [];
+  for (const anchor of anchors) {
+    const radius = anchor.radius ?? 12;
+    placed.push({ ...findFreePin(anchor, radius, placed, width, height), radius });
+  }
+  return placed.map(({ x, y }) => ({ x, y }));
 }
 
 export function googleMapsViewUrl(view: MapCoordinate & { zoom: number }) {

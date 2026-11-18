@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { courseMapViewport, googleMapsEmbedUrl, googleMapsViewUrl, groupCourseMapPins, isMapCoordinate } from "../src/utils/googleMaps.ts";
+import { courseMapViewport, googleMapsEmbedUrl, googleMapsViewUrl, isMapCoordinate, layoutCourseMapPins } from "../src/utils/googleMaps.ts";
 
 test("course map centers on the selected day's coordinates", () => {
   const viewport = courseMapViewport([
@@ -21,15 +21,24 @@ test("missing or out-of-range coordinates do not create a map", () => {
   assert.equal(courseMapViewport(located, 402, 380), null);
 });
 
-test("overlapping map pins merge in visit order and nearby pins separate at higher zoom", () => {
-  const stops = [
-    { latitude: 34.702, longitude: 135.490, order: 1 },
-    { latitude: 34.675, longitude: 135.505, order: 2 },
-    { latitude: 34.702, longitude: 135.490, order: 5 },
-    { latitude: 34.701, longitude: 135.491, order: 6 },
-  ];
-  assert.deepEqual(groupCourseMapPins(stops, 13).map((pin) => pin.label), ["1·5·6", "2"]);
-  const detailed = groupCourseMapPins(stops, 17);
-  assert.deepEqual(detailed.map((pin) => pin.label), ["1·5", "2", "6"]);
-  assert.deepEqual(detailed[0].places, [stops[0], stops[2]]);
+test("map pins stay separate even for identical coordinates and close visits", () => {
+  const anchors = [{ x: 42, y: 28 }, { x: 42, y: 28 }, { x: 51, y: 29 }, { x: 200, y: 140 }];
+  const placed = layoutCourseMapPins(anchors, 362, 264);
+  assert.equal(placed.length, anchors.length);
+  assert.deepEqual(placed[0], anchors[0]);
+  assert.deepEqual(placed[3], anchors[3]);
+  for (const [index, pin] of placed.entries()) {
+    for (const other of placed.slice(index + 1)) {
+      assert.ok(Math.hypot(pin.x - other.x, pin.y - other.y) >= 26);
+    }
+  }
+});
+
+test("a pin near the edge moves toward space inside a small map", () => {
+  const anchor = { x: 287, y: 176 };
+  const [first, second] = layoutCourseMapPins([anchor, anchor], 304, 200);
+  assert.deepEqual(first, anchor);
+  assert.ok(second.x >= 12 && second.x <= 292);
+  assert.ok(second.y >= 12 && second.y <= 188);
+  assert.ok(Math.hypot(first.x - second.x, first.y - second.y) >= 26);
 });
