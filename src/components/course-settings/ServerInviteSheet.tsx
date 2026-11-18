@@ -10,16 +10,16 @@ import { createTripShare } from "../../api/trips";
 import type { MemberResponse } from "../../api/types";
 import { routes } from "../../config/routes";
 import { inviteSmsUrl } from "../../utils/inviteSharing";
-import { prepareKakaoShare, type KakaoShare } from "../../utils/kakaoShare";
+import { kakaoShareConfigured, prepareKakaoShare, reportKakaoShareError, type KakaoShare } from "../../utils/kakaoShare";
 import { invitePath } from "../../utils/navigation";
 import TripSheet from "../common/TripSheet";
 import * as S from "./CourseSettings.styled";
 
 const shareActions = [
-  { label: "AirDrop", icon: airDropIcon, method: "native" },
-  { label: "메시지", icon: messagesIcon, method: "sms" },
-  { label: "카카오톡", icon: kakaoIcon, method: "kakao" },
-  { label: "메일", icon: mailIcon, method: "mail" },
+  { label: "AirDrop", accessibilityLabel: "AirDrop으로 공유", icon: airDropIcon, method: "native" },
+  { label: "메시지", accessibilityLabel: "메시지로 공유", icon: messagesIcon, method: "sms" },
+  { label: "카카오톡", accessibilityLabel: "카카오톡으로 공유", icon: kakaoIcon, method: "kakao" },
+  { label: "메일", accessibilityLabel: "메일로 공유", icon: mailIcon, method: "mail" },
 ] as const;
 
 export default function ServerInviteSheet({ tripId, onClose, publicShare = false }: {
@@ -36,12 +36,15 @@ export default function ServerInviteSheet({ tripId, onClose, publicShare = false
   const [actionError, setActionError] = useState("");
   const [members, setMembers] = useState<MemberResponse[]>([]);
   const [kakaoShare, setKakaoShare] = useState<KakaoShare>();
+  const [kakaoLoading, setKakaoLoading] = useState(kakaoShareConfigured);
 
   useEffect(() => {
     const sdk = prepareKakaoShare();
     if (!sdk) return;
     let active = true;
-    void sdk.then((share) => { if (active) setKakaoShare(share); }, () => undefined);
+    void sdk.then((share) => { if (active) setKakaoShare(share); }, (reason: unknown) => {
+      reportKakaoShareError("load", reason);
+    }).finally(() => { if (active) setKakaoLoading(false); });
     return () => { active = false; };
   }, []);
 
@@ -107,6 +110,7 @@ export default function ServerInviteSheet({ tripId, onClose, publicShare = false
       await navigator.share(data);
     } catch (reason) {
       if (reason instanceof DOMException && reason.name === "AbortError") return;
+      if (method === "kakao") reportKakaoShareError(kakaoShare ? "share" : "device", reason);
       setActionError("링크를 공유하지 못했어요. 링크를 직접 복사해 주세요.");
     }
   }
@@ -133,8 +137,9 @@ export default function ServerInviteSheet({ tripId, onClose, publicShare = false
             <S.ShareSection>
               <h3>공유하기</h3>
               <S.ShareList>
-                {shareActions.map(({ label, icon, method }) => <li key={label}>
-                  <button type="button" aria-label={`${label}로 공유`} onClick={() => void shareLink(method)}>
+                {shareActions.map(({ label, accessibilityLabel, icon, method }) => <li key={label}>
+                  <button type="button" aria-label={accessibilityLabel} disabled={method === "kakao" && kakaoLoading}
+                    onClick={() => void shareLink(method)}>
                     <img src={icon} alt="" /><span>{label}</span>
                   </button>
                 </li>)}
