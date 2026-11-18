@@ -706,6 +706,11 @@
 .companion-opinions__header > button img {
   width: 16px;
   height: 16px;
+  flex: 0 0 auto;
+}
+
+.companion-opinions__header > button.is-liked {
+  color: #0079c2;
 }
 
 .companion-opinions__thread {
@@ -799,7 +804,7 @@
 }
 
 .companion-comment__actions button:first-child {
-  color: #b4b5bd;
+  color: #8a8a8e;
 }
 
 .companion-comment__actions button:first-child.is-liked {

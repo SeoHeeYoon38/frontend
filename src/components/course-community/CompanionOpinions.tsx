@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import avatarBlue from "../../assets/course-settings/avatar-blue.png";
-import heartIcon from "../../assets/figma/traveler-heart.svg";
-import heartFilledIcon from "../../assets/figma/traveler-heart-filled.svg";
+import heartIcon from "../../assets/figma/opinion-like.svg";
+import commentHeartIcon from "../../assets/figma/opinion-comment-like.svg";
+import heartFilledIcon from "../../assets/figma/opinion-comment-like-filled.svg";
 import { initialCompanionComments } from "../../data/mocks/courseCommunityData";
 import type { CompanionComment } from "../../types/courseCommunity";
 import "./CourseCommunity.css";
@@ -92,7 +93,7 @@ function CompanionOpinions({ placeName }: { placeName: string }) {
                   aria-pressed={comment.liked}
                   onClick={() => toggleCommentLike(comment.id)}
                 >
-                  <img src={comment.liked ? heartFilledIcon : heartIcon} alt="" /> <span>{comment.likes}</span>
+                  <img src={comment.liked ? heartFilledIcon : commentHeartIcon} alt="" /> <span>{comment.likes}</span>
                 </button>
                 <button type="button" onClick={() => setReplyTo(comment.author)}>
                   답글 달기

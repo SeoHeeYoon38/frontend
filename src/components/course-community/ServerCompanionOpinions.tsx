@@ -4,8 +4,9 @@ import { appendComment, canDeleteComment, commentInputValid, removeComment } fro
 import avatarBlue from "../../assets/course-settings/avatar-blue.png";
 import avatarPurple from "../../assets/course-settings/avatar-purple.png";
 import avatarYellow from "../../assets/course-settings/avatar-yellow.png";
-import heartIcon from "../../assets/figma/traveler-heart.svg";
-import heartFilledIcon from "../../assets/figma/traveler-heart-filled.svg";
+import heartIcon from "../../assets/figma/opinion-like.svg";
+import commentHeartIcon from "../../assets/figma/opinion-comment-like.svg";
+import heartFilledIcon from "../../assets/figma/opinion-comment-like-filled.svg";
 import "./CourseCommunity.css";
 
 interface Props {
@@ -98,7 +99,7 @@ export default function ServerCompanionOpinions({ tripId, itemId, interactions, 
                     onChange((current) => ({ ...current, comments: current.comments.map((item) => item.id === comment.id
                       ? { ...item, likeCount: result.count, liked: result.liked } : item) }));
                   })}>
-                  <img src={comment.liked ? heartFilledIcon : heartIcon} alt="" /> <span>{comment.likeCount}</span>
+                  <img src={comment.liked ? heartFilledIcon : commentHeartIcon} alt="" /> <span>{comment.likeCount}</span>
                 </button>
                 <button type="button" disabled={pending || syncFailed || !summary}
                   onClick={() => setReplyTo(comment.parentId ?? comment.id)}>답글 달기</button>
