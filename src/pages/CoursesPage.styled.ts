@@ -52,15 +52,30 @@ export const CityPhoto = styled.img<{ $selected: boolean }>`
   outline: ${({ $selected }) => ($selected ? "2.5px solid #090738" : "none")};
   outline-offset: -2.5px;
 `;
-export const SearchCircle = styled.div<{ $selected: boolean }>`
+export const CityGroup = styled.div<{ $selected: boolean; $single?: boolean }>`
   width: 56px;
   height: 56px;
   display: grid;
-  place-items: center;
+  grid-template-columns: repeat(${({ $single }) => $single ? 1 : 2}, 1fr);
+  grid-auto-rows: minmax(0, 1fr);
+  gap: 2px;
   border-radius: 50%;
   background: #f4f5fa;
-  border: 2.5px solid
-    ${({ $selected }) => ($selected ? "#090738" : "transparent")};
+  overflow: hidden;
+  outline: ${({ $selected }) => $selected ? "2.5px solid #090738" : "none"};
+  outline-offset: -2.5px;
+
+  img { width: 100%; height: 100%; min-height: 0; object-fit: cover; }
+  .city-placeholder { width: 22px; height: 22px; margin: auto; }
+`;
+export const LoadMessage = styled.p`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  color: #5c5c63;
+  font-size: 14px;
+  button { color: #0079c2; font-weight: 700; }
 `;
 export const Interests = styled.div`
   display: flex;

@@ -25,9 +25,10 @@ function RegionSelect({
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState(initialDestination);
+  const searchTerm = query.trim().toLowerCase();
   const visibleDestinations = destinations.filter(
     (city) =>
-      city.name.includes(query.trim()) || city.country.includes(query.trim()),
+      city.name.toLowerCase().includes(searchTerm) || city.country.toLowerCase().includes(searchTerm),
   );
 
   useEffect(() => {
@@ -57,11 +58,7 @@ function RegionSelect({
           <img src={close} alt="" />
         </button>
       </S.Header>
-      <S.Description>
-        {mode === "trip"
-          ? "도시 하나를 골라주세요. 나중에 바꿀 수 있어요"
-          : "나라나 도시를 고르면 그곳의 코스만 보여드려요"}
-      </S.Description>
+      {mode === "trip" && <S.Description>도시 하나를 골라주세요. 나중에 바꿀 수 있어요</S.Description>}
       <S.Search>
         <img src={search} alt="" />
         <input
@@ -71,16 +68,16 @@ function RegionSelect({
           onChange={(event) => setQuery(event.target.value)}
         />
       </S.Search>
-      {mode === "courses" && (
+      {mode === "courses" && !searchTerm && recentDestinations.length > 0 && (
         <S.Section>
           <h3>최근 본 도시</h3>
           <S.Recent>
             {recentDestinations.map((city) => (
               <button
-                key={city.name}
+                key={`${city.country}:${city.name}`}
                 type="button"
                 onClick={() => setSelected(city)}
-                aria-pressed={selected.name === city.name}
+                aria-pressed={selected.name === city.name && selected.country === city.country}
               >
                 {city.name}
               </button>
@@ -98,19 +95,19 @@ function RegionSelect({
           )}
           {visibleDestinations.map((city) => (
             <S.Destination
-              key={city.name}
+              key={`${city.country}:${city.name}`}
               type="button"
-              $selected={selected.name === city.name}
-              aria-pressed={selected.name === city.name}
+              $selected={selected.name === city.name && selected.country === city.country}
+              aria-pressed={selected.name === city.name && selected.country === city.country}
               onClick={() => setSelected(city)}
             >
-              <S.Photo src={city.image} alt="" />
+              {city.image && <S.Photo src={city.image} alt="" />}
               <S.Scrim />
               <S.CityName>
                 <strong>{city.name}</strong>
                 <span>{city.country}</span>
               </S.CityName>
-              {selected.name === city.name && (
+              {selected.name === city.name && selected.country === city.country && (
                 <S.Check src={check} alt="선택됨" />
               )}
             </S.Destination>

@@ -157,7 +157,7 @@ const cityCoverImages: Record<string, string> = {
   다낭: new URL("../assets/images/city-danang.webp", import.meta.url).href,
 };
 
-function courseTitle(title: string) {
+export function courseTitle(title: string) {
   return title.replace(/^\[테스트용\]\s*/, "");
 }
 
@@ -170,10 +170,10 @@ export function courseSummaryToTravelCourse(
     city: course.city,
     country: course.country,
     duration: `${course.nightCount}박 ${course.dayCount}일`,
-    author: course.author.name,
+    author: course.author.name ?? "",
     image: courseCover(course),
     avatar: course.author.imageUrl || undefined,
-    description: course.author.sourceLabel || course.transportSummary,
+    description: course.transportSummary || undefined,
     interests: courseInterest(course.tags),
   };
 }
@@ -184,7 +184,7 @@ export function courseSummaryToHomeCourse(
   return {
     id: String(course.id),
     title: courseTitle(course.title),
-    description: course.transportSummary,
+    description: course.transportSummary ?? "",
     category: course.tags[0] ?? course.city,
     courseCount: course.stopCount,
     coverImage: courseCover(course),

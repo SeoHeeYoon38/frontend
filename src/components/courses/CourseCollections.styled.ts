@@ -15,7 +15,7 @@ export const Heading = styled.div`
     font-size: 19px;
     font-weight: 700;
   }
-  button,
+  a,
   span {
     font-size: 13px;
     font-weight: 500;
@@ -57,7 +57,17 @@ export const PopularCard = styled.article`
   flex: 0 0 220px;
   scroll-snap-align: start;
   color: white;
+  background: #090738;
   cursor: pointer;
+`;
+export const Empty = styled.p`
+  margin: 0;
+  padding: 32px 16px;
+  border-radius: 16px;
+  text-align: center;
+  background: #f3f5fa;
+  color: #5c5c63;
+  font-size: 14px;
 `;
 export const PopularText = styled.div`
   position: absolute;

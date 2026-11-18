@@ -322,18 +322,18 @@ export interface CourseSummaryResponse {
   nightCount: number;
   stopCount: number;
   coverImageUrl: string | null;
-  transportSummary: string;
+  transportSummary: string | null;
   author: {
-    name: string;
+    name: string | null;
     imageUrl: string | null;
-    sourceLabel: string;
+    sourceLabel: string | null;
     travelMonth: string | null;
   };
   tags: string[];
 }
 
 export interface CourseDetailResponse extends CourseSummaryResponse {
-  description: string;
+  description: string | null;
   days: Array<{
     dayNumber: number;
     stopCount: number;

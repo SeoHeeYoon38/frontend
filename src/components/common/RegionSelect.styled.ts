@@ -86,6 +86,7 @@ export const Search = styled.label`
   gap: 10px;
   padding: 0 14px;
   height: 50px;
+  margin-top: 12px;
   background: #f4f4f7;
   border-radius: 14px;
   img {
@@ -139,6 +140,7 @@ export const Destination = styled.button<{ $selected: boolean }>`
   height: 124px;
   overflow: hidden;
   border-radius: 18px;
+  background: #c2cfe0;
   outline: ${({ $selected }) => ($selected ? "3px solid #090738" : "none")};
   outline-offset: -3px;
 `;
