@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import type { TravelLeg } from "../../api/types";
 import { getTravelOptions, type TravelOption } from "../../api/itineraries";
-import walk from "../../assets/figma/traveler-walk.svg";
-import train from "../../assets/course-completion/icon-train.svg";
-import car from "../../assets/icons/transport-car.svg";
+import walk from "../../assets/course-completion/travel-walk-figma.svg";
+import train from "../../assets/course-completion/travel-train-figma.svg";
+import car from "../../assets/course-completion/travel-car-figma.svg";
 import selectedCheck from "../../assets/icons/status-selected-check.svg";
 import TripSheet from "../common/TripSheet";
 import { Primary } from "../trip/Trip.styled";
