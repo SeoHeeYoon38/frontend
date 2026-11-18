@@ -8,13 +8,16 @@ export function isMapCoordinate<T extends { latitude?: number | null; longitude?
     typeof point.longitude === "number" && Math.abs(point.longitude) <= 180;
 }
 
+function projectMapCoordinate({ latitude, longitude }: MapCoordinate) {
+  const radians = Math.max(-85.05112878, Math.min(85.05112878, latitude)) * Math.PI / 180;
+  return { x: (longitude + 180) / 360, y: (1 - Math.asinh(Math.tan(radians)) / Math.PI) / 2 };
+}
+
 export function courseMapViewport(points: MapCoordinate[], width: number, height: number) {
   if (!points.length || width <= 0 || height <= 0) return null;
-  const xs = points.map(({ longitude }) => (longitude + 180) / 360);
-  const ys = points.map(({ latitude }) => {
-    const radians = Math.max(-85.05112878, Math.min(85.05112878, latitude)) * Math.PI / 180;
-    return (1 - Math.asinh(Math.tan(radians)) / Math.PI) / 2;
-  });
+  const projected = points.map(projectMapCoordinate);
+  const xs = projected.map(({ x }) => x);
+  const ys = projected.map(({ y }) => y);
   const west = Math.min(...xs);
   const east = Math.max(...xs);
   const south = Math.max(...ys);
@@ -28,6 +31,45 @@ export function courseMapViewport(points: MapCoordinate[], width: number, height
     longitude: (west + east) * 180 - 180,
     zoom,
   };
+}
+
+export function groupCourseMapPins<T extends MapCoordinate & { order?: number }>(points: T[], zoom: number) {
+  const worldSize = 256 * 2 ** zoom;
+  const groups = points.map((place, index) => ({
+    position: place,
+    ...projectMapCoordinate(place),
+    stops: [{ place, index }],
+    label: String(place.order ?? index + 1),
+    halfWidth: 12,
+  }));
+
+  for (let index = 0; index < groups.length;) {
+    const anchor = groups[index];
+    const overlappingIndex = groups.findIndex((other, candidate) => {
+      if (candidate <= index) return false;
+      const longitudeDelta = Math.abs(anchor.x - other.x);
+      const dx = Math.min(longitudeDelta, 1 - longitudeDelta) * worldSize;
+      const dy = Math.abs(anchor.y - other.y) * worldSize;
+      const extraWidth = Math.max(0, anchor.halfWidth - 12) + Math.max(0, other.halfWidth - 12);
+      const radii = (anchor.stops.length > 1 ? 12 : 16) + (other.stops.length > 1 ? 12 : 16);
+      return Math.hypot(Math.max(0, dx - extraWidth), dy) < radii + 2;
+    });
+    if (overlappingIndex === -1) {
+      index += 1;
+      continue;
+    }
+    const [overlapping] = groups.splice(overlappingIndex, 1);
+    anchor.stops.push(...overlapping.stops);
+    anchor.stops.sort((a, b) => a.index - b.index);
+    const orders = anchor.stops.map(({ place, index: orderIndex }) => place.order ?? orderIndex + 1);
+    anchor.label = orders.length <= 3 ? orders.join("·") : `${orders[0]} +${orders.length - 1}`;
+    anchor.halfWidth = Math.max(12, Math.ceil(anchor.label.length * 3.6 + 5));
+    index = 0;
+  }
+
+  return groups.map(({ position, stops, label, halfWidth }) => ({
+    position, places: stops.map(({ place }) => place), label, halfWidth,
+  }));
 }
 
 export function googleMapsViewUrl(view: MapCoordinate & { zoom: number }) {
