@@ -16,5 +16,7 @@ export interface DirectTripPlace {
   image: string;
   source: "recommend" | "google";
   travelTime?: string;
+  latitude?: number;
+  longitude?: number;
 }
 

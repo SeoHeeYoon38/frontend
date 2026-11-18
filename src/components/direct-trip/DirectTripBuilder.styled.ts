@@ -381,19 +381,76 @@ export const HeroTitle = styled.div`
   }
 `;
 
+export const HeroInvite = styled.button`
+  position: absolute;
+  right: 20px;
+  bottom: 23px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 10px !important;
+  border: 1px solid #ffffff !important;
+  border-radius: 999px;
+  color: #ffffff !important;
+  background: rgb(5 5 15 / 24%) !important;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+
+  img { width: 16px; height: 16px; }
+`;
+
 export const PlanScroll = styled.main`
   flex: 1;
   min-height: 0;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 16px;
   padding: 24px 20px 130px;
   scrollbar-width: none;
 
   &::-webkit-scrollbar {
     display: none;
   }
+
+  > * { flex-shrink: 0; }
+`;
+
+export const ItineraryOverview = styled.section`
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  h2 {
+    margin: 0;
+    color: #1a1a1a;
+    font-size: 17px;
+    line-height: 24px;
+    font-weight: 700;
+  }
+`;
+
+export const Facts = styled.div`
+  display: flex;
+  align-items: flex-start;
+  padding: 16px 8px;
+  border-radius: 16px;
+  background: #f3f5fa;
+
+  > div {
+    min-width: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
+  img { width: 24px; height: 24px; margin-bottom: 4px; }
+  strong { color: #1a1a1a; font-size: 15px; line-height: 22px; white-space: nowrap; }
+  span { color: #8a8a8e; font-size: 12px; line-height: 17px; }
 `;
 
 export const TripSummary = styled.section`
@@ -477,7 +534,7 @@ export const EmptyPlan = styled.section`
   margin: 0;
   padding: 36px 24px;
   border-radius: 20px;
-  background: #ffffff;
+  background: #f3f5fa;
   text-align: center;
 
   > span {
@@ -534,6 +591,9 @@ export const FilledPlan = styled.section`
   margin: 0;
   padding: 0;
   background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 `;
 
 export const RouteMap = styled.div`
@@ -574,7 +634,7 @@ export const ScheduleHeader = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0;
+  padding: 8px 0 0;
 
   > div {
     display: flex;
@@ -589,8 +649,8 @@ export const ScheduleHeader = styled.div`
   }
 
   span {
-    color: #0088c9;
-    font-size: 12px;
+    color: #8a8a8e;
+    font-size: 13px;
   }
 
   button {
@@ -616,15 +676,18 @@ export const Timeline = styled.ol`
 
   > li {
     position: relative;
-    padding-left: 28px;
+    padding-left: 38px;
+    margin-bottom: 12px;
   }
+
+  > li:focus-visible { outline: 2px solid #090738; outline-offset: 3px; }
 
   > li:not(:last-child)::before {
     content: "";
     position: absolute;
-    left: 10px;
+    left: 12px;
     top: 27px;
-    bottom: -11px;
+    bottom: -12px;
     width: 2px;
     border-left: 2px dashed #d4d4df;
   }
@@ -634,102 +697,123 @@ export const TimelineNumber = styled.span`
   position: absolute;
   z-index: 1;
   left: 0;
-  top: 12px;
-  width: 22px;
-  height: 22px;
+  top: 0;
+  width: 26px;
+  height: 26px;
   display: grid;
   place-items: center;
-  border: 2px solid #ffffff;
+  border: 0;
   border-radius: 50%;
-  color: #ffffff;
-  background: ${navy};
-  box-shadow: 0 0 0 1px ${navy};
-  font-size: 10px;
+  color: ${navy};
+  background: #00e1ff;
+  font-size: 12px;
+  font-weight: 700;
 `;
 
-export const TimelineCard = styled.article<{ $hasImage: boolean }>`
-  min-height: 100px;
+export const TimelineCard = styled.article`
+  min-height: 86px;
   display: grid;
-  grid-template-columns: ${({ $hasImage }) => $hasImage ? "74px 1fr 24px" : "1fr 24px"};
-  gap: 11px;
-  padding: 12px;
+  grid-template-columns: 24px 60px minmax(0, 1fr) 24px;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 8px 12px 12px;
   border: 1px solid ${border};
-  border-radius: 16px;
+  border-radius: 12px;
   background: #ffffff;
 
-  > img {
-    width: 74px;
-    height: 74px;
-    border-radius: 11px;
-    object-fit: cover;
+  .direct-place-handle {
+    position: relative;
+    display: block;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
   }
 
-  > div {
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
+  .direct-place-handle img { width: 24px; height: 24px; }
+  .direct-place-handle select {
+    position: absolute;
+    inset: 0;
+    width: 24px;
+    height: 24px;
+    opacity: 0;
+    cursor: pointer;
   }
+  .direct-place-handle:focus-within { outline: 2px solid ${navy}; border-radius: 4px; }
 
-  small {
-    color: #0088c9;
-    font-size: 9px;
+  .direct-place-thumb {
+    width: 60px;
+    height: 60px;
+    overflow: hidden;
+    border-radius: 10px;
+    background: #f3f5fa;
   }
+  .direct-place-thumb > img { width: 100%; height: 100%; object-fit: cover; }
+  .direct-place-thumb .place-photo { width: 60px; height: 60px; border-radius: 10px; }
 
-  strong {
+  .direct-place-copy { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+  .direct-place-copy strong {
     max-width: 100%;
     overflow: hidden;
-    color: ${navy};
-    font-size: 13px;
-    line-height: 20px;
+    color: #1a1a1a;
+    font-size: 15px;
+    line-height: 22px;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-
-  > div > span {
-    max-width: 100%;
-    overflow: hidden;
-    color: ${muted};
-    font-size: 9px;
-    line-height: 15px;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  select {
-    height: 23px;
-    margin-top: 6px;
-    padding: 0 6px;
-    border: 0;
-    border-radius: 6px;
-    color: #5c5c68;
-    background: #f3f3f7;
-    font-size: 9px;
-  }
-
-  > div:last-child {
+  .direct-place-copy span {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 8px;
+    gap: 4px;
+    color: #5c5c63;
+    font-size: 12px;
+    line-height: 17px;
+    font-weight: 700;
   }
-
-  > div:last-child > img {
-    width: 14px;
-    height: 14px;
+  .direct-place-copy span img { width: 16px; height: 16px; }
+  .direct-place-remove {
+    width: 24px;
+    height: 24px;
+    display: grid;
+    place-items: center;
   }
+  .direct-place-remove img { width: 24px; height: 24px; }
+`;
 
-  > div:last-child > button {
-    align-self: start;
-    color: #a5a5af;
-    font-size: 21px;
-    text-align: center;
+export const AddPlaceButton = styled.button`
+  width: 100%;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 12px;
+  color: #1a1a1a;
+  background: #f3f5fa !important;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 700;
 
-    img {
-      width: 14px;
-      height: 14px;
-    }
-  }
+  img { width: 18px; height: 18px; filter: brightness(0); }
+`;
+
+export const AddedToast = styled.div`
+  position: absolute;
+  z-index: 13;
+  right: 20px;
+  bottom: 116px;
+  left: 20px;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  color: #ffffff;
+  background: #242426;
+  font-size: 13px;
+  line-height: 18px;
+
+  img { width: 20px; height: 20px; }
 `;
 
 export const TravelRow = styled.div`

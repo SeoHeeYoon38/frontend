@@ -343,6 +343,46 @@
   object-fit: cover;
 }
 
+.course-map__tiles {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #edf2f4;
+}
+
+.course-map__tiles img {
+  position: absolute;
+  width: 256px;
+  height: 256px;
+  max-width: none;
+  filter: saturate(.55) brightness(1.06);
+}
+
+.course-map__attribution {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  z-index: 2;
+  padding: 2px 4px;
+  border-radius: 3px;
+  background: rgb(255 255 255 / 88%);
+  color: #5c5c63;
+  font-size: 9px;
+  text-decoration: none;
+}
+
+.course-map__unavailable {
+  align-self: center;
+  margin: auto 12px;
+  color: #8a8a8e;
+  font-size: 13px;
+  text-align: center;
+}
+
+.course-map--live {
+  display: flex;
+}
+
 .course-map--expanded {
   height: clamp(264px, 64dvh, 620px);
 }

@@ -1,6 +1,8 @@
+import { useEffect, useMemo, useRef, useState } from "react";
 import routeMap from "../../assets/course-completion/route-map.png";
 import figmaRouteMap from "../../assets/course-completion/route-map-figma.png";
 import type { CoursePlace } from "../../types/courseCompletion";
+import { mapTileLayout } from "../../utils/mapTiles";
 import "./CourseCompletion.css";
 
 interface CourseRouteMapProps {
@@ -12,12 +14,52 @@ interface CourseRouteMapProps {
   city: string;
   day?: number;
   schematic?: boolean;
+  liveTiles?: boolean;
+  hideCaption?: boolean;
   expanded?: boolean;
   onSelect?: (id: number | string) => void;
 }
 
-function CourseRouteMap({ places, city, day, schematic = false, expanded = false, onSelect }: CourseRouteMapProps) {
+function CourseRouteMap({ places, city, day, schematic = false, liveTiles = false, hideCaption = false, expanded = false, onSelect }: CourseRouteMapProps) {
   const dayLabel = day === undefined ? "전체" : `${day}일차`;
+  const mapRef = useRef<HTMLDivElement>(null);
+  const [dimensions, setDimensions] = useState({ width: 362, height: 264 });
+  useEffect(() => {
+    if (!liveTiles || !mapRef.current) return;
+    const element = mapRef.current;
+    const updateSize = () => setDimensions({ width: element.clientWidth, height: element.clientHeight });
+    updateSize();
+    const observer = new ResizeObserver(updateSize);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [liveTiles]);
+  const mappedPlaces = places.filter((place) =>
+    Number.isFinite(place.latitude) && Number.isFinite(place.longitude));
+  const layout = useMemo(() => liveTiles
+    ? mapTileLayout(mappedPlaces.map((place) => ({ latitude: place.latitude!, longitude: place.longitude! })), dimensions.width, dimensions.height)
+    : null, [liveTiles, mappedPlaces, dimensions.width, dimensions.height]);
+  if (liveTiles) return <div ref={mapRef} className={`course-map course-map--live${expanded ? " course-map--expanded" : ""}`} aria-label={`${dayLabel} ${city} 지도`}>
+    {layout ? <>
+      <div className="course-map__tiles" aria-hidden="true">
+        {layout.tiles.map((tile) => <img key={`${layout.zoom}-${tile.x}-${tile.y}`}
+          src={`https://tile.openstreetmap.org/${layout.zoom}/${tile.x}/${tile.y}.png`}
+          style={{ left: tile.left, top: tile.top }} alt="" loading="lazy" decoding="async" />)}
+      </div>
+      <svg className="course-map__route" viewBox={`0 0 ${dimensions.width} ${dimensions.height}`} preserveAspectRatio="none" aria-hidden="true">
+        {layout.pins.length > 1 && <polyline points={layout.pins.map((pin) => `${pin.x},${pin.y}`).join(" ")}
+          fill="none" stroke="#00c6df" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />}
+      </svg>
+      {layout.pins.map((pin, index) => {
+        const place = mappedPlaces[index];
+        const style = { left: pin.x, top: pin.y };
+        return onSelect ? <button key={place.id} className="course-map__pin" type="button" style={style}
+          aria-label={`${place.name} 열기`} onClick={() => onSelect(place.id)}>{place.order ?? index + 1}</button>
+          : <span key={place.id} className="course-map__pin" style={style} title={place.name}>{place.order ?? index + 1}</span>;
+      })}
+      <a className="course-map__attribution" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">© OpenStreetMap</a>
+    </> : <p className="course-map__unavailable">지도에 표시할 장소 좌표가 없어요.</p>}
+    <ol className="course-live-region">{places.map((place) => <li key={place.id}>{place.name}</li>)}</ol>
+  </div>;
   const isFigmaSample = !schematic && !expanded && !onSelect && city === "오사카" && day === 1 &&
     places.map((place) => place.name).join("|") ===
       "간사이 공항 도착|APA 호텔 난바|구로몬 시장|리로 커피 로스터스|도톤보리 저녁 식사";
@@ -72,7 +114,7 @@ function CourseRouteMap({ places, city, day, schematic = false, expanded = false
           </button>
         ) : <span key={pin.id} className="course-map__pin" style={style} title={pin.name}>{pin.order}</span>;
       })}
-      <small className="course-map__caption">{dayLabel} · {places.length}곳 · {schematic ? "방문 순서" : "샘플 경로"}</small>
+      {!hideCaption && <small className="course-map__caption">{dayLabel} · {places.length}곳 · {schematic ? "방문 순서" : "샘플 경로"}</small>}
       <ol className="course-live-region">{places.map((place) => <li key={place.id}>{place.name}</li>)}</ol>
     </div>
   );

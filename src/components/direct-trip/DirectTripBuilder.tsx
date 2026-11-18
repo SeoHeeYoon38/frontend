@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import directHeroPhoto from "../../assets/direct-trip/hero.png";
 import CourseRouteMap from "../course-completion/CourseRouteMap";
+import { PlaceThumbnail } from "../common/PlacePhoto";
 import TripInfoStep from "../trip/TripInfoStep";
 import DirectPlaceSearch from "./DirectPlaceSearch";
 import { isServerTripId, savedPlaceToTripPlace, tripDraftToApiInput } from "../../api/adapters";
@@ -17,14 +18,24 @@ import { createGeneratedTrip, mockTripStatus, placeIcon, saveMockTrip, tripStora
 import { dateLabel, durationLabel, emptyDraft, rangeDates, tripDateStatus } from "../../utils/trip";
 import type { TripDraft } from "../../types/trip";
 import { mockTripPlaces } from "../../data/mocks/tripData";
+import { mockTripCities } from "../../data/mocks/tripData";
 import searchIcon from "../../assets/direct-trip/search.svg";
 import settingsIcon from "../../assets/course-completion/settings.svg";
 import backIcon from "../../assets/icons/nav-back.svg";
 import heroBackIcon from "../../assets/course-completion/back.svg";
-import closeIcon from "../../assets/icons/action-close.svg";
 import addIcon from "../../assets/direct-trip/add.svg";
 import cityPinIcon from "../../assets/direct-trip/city-pin.svg";
 import emptyPinIcon from "../../assets/direct-trip/empty-pin.svg";
+import calendarIcon from "../../assets/course-completion/icon-calendar.svg";
+import pinIcon from "../../assets/course-completion/icon-pin.svg";
+import trainIcon from "../../assets/course-completion/icon-train.svg";
+import dragHandleIcon from "../../assets/course-completion/drag-handle.svg";
+import removeIcon from "../../assets/course-completion/remove.svg";
+import foodIcon from "../../assets/course-completion/category-food.svg";
+import cafeIcon from "../../assets/course-completion/category-cafe.svg";
+import sightIcon from "../../assets/icons/category-sightseeing.svg";
+import shoppingIcon from "../../assets/icons/category-shopping.svg";
+import savedCheckIcon from "../../assets/direct-trip/added-check.svg";
 import { routes } from "../../config/routes";
 import { serverTripPlanPath, tripSettingsPath } from "../../utils/navigation";
 import {
@@ -43,6 +54,29 @@ const emptyDayPlaces: Record<number, string[]> = {
   3: [],
   4: [],
 };
+
+function categoryIcon(category: string) {
+  if (category.includes("맛집") || category.includes("음식")) return foodIcon;
+  if (category.includes("카페")) return cafeIcon;
+  if (category.includes("쇼핑")) return shoppingIcon;
+  return sightIcon;
+}
+
+function heroDateLabel(start: string, end: string) {
+  const weekday = ["일", "월", "화", "수", "목", "금", "토"];
+  const format = (date: string, showYear: boolean) => {
+    const [year, month, day] = date.split("-");
+    const dayOfWeek = weekday[new Date(`${date}T00:00:00`).getDay()];
+    return `${showYear ? `${year}.` : ""}${month}.${day} (${dayOfWeek})`;
+  };
+  return `${format(start, true)} – ${format(end, false)}`;
+}
+
+function addedPlaceMessage(name: string, day: number) {
+  const last = name.charCodeAt(name.length - 1);
+  const hasFinal = last >= 0xac00 && last <= 0xd7a3 && (last - 0xac00) % 28 !== 0;
+  return `${name}${hasFinal ? "을" : "를"} ${day}일차에 담았어요`;
+}
 
 function BackIcon() {
   return <img src={backIcon} alt="" />;
@@ -81,6 +115,12 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
     startDate: "2026-05-18", endDate: "2026-05-21", companion: "친구", people: 3,
   }));
   const [notice, setNotice] = useState("");
+  const [addedNotice, setAddedNotice] = useState("");
+  useEffect(() => {
+    if (!addedNotice) return;
+    const timer = window.setTimeout(() => setAddedNotice(""), 3000);
+    return () => window.clearTimeout(timer);
+  }, [addedNotice]);
   const [changed, setChanged] = useState(false);
   const [preparingTrip, setPreparingTrip] = useState(false);
   const [savingItinerary, setSavingItinerary] = useState(false);
@@ -100,6 +140,8 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
         category: place?.category ?? "",
         detail: place?.description ?? "",
         image: place?.image ?? "",
+        latitude: place?.latitude,
+        longitude: place?.longitude,
         source: "google",
         visit: { ...visit, itemId: id },
       }];
@@ -112,8 +154,10 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
     mockTripPlaces.filter((place) => place.city === draft.city).map((place) => ({
       id: place.id, name: place.title, category: place.category, detail: place.description,
       image: place.image, source: "recommend" as const,
+      latitude: place.latitude, longitude: place.longitude,
     })), [draft.city]);
   const [selectedDay, setSelectedDay] = useState(existing?.initialDay ?? 1);
+  const draggingPlace = useRef<string | null>(null);
   const [dayPlaces, setDayPlaces] = useState<Record<number, string[]>>(() => existing
     ? Object.fromEntries(rangeDates(draft.startDate, draft.endDate).map((date, index) => [
       index + 1,
@@ -171,6 +215,8 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
       ),
     }));
     setStage("itinerary");
+    const first = directTripPlaces.find((place) => place.id === ids[0]);
+    if (first) setAddedNotice(addedPlaceMessage(first.name, selectedDay));
   };
 
   const movePlace = (placeId: string, nextDay: number) => {
@@ -186,6 +232,22 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
       ...current,
       [selectedDay]: reorderVisit(current[selectedDay] ?? [], itemId, offset),
     }));
+  };
+
+  const dropPlace = (targetId: string) => {
+    const sourceId = draggingPlace.current;
+    draggingPlace.current = null;
+    if (!sourceId || sourceId === targetId) return;
+    resetCheck();
+    setChanged(true);
+    setDayPlaces((current) => {
+      const order = [...(current[selectedDay] ?? [])];
+      const from = order.indexOf(sourceId);
+      const to = order.indexOf(targetId);
+      if (from < 0 || to < 0) return current;
+      order.splice(to, 0, order.splice(from, 1)[0]);
+      return { ...current, [selectedDay]: order };
+    });
   };
 
   const removePlace = (placeId: string) => {
@@ -240,6 +302,8 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
         category: place.category,
         detail: place.description,
         image: place.image,
+        latitude: place.latitude,
+        longitude: place.longitude,
         source: "google",
         visit: { itemId: id, placeId },
       };
@@ -251,6 +315,7 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
     setLivePlaces((current) => ({ ...current, ...additions }));
     setDayPlaces((current) => ({ ...current, [selectedDay]: [...(current[selectedDay] ?? []), ...ids] }));
     setStage("itinerary");
+    if (savedPlaces[0]) setAddedNotice(addedPlaceMessage(savedPlaces[0].name, selectedDay));
   }
 
   const renderInfo = () => (
@@ -355,7 +420,7 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
   const renderItinerary = () => (
     <S.PlanScreen>
       <S.Hero>
-        <img src={directHeroPhoto} alt={`${draft.city} 여행`} />
+        <img src={draft.city === "오사카" ? directHeroPhoto : mockTripCities.find((city) => city.name === draft.city)?.image ?? ""} alt={`${draft.city} 여행`} />
         <S.HeroScrim />
         <S.HeroHeader>
           <S.BackButton type="button" onClick={goBack} aria-label="뒤로 가기">
@@ -378,12 +443,25 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
           <span><img src={cityPinIcon} alt="" />{draft.city}</span>
           <div>
             <h1>{draft.city} {durationLabel(draft.startDate, draft.endDate)}</h1>
-            <p>{dateLabel(draft.startDate)} – {dateLabel(draft.endDate)}</p>
+            <p>{heroDateLabel(draft.startDate, draft.endDate)}</p>
           </div>
         </S.HeroTitle>
+        <S.HeroInvite type="button" onClick={() => {
+          if (isServerTripId(draft.tripId)) {
+            navigate(`${tripSettingsPath("generated", undefined, Number(draft.tripId))}&panel=invite`);
+          } else setNotice("일정을 저장한 뒤 친구를 초대할 수 있어요.");
+        }}><img src={addIcon} alt="" />친구 초대</S.HeroInvite>
       </S.Hero>
 
       <S.PlanScroll>
+        {hasAnyPlace && <S.ItineraryOverview>
+          <h2>일정</h2>
+          <S.Facts aria-label="여행 요약">
+            <div><img src={calendarIcon} alt="" /><strong>{durationLabel(draft.startDate, draft.endDate)}</strong><span>여행 기간</span></div>
+            <div><img src={pinIcon} alt="" /><strong>{placeCount}곳</strong><span>장소</span></div>
+            <div><img src={trainIcon} alt="" /><strong>미정</strong><span>이동 방법</span></div>
+          </S.Facts>
+        </S.ItineraryOverview>}
         <S.DayTabs aria-label="일정 일자">
           {directTripDays.map((day) => (
             <button
@@ -398,16 +476,22 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
           ))}
         </S.DayTabs>
 
+        {placesForDay.length > 0 && <CourseRouteMap
+          city={draft.city}
+          day={selectedDay}
+          liveTiles={live}
+          hideCaption
+          places={placesForDay.map((place, index) => ({
+            id: place.id, name: place.name, order: index + 1,
+            latitude: place.latitude, longitude: place.longitude,
+          }))}
+        />}
+
         <S.ScheduleHeader>
           <div>
             <strong>{selectedDay}일차 일정</strong>
             {placesForDay.length > 0 && <span>{placesForDay.length}곳</span>}
           </div>
-          {placesForDay.length > 0 && (
-            <button type="button" onClick={() => setStage("search")}>
-              <img src={addIcon} alt="" />장소 추가
-            </button>
-          )}
         </S.ScheduleHeader>
 
         {placesForDay.length === 0 ? (
@@ -422,59 +506,52 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
           </S.EmptyPlan>
         ) : (
           <S.FilledPlan>
-            {!live && <CourseRouteMap
-              city={draft.city}
-              day={selectedDay}
-              places={placesForDay.map((place, index) => ({
-                id: index + 1, name: place.name, category: place.category,
-                detail: place.detail, image: place.image, icon: placeIcon(place.category),
-              }))}
-            />}
             <S.Timeline>
               {placesForDay.map((place, index) => {
-                const visit = scheduled?.visits.find((item) => item.itemId === place.id);
                 return (
-                <li key={place.id}>
+                <li key={place.id} draggable={!savingItinerary} tabIndex={0}
+                  aria-label={`${place.name} 일정 순서`}
+                  onKeyDown={(event) => {
+                    if (!event.shiftKey || !["ArrowUp", "ArrowDown"].includes(event.key)) return;
+                    event.preventDefault();
+                    reorderPlace(place.id, event.key === "ArrowUp" ? -1 : 1);
+                  }}
+                  onDragStart={() => { draggingPlace.current = place.id; }}
+                  onDragOver={(event) => event.preventDefault()}
+                  onDrop={() => dropPlace(place.id)}
+                  onDragEnd={() => { draggingPlace.current = null; }}>
                   <S.TimelineNumber>{index + 1}</S.TimelineNumber>
-                  <S.TimelineCard $hasImage={Boolean(place.image)}>
-                    {place.image && <img src={place.image} alt="" />}
-                    <div>
-                      <small>{place.category}</small>
+                  <S.TimelineCard>
+                    <label className="direct-place-handle">
+                      <img src={dragHandleIcon} alt="" />
+                      <select
+                        aria-label={`${place.name} 이동 일자`}
+                        disabled={savingItinerary}
+                        value={selectedDay}
+                        onChange={(event) => movePlace(place.id, Number(event.target.value))}>
+                        {directTripDays.map((day) => <option key={day.day} value={day.day}>{day.day}일차로 이동</option>)}
+                      </select>
+                    </label>
+                    <div className="direct-place-thumb">
+                      {live && livePlaces[place.id]?.visit.placeId
+                        ? <PlaceThumbnail placeId={livePlaces[place.id].visit.placeId} name={place.name} />
+                        : place.image && <img src={place.image} alt="" />}
+                    </div>
+                    <div className="direct-place-copy">
                       <strong>{place.name}</strong>
-                      <span>{place.detail}</span>
-                      {visit && <span>{visit.start.slice(11, 16)} – {visit.end.slice(11, 16)} · 이동 {visit.travel.minutes}분{visit.travel.estimated || ["ESTIMATED", "ROUTE_NOT_FOUND"].includes(visit.travel.source) ? " (추정)" : ""}</span>}
-                      <label>
-                        <span className="sr-only">{place.name} 이동 일자</span>
-                        <select
-                          disabled={savingItinerary}
-                          value={selectedDay}
-                          onChange={(event) =>
-                            movePlace(place.id, Number(event.target.value))
-                          }
-                        >
-                          {directTripDays.map((day) => (
-                            <option key={day.day} value={day.day}>
-                              {day.day}일차로 이동
-                            </option>
-                          ))}
-                        </select>
-                      </label>
+                      <span><img src={categoryIcon(place.category)} alt="" />{place.category}</span>
                     </div>
-                    <div>
-                      <button type="button" disabled={savingItinerary || index === 0} onClick={() => reorderPlace(place.id, -1)} aria-label={`${place.name} 위로 이동`}>↑</button>
-                      <button type="button" disabled={savingItinerary || index === placesForDay.length - 1} onClick={() => reorderPlace(place.id, 1)} aria-label={`${place.name} 아래로 이동`}>↓</button>
-                      <button type="button" disabled={savingItinerary} onClick={() => removePlace(place.id)} aria-label={`${place.name} 삭제`}>
-                        <img src={closeIcon} alt="" />
-                      </button>
-                    </div>
+                    <button className="direct-place-remove" type="button" disabled={savingItinerary}
+                      onClick={() => removePlace(place.id)} aria-label={`${place.name} 삭제`}><img src={removeIcon} alt="" /></button>
                   </S.TimelineCard>
-                  {!live && index < placesForDay.length - 1 && (
-                    <S.TravelRow>{place.travelTime ?? "도보 8분"}</S.TravelRow>
-                  )}
+                  {index < placesForDay.length - 1 && <S.TravelRow>{scheduled?.visits[index + 1]?.travel.minutes !== undefined
+                    ? `이동 ${scheduled.visits[index + 1].travel.minutes}분`
+                    : place.travelTime ?? ""}</S.TravelRow>}
                 </li>
                 );
               })}
             </S.Timeline>
+            <S.AddPlaceButton type="button" onClick={() => setStage("search")}><img src={addIcon} alt="" />장소 추가</S.AddPlaceButton>
           </S.FilledPlan>
         )}
         {checkError && (
@@ -486,6 +563,7 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
       </S.PlanScroll>
 
       {notice && <p role="alert">{notice}</p>}
+      {addedNotice && <S.AddedToast role="status"><img src={savedCheckIcon} alt="" />{addedNotice}</S.AddedToast>}
       <S.BottomAction $floating>
         <button
           type="button"
