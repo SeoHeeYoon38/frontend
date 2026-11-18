@@ -325,6 +325,15 @@ export const SearchSection = styled.section`
     display: flex;
     gap: 8px;
   }
+
+  form > label {
+    flex: 1;
+    min-width: 0;
+
+    input {
+      font-size: 13px;
+    }
+  }
 `;
 export const CourseCard = styled.div`
   border: 1px solid #e7e6ef;
