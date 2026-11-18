@@ -37,6 +37,20 @@
   box-shadow: 0 0 30px rgb(28 28 56 / 8%);
 }
 
+.course-page--draft {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+
+.course-page--draft .course-hero {
+  flex-shrink: 0;
+}
+
+.course-page--draft .course-cta {
+  margin-top: auto;
+}
+
 .course-hero {
   position: relative;
   height: 358px;

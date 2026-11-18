@@ -183,10 +183,12 @@ function ServerTripPlan({ tripId, userId }: { tripId: number; userId: number }) 
   }, [tripId, cacheKey]);
 
   useEffect(() => {
-    if (data) recentPlans.set(cacheKey, data);
+    if (data?.itinerary) recentPlans.set(cacheKey, data);
+    else if (data) recentPlans.delete(cacheKey);
   }, [data, cacheKey]);
 
   const summary = data && apiTripToSummary(data.trip);
+  const hasNoItinerary = data?.itinerary === null;
   const days = data?.itinerary?.validation.days ?? [];
   const imported = data?.itinerary?.source === "COURSE_ADD" ||
     data?.history.some((item) => item.source === "COURSE_ADD") || state?.courseImported === true;
@@ -454,7 +456,7 @@ function ServerTripPlan({ tripId, userId }: { tripId: number; userId: number }) 
 
   return (
     <div className="course-page-shell">
-      <main className="course-page">
+      <main className={`course-page${hasNoItinerary ? " course-page--draft" : ""}`}>
         {data && summary && (
           <header className={`course-hero${imported ? " course-hero--imported" : ""}${needsRegistration ? " course-hero--unregistered" : ""}`}>
             {(importedPhoto || summary.coverImage) && <img className="course-hero__photo"
@@ -463,7 +465,7 @@ function ServerTripPlan({ tripId, userId }: { tripId: number; userId: number }) 
             <div className="course-hero__scrim" />
             <nav className="course-navigation" aria-label="코스 화면 탐색">
               <Link to={backPath} aria-label="뒤로 가기"><img src={backIcon} alt="" /></Link>
-              <strong>{imported ? "내 여행" : shared ? "함께하는 여행" : manuallyCreated ? "내 일정" : "AI 여행 코스"}</strong>
+              <strong>{imported || hasNoItinerary ? "내 여행" : shared ? "함께하는 여행" : manuallyCreated ? "내 일정" : "AI 여행 코스"}</strong>
               {shared && (
                 <Link to={tripCommunityPath(origin, undefined, tripId, activeDay + 1)} aria-label="함께하는 여행 채팅">
                   <img src={chatIcon} alt="" />
@@ -510,7 +512,7 @@ function ServerTripPlan({ tripId, userId }: { tripId: number; userId: number }) 
             </div>
           )}
           {!data && !error && <p className="course-live-region" role="status">여행 일정을 불러오고 있어요.</p>}
-          {data && summary && (needsRegistration || data.itinerary) && <RegisterBanner>
+          {data?.itinerary && summary && <RegisterBanner>
             <span><img src={calendarIcon} alt="" /></span>
             <strong>여행 날짜와 동행을 알려주세요</strong>
             <button type="button" onClick={() => setRegistrationOpen(true)}>
@@ -519,16 +521,14 @@ function ServerTripPlan({ tripId, userId }: { tripId: number; userId: number }) 
           </RegisterBanner>}
           {data && summary && (
             <section className="course-section">
-              {!imported && !manuallyCreated && <section className="ai-summary" aria-label="도틀로 AI 일정 구성 설명">
+              {data.itinerary && !imported && !manuallyCreated && <section className="ai-summary" aria-label="도틀로 AI 일정 구성 설명">
                 <img src={aiAvatar} alt="도틀로 AI" />
                 <div className="ai-summary__bubble">
                   <b>도틀로 AI의 일정 구성</b>
-                  <p>{data.itinerary
-                    ? `${summary.durationLabel ?? "여행 기간"} 동안 ${placeCount}곳을 방문하는 일정이에요.`
-                    : "일정을 만들면 여행 동선을 확인할 수 있어요."}</p>
+                  <p>{summary.durationLabel ?? "여행 기간"} 동안 {placeCount}곳을 방문하는 일정이에요.</p>
                 </div>
               </section>}
-              {data.itinerary ? (
+              {data.itinerary && (
                 <>
                   {confirmation === null && (
                     <div>
@@ -645,15 +645,15 @@ function ServerTripPlan({ tripId, userId }: { tripId: number; userId: number }) 
                     />
                   )}
                 </>
-              ) : (
-                <>
-                  <p>아직 저장된 일정이 없어요.</p>
-                  <Link to={resumeTripPath(tripId)}>일정 만들기</Link>
-                </>
               )}
             </section>
           )}
         </div>
+        {hasNoItinerary && data.members.some((member) => member.me && member.role === "OWNER") && (
+          <div className="course-cta">
+            <Link to={resumeTripPath(tripId)}>일정 등록하기</Link>
+          </div>
+        )}
         {data?.itinerary && (!manuallyCreated || shared) && (
           <div className="course-cta">
             {shared ? (
