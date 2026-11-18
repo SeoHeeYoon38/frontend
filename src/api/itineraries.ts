@@ -78,11 +78,11 @@ export function requestItineraryEdit(
 
 export function applyItineraryEdit(
   tripId: number,
-  baseVersion: number,
+  editRequestId: number,
   signal?: AbortSignal,
 ) {
   return apiRequest<ItineraryVersionView>(
-    `/api/trips/${tripId}/itineraries/${baseVersion}/apply`,
+    `/api/trips/${tripId}/itineraries/edit-requests/${editRequestId}/apply`,
     { method: "POST", signal, timeoutMs: 180_000 },
   );
 }

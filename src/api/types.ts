@@ -240,6 +240,7 @@ export interface ItineraryDiff {
 }
 
 export interface ItineraryEditPreview {
+  editRequestId: number;
   baseVersion: number;
   reason: string;
   itinerary: {
