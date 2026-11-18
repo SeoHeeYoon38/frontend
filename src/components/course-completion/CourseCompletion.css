@@ -155,6 +155,7 @@
   font-size: 13px;
   line-height: 18px;
   font-weight: 700;
+  text-decoration: none;
 }
 
 .course-hero__invite img {
@@ -315,22 +316,6 @@
   overflow-wrap: anywhere;
 }
 
-.course-summary-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.course-page .course-summary-heading button {
-  padding: 5px 0;
-  background: transparent;
-  color: #090738;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
 .course-fact span {
   color: #8a8a8e;
   font-size: 12px;
@@ -409,6 +394,41 @@
 
 .course-map:not(.course-map--interactive) .course-map__google {
   pointer-events: none;
+}
+
+.course-map__number-pin {
+  position: absolute;
+  display: grid;
+  width: 24px;
+  height: 24px;
+  box-sizing: border-box;
+  padding: 0;
+  place-items: center;
+  transform: translate(-50%, -50%);
+  border: 2px solid #fff;
+  border-radius: 50%;
+  color: #fff;
+  background: #80daf5;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.course-map__number-pin[aria-pressed="true"] {
+  z-index: 1;
+  width: 32px;
+  height: 32px;
+  background: #090738;
+}
+
+button.course-map__number-pin {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.course-map__number-pin[hidden] {
+  display: none;
 }
 
 .course-map__controls {

@@ -3,12 +3,13 @@ import { importLibrary, setOptions } from "@googlemaps/js-api-loader";
 import googleIcon from "../../assets/figma/course-map-google.png";
 import locateIcon from "../../assets/figma/course-map-locate.svg";
 import { googleMapsBrowserKey } from "../../api/config";
-import { courseMapViewport, googleMapsDirectionsUrl, googleMapsEmbedUrl, googleMapsViewUrl, groupCourseMapPins, isMapCoordinate } from "../../utils/googleMaps";
+import { courseMapViewport, googleMapsDirectionsUrl, googleMapsEmbedUrl, googleMapsViewUrl, isMapCoordinate } from "../../utils/googleMaps";
 import type { RouteMapPlace } from "./CourseRouteMap";
+import { addCoursePinLayer } from "./GoogleCourseMapPins";
 import { addCourseRouteLayer } from "./GoogleCourseMapRoute";
 
 const authFailureListeners = new Set<() => void>();
-let mapsLoad: Promise<[google.maps.MapsLibrary, google.maps.MarkerLibrary]> | undefined;
+let mapsLoad: Promise<google.maps.MapsLibrary> | undefined;
 let mapAuthFailed = false;
 
 function loadMaps() {
@@ -19,7 +20,7 @@ function loadMaps() {
       authFailureListeners.forEach((listener) => listener());
     };
     setOptions({ key: googleMapsBrowserKey, v: "weekly", language: "ko" });
-    mapsLoad = Promise.all([importLibrary("maps"), importLibrary("marker")]);
+    mapsLoad = importLibrary("maps");
   }
   return mapsLoad;
 }
@@ -37,10 +38,13 @@ export default function GoogleCourseMap({ places, label, interactive, selectedId
   const canvas = useRef<HTMLDivElement>(null);
   const routeLayerId = useId();
   const [size, setSize] = useState({ width: 362, height: 264 });
-  const [sdk, setSdk] = useState<{ map: google.maps.Map; OverlayView: typeof google.maps.OverlayView; Marker: typeof google.maps.Marker }>();
+  const [sdk, setSdk] = useState<{ map: google.maps.Map; OverlayView: typeof google.maps.OverlayView }>();
   const [sdkFailed, setSdkFailed] = useState(false);
   const [embedRevision, setEmbedRevision] = useState(0);
-  const located = useMemo(() => places.filter(isMapCoordinate), [places]);
+  const located = useMemo(
+    () => places.map((place, index) => ({ ...place, order: place.order ?? index + 1 })).filter(isMapCoordinate),
+    [places],
+  );
   const viewport = useMemo(() => courseMapViewport(located, size.width, size.height), [located, size]);
   const directionsUrl = new Set(located.map((place) => place.group)).size === 1
     ? googleMapsDirectionsUrl(located)
@@ -68,7 +72,7 @@ export default function GoogleCourseMap({ places, label, interactive, selectedId
     let active = true;
     const failed = () => { if (active) setSdkFailed(true); };
     authFailureListeners.add(failed);
-    void loadMaps().then(([{ Map, OverlayView }, { Marker }]) => {
+    void loadMaps().then(({ Map, OverlayView }) => {
       if (!active) return;
       if (mapAuthFailed) { failed(); return; }
       const map = new Map(element, {
@@ -77,7 +81,7 @@ export default function GoogleCourseMap({ places, label, interactive, selectedId
         gestureHandling: interactive ? "greedy" : "none",
         keyboardShortcuts: interactive,
       });
-      setSdk({ map, OverlayView, Marker });
+      setSdk({ map, OverlayView });
     }).catch(failed);
     return () => {
       active = false;
@@ -104,51 +108,7 @@ export default function GoogleCourseMap({ places, label, interactive, selectedId
 
   useEffect(() => {
     if (!useSdk || !sdk) return;
-    const { map, Marker } = sdk;
-    let markers: { marker: google.maps.Marker; listener?: google.maps.MapsEventListener }[] = [];
-
-    function clearMarkers() {
-      markers.forEach(({ marker, listener }) => { listener?.remove(); marker.setMap(null); });
-    }
-
-    function renderMarkers() {
-      const zoom = map.getZoom();
-      if (zoom === undefined) return;
-      clearMarkers();
-      markers = groupCourseMapPins(located, zoom).map(({ position, places: entries, label, halfWidth }) => {
-        const selectedIndex = entries.findIndex((place) => place.id === selectedId);
-        const selected = selectedIndex !== -1;
-        const group = entries.length > 1;
-        const halfMiddle = halfWidth - 12;
-        const marker = new Marker({
-          map,
-          position: { lat: position.latitude, lng: position.longitude },
-          title: [...new Set(entries.map((place) => place.name))].join(", "),
-          label: { text: label, color: "#fff", fontSize: group ? "12px" : "14px", fontWeight: "700" },
-          icon: {
-            path: group
-              ? `M ${-halfMiddle} -12 H ${halfMiddle} A 12 12 0 0 1 ${halfMiddle} 12 H ${-halfMiddle} A 12 12 0 0 1 ${-halfMiddle} -12 Z`
-              : google.maps.SymbolPath.CIRCLE,
-            scale: group ? 1 : selected ? 16 : 12,
-            fillColor: selected ? "#090738" : "#80daf5",
-            fillOpacity: 1,
-            strokeColor: "#fff",
-            strokeWeight: 2,
-          },
-        });
-        const listener = onSelect
-          ? marker.addListener("click", () => onSelect(entries[(selectedIndex + 1) % entries.length].id))
-          : undefined;
-        return { marker, listener };
-      });
-    }
-
-    renderMarkers();
-    const zoomListener = map.addListener("zoom_changed", renderMarkers);
-    return () => {
-      zoomListener.remove();
-      clearMarkers();
-    };
+    return addCoursePinLayer(sdk.map, sdk.OverlayView, located, selectedId, onSelect);
   }, [located, onSelect, sdk, selectedId, useSdk]);
 
   return (

@@ -46,6 +46,7 @@ function distanceLabel(meters: number) {
 
 export default function CourseMapScreen({ title, city, days, tripId, photoCourseId, sampleMap, activeDay, onBack, onDayChange, onOpenPlace }: CourseMapScreenProps) {
   const [selectedId, setSelectedId] = useState<string>();
+  let order = 0;
   const groups = days.flatMap((day, dayIndex) => activeDay === undefined || activeDay === dayIndex ? [{
     label: day.label,
     rows: day.places.map((place, index) => {
@@ -53,7 +54,7 @@ export default function CourseMapScreen({ title, city, days, tripId, photoCourse
       const straightDistance = photoCourseId && next ? straightLineMeters(place, next) : undefined;
       return {
         key: `${dayIndex}-${index}`,
-        order: index + 1,
+        order: ++order,
         place,
         meters: place.distanceMeters ?? straightDistance,
         distance: place.distance ?? (straightDistance === undefined ? undefined : `직선거리 ${distanceLabel(straightDistance)}`),

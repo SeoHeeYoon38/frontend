@@ -141,13 +141,11 @@ function ImportedTrip({ tripId }: { tripId: string }) {
         </S.Hero>
 
         <S.Content>
-          {!registration && (
-            <S.RegisterBanner>
-              <span><img src={calendarIcon} alt="" /></span>
-              <strong>여행 날짜와 동행을 알려주세요</strong>
-              <button type="button" onClick={openInfo}>등록하기</button>
-            </S.RegisterBanner>
-          )}
+          <S.RegisterBanner>
+            <span><img src={calendarIcon} alt="" /></span>
+            <strong>여행 날짜와 동행을 알려주세요</strong>
+            <button type="button" onClick={openInfo}>{registration ? "수정하기" : "등록하기"}</button>
+          </S.RegisterBanner>
 
           <S.Section>
             <h2>일정</h2>
