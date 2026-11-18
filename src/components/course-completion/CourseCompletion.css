@@ -552,6 +552,7 @@ button.course-map__number-pin {
 
 .place-stop {
   display: flex;
+  flex-shrink: 0;
   gap: 12px;
 }
 
@@ -840,6 +841,7 @@ button.course-map__number-pin {
   display: flex;
   align-items: center;
   gap: 8px;
+  padding: 10px 0 10px 4px;
 }
 
 .travel-mode-connection button {
