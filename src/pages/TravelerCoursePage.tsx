@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useLocation, useNavigate, useParams } from "react-router";
 import backIcon from "../assets/figma/traveler-back.svg";
 import calendarIcon from "../assets/figma/traveler-calendar.svg";
 import heartIcon from "../assets/figma/traveler-heart.svg";
@@ -10,7 +10,7 @@ import walkIcon from "../assets/figma/traveler-walk.svg";
 import { routes } from "../config/routes";
 import { travelerCourse } from "../data/mocks/travelerCourseData";
 import { mockTripCities } from "../data/mocks/tripData";
-import TravelerCourseMap from "../components/traveler-course/TravelerCourseMap";
+import CourseMapScreen from "../components/traveler-course/CourseMapScreen";
 import TravelerPlaceDetail from "../components/traveler-course/TravelerPlaceDetail";
 import TravelerAiChat from "../components/traveler-course/TravelerAiChat";
 import { PlaceThumbnail } from "../components/common/PlacePhoto";
@@ -30,6 +30,7 @@ import * as ImportedSheet from "./ImportedTripPage.styled";
 import closeIcon from "../assets/icons/action-close.svg";
 import { courseImportEndDate, courseImportUncertain } from "../utils/courseImport";
 import { ApiError } from "../api/client";
+import { courseTitle } from "../api/adapters";
 
 const categoryLabels: Record<PlaceCategoryCode, string> = {
   FOOD: "맛집",
@@ -45,22 +46,22 @@ const categoryLabels: Record<PlaceCategoryCode, string> = {
 
 function courseView(course: CourseDetailResponse): TravelerCourseView {
   const cityImage = mockTripCities.find((item) => item.name === course.city)?.image;
-  const hero = course.coverImageUrl || cityImage || travelerCourse.hero;
+  const hero = course.coverImageUrl || cityImage || "";
   const duration = `${course.nightCount}박 ${course.dayCount}일`;
   return {
     id: String(course.id),
     city: course.city,
     duration,
     tags: [...new Set([course.city, duration, ...course.tags])],
-    title: course.title,
-    author: course.author.name,
-    authorNote: course.author.sourceLabel,
+    title: courseTitle(course.title),
+    author: course.author.name ?? "",
+    authorNote: course.author.sourceLabel === "연동 테스트용" ? "" : course.author.sourceLabel ?? "",
     publishedAt: course.author.travelMonth?.replace("-", ". ") ?? "",
-    description: course.description,
+    description: course.description ?? "",
     placeCount: course.stopCount,
-    transport: course.transportSummary,
+    transport: course.transportSummary ?? "미정",
     hero,
-    authorImage: course.author.imageUrl || travelerCourse.authorImage,
+    authorImage: course.author.imageUrl ?? "",
     routePreview: travelerCourse.routePreview,
     mapFull: travelerCourse.mapFull,
     days: course.days.map((day) => ({
@@ -79,6 +80,8 @@ function courseView(course: CourseDetailResponse): TravelerCourseView {
 
 function TravelerCoursePage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const catalogSearch: unknown = location.state?.courseCatalogSearch;
   const { courseId } = useParams();
   const apiEnabled = isApiEnabled();
   const liveCourseId = courseId && /^\d+$/.test(courseId) && apiEnabled
@@ -103,6 +106,11 @@ function TravelerCoursePage() {
   const [importError, setImportError] = useState("");
   const [importUncertain, setImportUncertain] = useState(false);
   const importing = useRef(false);
+  const detailScroll = useRef(0);
+
+  useLayoutEffect(() => {
+    window.scrollTo(0, screen === "course" ? detailScroll.current : 0);
+  }, [screen]);
 
   useEffect(() => {
     if (!liveCourseId) return;
@@ -204,14 +212,17 @@ function TravelerCoursePage() {
 
   if (screen === "map") {
     return (
-      <TravelerCourseMap
-        course={course}
+      <CourseMapScreen
+        title={`${course.city} ${course.duration}`}
+        city={course.city}
+        days={course.days.map(({ label, places }) => ({ label, places: places.map((place) => ({ ...place, photoPlaceId: place.id })) }))}
         photoCourseId={liveCourseId ?? undefined}
+        sampleMap={liveCourseId ? undefined : course.mapFull}
         activeDay={mapDay}
         onBack={() => setScreen("course")}
         onDayChange={setMapDay}
-        onOpenPlace={(placeId) => {
-          setSelectedPlaceId(placeId);
+        onOpenPlace={(place) => {
+          setSelectedPlaceId(String(place.id));
           setPlaceOrigin("map");
           setScreen("place");
         }}
@@ -230,9 +241,11 @@ function TravelerCoursePage() {
   return (
     <S.Shell>
       <S.Hero>
-        <img src={course.hero} alt={course.title.replace("\n", " ")} />
+        {course.hero && <img src={course.hero} alt={course.title.replace("\n", " ")} />}
         <S.Navigation aria-label="여행자 코스 탐색">
-          <button type="button" aria-label="코스 목록으로 돌아가기" onClick={() => navigate(routes.courses)}>
+          <button type="button" aria-label="코스 목록으로 돌아가기" onClick={() => navigate({
+            pathname: routes.courses, search: typeof catalogSearch === "string" ? catalogSearch : "",
+          })}>
             <img src={backIcon} alt="" />
           </button>
           <strong>여행자 코스</strong>
@@ -250,14 +263,14 @@ function TravelerCoursePage() {
             </S.Tags>
             <h1>{course.title}</h1>
           </div>
-          <S.Author>
-            <img src={course.authorImage} alt="" />
+          {(course.author || course.authorImage) && <S.Author>
+            {course.authorImage && <img src={course.authorImage} alt="" />}
             <div>
               <strong>{course.author}</strong>
-              <small>{course.authorNote}　|　{course.publishedAt}</small>
+              <small>{[course.authorNote, course.publishedAt].filter(Boolean).join(" · ")}</small>
             </div>
-          </S.Author>
-          <p>{course.description}</p>
+          </S.Author>}
+          {course.description && <p>{course.description}</p>}
         </S.Intro>
 
         <S.Facts aria-label="코스 요약">
@@ -275,7 +288,11 @@ function TravelerCoursePage() {
               </button>
             ))}
           </S.DayTabs>
-          <S.MapPreview type="button" aria-label={`${day.label} 지도 전체 보기`} onClick={() => { setMapDay(activeDay); setScreen("map"); }}>
+          {day && <S.MapPreview type="button" aria-label={`${day.label} 지도 보기`} onClick={() => {
+            detailScroll.current = window.scrollY;
+            setMapDay(activeDay);
+            setScreen("map");
+          }}>
             {liveCourseId ? <CourseRouteMap
               places={day.places.map((place, index) => ({
                 id: place.id,
@@ -286,16 +303,20 @@ function TravelerCoursePage() {
               }))}
               city={course.city}
               day={activeDay + 1}
-              liveTiles
+              live
             /> : <img src={course.routePreview} alt={`${course.city} 여행 경로 지도`} />}
-            <span>지도 크게 보기</span>
-          </S.MapPreview>
+          </S.MapPreview>}
           <S.PlaceList>
-            {day.places.map((place, index) => (
+            {day?.places.map((place, index) => (
               <S.PlaceRow key={place.id}>
                 <S.Rail><b>{index + 1}</b>{index < day.places.length - 1 && <i />}</S.Rail>
                 <S.PlaceContent>
-                  <S.PlaceCard type="button" onClick={() => { setSelectedPlaceId(place.id); setPlaceOrigin("course"); setScreen("place"); }}>
+                  <S.PlaceCard type="button" onClick={() => {
+                    detailScroll.current = window.scrollY;
+                    setSelectedPlaceId(place.id);
+                    setPlaceOrigin("course");
+                    setScreen("place");
+                  }}>
                     {liveCourseId ? <PlaceThumbnail courseId={liveCourseId} placeId={place.id} name={place.name} /> : <img src={place.image} alt="" />}
                     <span><strong>{place.name}</strong><small>{place.category}</small></span>
                   </S.PlaceCard>

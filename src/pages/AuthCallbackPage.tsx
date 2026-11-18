@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { loginWithGoogleCode, validateOAuthState } from "../api/auth";
+import brandLogo from "../assets/images/brand-dotlo-logo.png";
 import { routes } from "../config/routes";
 import { shouldCompleteSignup } from "../utils/authFlow";
 import { takePendingInvitePath } from "../utils/navigation";
@@ -58,16 +59,17 @@ function AuthCallbackPage() {
   }, [cancelled, code, state, navigate]);
 
   return (
-    <main aria-busy={!error} style={{ minHeight: "100dvh", display: "grid", placeItems: "center", padding: 24 }}>
+    <main className={`auth-gate${error ? " auth-gate--error" : ""}`}>
+      <img src={brandLogo} alt="Dotlo" />
       {error ? (
-        <section style={{ textAlign: "center" }}>
+        <>
           <p role="alert">{error}</p>
           <button type="button" onClick={() => navigate(routes.login, { replace: true })}>
             로그인 화면으로 돌아가기
           </button>
-        </section>
+        </>
       ) : (
-        <p role="status">Google 로그인을 마무리하고 있어요…</p>
+        <p className="auth-gate__sr-only" role="status">Google 로그인을 마무리하고 있어요.</p>
       )}
     </main>
   );

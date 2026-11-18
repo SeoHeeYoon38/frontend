@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
 import type { Flight, Stay, TripDraft } from "../../types/trip";
 import { mockFlights, mockHotels } from "../../data/mocks/tripData";
 import {
@@ -24,19 +24,22 @@ import { searchPlaces } from "../../api/places";
 import { saveFlights, saveRental, saveStays, searchFlights } from "../../api/reservations";
 import { hasAuthSession } from "../../api/tokenStorage";
 import type { PlaceCandidate } from "../../api/types";
+import type { PrepareServerTrip } from "../../hooks/useServerTripDraft";
 
 interface OptionalInfoSheetProps {
   mode: "flight" | "stay" | "car";
   draft: TripDraft;
+  prepareServerTrip: PrepareServerTrip;
   onClose: () => void;
   onSave: (draft: TripDraft) => void;
 }
 
-const lodgingName = /호텔|모텔|호스텔|게스트하우스|여관|리조트|펜션|숙소|스위소텔|hotel|hostel|resort|inn|lodging|stay|suite/i;
+const lodgingName = /호텔|모텔|호스텔|게스트하우스|여관|리조트|펜션|숙소|스위소텔|ホテル|旅館|民宿|\b(hotel|hostel|resort|inn|lodging|stay|suites?)\b/i;
 
 function OptionalInfoSheet({
   mode,
   draft,
+  prepareServerTrip,
   onClose,
   onSave,
 }: OptionalInfoSheetProps) {
@@ -94,12 +97,11 @@ function OptionalInfoSheet({
       previous.length++;
     else gaps.push({ start: index, length: 1 });
   });
-  const liveReservations =
-    isApiEnabled() && hasAuthSession() && isServerTripId(draft.tripId);
+  const liveSession = isApiEnabled() && hasAuthSession();
+  const liveReservations = liveSession && isServerTripId(draft.tripId);
   const demoStaySearch = !isApiEnabled();
   const settledStaySearch = staySearch?.query === hotelQuery.trim() ? staySearch : undefined;
-  const activePlaceQuery = mode === "stay" ? hotelQuery : location;
-  const hotels = liveReservations
+  const hotels = liveSession
     ? (settledStaySearch && "results" in settledStaySearch ? settledStaySearch.results : [])
         .map((place) => ({ ...place, city: draft.city }))
     : demoStaySearch ? mockHotels.filter(
@@ -107,50 +109,44 @@ function OptionalInfoSheet({
           hotel.name.toLowerCase().includes(hotelQuery.trim().toLowerCase()) ||
           hotel.address.includes(hotelQuery.trim()),
       ) : [];
+  const prepareStaySearch = useEffectEvent(() => prepareServerTrip(draft));
 
   useEffect(() => {
-    const query = activePlaceQuery.trim();
-    if (!liveReservations || mode === "flight" ||
-      (mode === "stay" ? !isSearching || !query : query.length < 2)) {
-      return;
-    }
-    if (mode === "car" && rentalPlaceId) return;
+    const query = hotelQuery.trim();
+    if (!liveSession || mode !== "stay" || !isSearching || !query) return;
     const controller = new AbortController();
+    const { signal } = controller;
+    const timer = window.setTimeout(async () => {
+      try {
+        const tripId = await prepareStaySearch();
+        if (signal.aborted) return;
+        const lodgingQuery = lodgingName.test(query) ? query : `${query} 호텔`;
+        const results = await searchPlaces(tripId, lodgingQuery, signal);
+        if (!Array.isArray(results)) throw new Error("숙소 검색 결과를 확인하지 못했어요.");
+        if (!signal.aborted) setStaySearch({ query, results });
+      } catch (reason) {
+        if (!signal.aborted) {
+          setStaySearch({ query, error: reason instanceof Error ? reason.message : "숙소를 검색하지 못했어요." });
+        }
+      }
+    }, 350);
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [draft.city, draft.startDate, draft.endDate, draft.companion, draft.people, hotelQuery, isSearching, liveSession, mode]);
+
+  useEffect(() => {
+    const query = location.trim();
+    if (mode !== "car" || !liveReservations || rentalPlaceId || query.length < 2) return;
+    const controller = new AbortController();
+    const { signal } = controller;
     const timer = window.setTimeout(() => {
-      if (mode === "car") setSearchError("");
-      void searchPlaces(Number(draft.tripId), query, controller.signal).then(
-        async (results) => {
-          if (controller.signal.aborted) return;
-          if (mode === "stay") {
-            if (!Array.isArray(results)) {
-              setStaySearch({ query, error: "숙소를 검색하지 못했어요. 다시 시도해 주세요." });
-              return;
-            }
-            let lodgingResults = results;
-            if (query.length <= 6 && !lodgingName.test(query) &&
-              !results.some((place) => lodgingName.test(place.name))) {
-              try {
-                const hotels = await searchPlaces(Number(draft.tripId), `${query} 호텔`, controller.signal);
-                if (controller.signal.aborted) return;
-                if (Array.isArray(hotels) && hotels.length) {
-                  const seen = new Set(hotels.map((place) => place.placeId));
-                  lodgingResults = [...hotels, ...results.filter((place) => !seen.has(place.placeId))];
-                }
-              } catch {
-                if (controller.signal.aborted) return;
-              }
-            }
-            setStaySearch({ query, results: lodgingResults });
-          } else {
-            setRemotePlaces(results);
-          }
-        },
+      setSearchError("");
+      void searchPlaces(Number(draft.tripId), query, signal).then(
+        (results) => { if (!signal.aborted) setRemotePlaces(results); },
         (reason: unknown) => {
-          if (!controller.signal.aborted) {
-            if (mode === "stay") {
-              setStaySearch({ query, error: "숙소를 검색하지 못했어요. 다시 시도해 주세요." });
-              return;
-            }
+          if (!signal.aborted) {
             setRemotePlaces([]);
             setSearchError(reason instanceof Error ? reason.message : "장소를 검색하지 못했어요.");
           }
@@ -161,7 +157,7 @@ function OptionalInfoSheet({
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [activePlaceQuery, draft.rental?.location, draft.tripId, isSearching, liveReservations, mode, rentalPlaceId]);
+  }, [draft.tripId, liveReservations, location, mode, rentalPlaceId]);
 
   async function findFlight() {
     setFlightNotFound(false);
@@ -399,15 +395,16 @@ function OptionalInfoSheet({
         setError(message);
         return;
       }
-      if (liveReservations) {
+      if (liveSession) {
         if (stays.some((stay) => !stay.placeId)) {
           setError("서버 검색 결과에서 숙소를 선택해 주세요.");
           return;
         }
         setSaving(true);
         try {
+          const tripId = await prepareServerTrip(draft);
           const response = await saveStays(
-            Number(draft.tripId),
+            tripId,
             stays.map((stay) => ({
               placeId: stay.placeId!,
               checkIn: stay.startDate,
@@ -416,6 +413,7 @@ function OptionalInfoSheet({
           );
           onSave({
             ...draft,
+            tripId: String(tripId),
             stays: response.stays.map((stay) => ({
               id: `stay-${stay.placeId}-${stay.checkIn}`,
               placeId: stay.placeId,
@@ -711,7 +709,7 @@ function OptionalInfoSheet({
                 <img src={search} alt="" />
                 <input
                   aria-label="숙소 검색"
-                  placeholder="숙소 이름 또는 지역 검색"
+                  placeholder="호텔, 숙소 이름 검색"
                   value={hotelQuery}
                   onChange={(event) => {
                     setHotelQuery(event.target.value);
@@ -732,10 +730,10 @@ function OptionalInfoSheet({
                   </button>
                 ))}
               </S.Results>
-              {!liveReservations && !demoStaySearch && (
-                <S.Help role="status">저장된 여행에서 숙소를 검색할 수 있어요.</S.Help>
+              {!liveSession && !demoStaySearch && (
+                <S.Help role="status">로그인 후 숙소를 검색할 수 있어요.</S.Help>
               )}
-              {liveReservations && hotelQuery.trim() && !settledStaySearch && (
+              {liveSession && hotelQuery.trim() && !settledStaySearch && (
                 <S.Help role="status">숙소를 검색하고 있어요.</S.Help>
               )}
               {settledStaySearch && "error" in settledStaySearch && (
@@ -745,17 +743,17 @@ function OptionalInfoSheet({
                 (demoStaySearch || (settledStaySearch && "results" in settledStaySearch)) && (
                 <>
                   <S.Help role="status">
-                    {liveReservations
+                    {liveSession
                       ? "숙소 검색 결과가 없어요. 다른 이름으로 검색해 주세요."
                       : "숙소 검색 결과가 없어요. 주소를 직접 입력해 주세요."}
                   </S.Help>
-                  {!liveReservations && <S.Input
+                  {demoStaySearch && <S.Input
                     aria-label="숙소 주소 직접 입력"
                     placeholder="숙소 주소"
                     value={hotelQuery}
                     onChange={(event) => setHotelQuery(event.target.value)}
                   />}
-                  {!liveReservations && <S.Chip
+                  {demoStaySearch && <S.Chip
                     type="button"
                     onClick={() =>
                       addHotel({

@@ -84,6 +84,7 @@ Copy-Item .env.example .env
 | VITE_API_BASE_URL | 백엔드 API 주소 | https://api.dotlo.cloud |
 | VITE_GOOGLE_CLIENT_ID | Google OAuth 웹 클라이언트 ID | Google Cloud에서 발급한 값 |
 | VITE_GOOGLE_REDIRECT_URI | Google 로그인 후 돌아올 프론트 주소 | http://localhost:5173/auth/callback/google |
+| VITE_GOOGLE_MAPS_BROWSER_KEY | 코스 지도 번호 핀에 사용할 Maps JavaScript API 브라우저 키. 프론트 도메인과 해당 API로 제한합니다. | Google Cloud에서 발급한 브라우저용 키 |
 
 `.env.example`에는 다음 내용을 작성합니다.
 

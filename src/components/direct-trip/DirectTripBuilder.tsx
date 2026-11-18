@@ -8,12 +8,13 @@ import DirectPlaceSearch from "./DirectPlaceSearch";
 import { isServerTripId, savedPlaceToTripPlace, tripDraftToApiInput } from "../../api/adapters";
 import { isApiEnabled } from "../../api/config";
 import { hasAuthSession } from "../../api/tokenStorage";
-import { confirmTrip, createTrip, updateTrip } from "../../api/trips";
+import { confirmTrip } from "../../api/trips";
 import { saveItinerary } from "../../api/itineraries";
 import { ApiError } from "../../api/client";
 import { editedItineraryDays, moveVisit, reorderVisit } from "../../utils/itineraryEditing";
 import type { ItineraryDayInput, ItineraryVersionView, ItineraryVisitInput, SavedPlaceResponse } from "../../api/types";
 import { useItineraryCheck } from "../../hooks/useItineraryCheck";
+import useServerTripDraft from "../../hooks/useServerTripDraft";
 import { createGeneratedTrip, mockTripStatus, placeIcon, saveMockTrip, tripStorageNotice } from "../../data/mocks/mockTripService";
 import { dateLabel, durationLabel, emptyDraft, rangeDates, tripDateStatus } from "../../utils/trip";
 import type { TripDraft } from "../../types/trip";
@@ -115,6 +116,7 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
     startDate: "2026-05-18", endDate: "2026-05-21", companion: "친구", people: 3,
   }));
   const [notice, setNotice] = useState("");
+  const prepareServerTrip = useServerTripDraft(setDraft);
   const [addedNotice, setAddedNotice] = useState("");
   useEffect(() => {
     if (!addedNotice) return;
@@ -275,11 +277,9 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
     setNotice("");
     setPreparingTrip(true);
     try {
-      const trip = isServerTripId(draft.tripId)
-        ? await updateTrip(Number(draft.tripId), input, controller.signal)
-        : await createTrip(input, controller.signal);
+      const tripId = await prepareServerTrip(draft);
       if (controller.signal.aborted) return;
-      setDraft({ ...draft, tripId: String(trip.id) });
+      setDraft({ ...draft, tripId: String(tripId) });
       setStage("itinerary");
     } catch (reason) {
       if (!controller.signal.aborted) {
@@ -339,6 +339,7 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
             setDraft(next);
           }}
           onNext={startItinerary}
+          prepareServerTrip={prepareServerTrip}
           nextLabel="일정 만들기"
           submitting={preparingTrip}
           submitError={notice}
@@ -483,7 +484,7 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
         {placesForDay.length > 0 && <CourseRouteMap
           city={draft.city}
           day={selectedDay}
-          liveTiles={live}
+          live={live}
           hideCaption
           places={placesForDay.map((place, index) => ({
             id: place.id, name: place.name, order: index + 1,

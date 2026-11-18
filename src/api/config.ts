@@ -18,6 +18,8 @@ export const googleOAuthConfig = {
     `${window.location.origin}/auth/callback/google`,
 };
 
+export const googleMapsBrowserKey = import.meta.env.VITE_GOOGLE_MAPS_BROWSER_KEY?.trim() || "";
+
 export function isApiEnabled() {
   return apiMode !== "mock";
 }

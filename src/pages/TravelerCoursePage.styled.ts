@@ -257,17 +257,6 @@ export const MapPreview = styled.button`
     object-fit: cover;
   }
 
-  > span {
-    position: absolute;
-    right: 12px;
-    bottom: 12px;
-    padding: 8px 12px;
-    border-radius: 999px;
-    background: rgba(9, 7, 56, 0.88);
-    color: #fff;
-    font-size: 12px;
-    font-weight: 700;
-  }
 `;
 
 export const PlaceList = styled.div`

@@ -115,7 +115,7 @@ function ServerCourseDetail({ course, busy, saveError, onClose, onAdd }: {
         <>
           {stops.length > 0 && (
             <P.CourseMap>
-              <CourseRouteMap places={stops} city={course.city} liveTiles />
+              <CourseRouteMap places={stops} city={course.city} live />
             </P.CourseMap>
           )}
           <P.PlaceList>

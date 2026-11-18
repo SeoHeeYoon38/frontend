@@ -1,33 +1,41 @@
 import type { CourseTheme, TravelCourse } from "../../types/course";
 import * as S from "./CourseCollections.styled";
-import { Link } from "react-router";
+import { Link, useLocation } from "react-router";
 import { travelerCoursePath } from "../../utils/navigation";
 interface CourseCollectionsProps {
   popularCourses: TravelCourse[];
   themes: CourseTheme[];
   travelerCourses: TravelCourse[];
+  region: string;
 }
 function CourseCollections({
   popularCourses,
   themes,
   travelerCourses,
+  region,
 }: CourseCollectionsProps) {
+  const { search } = useLocation();
+  if (!popularCourses.length && !themes.length && !travelerCourses.length) {
+    return <S.Empty role="status">{region}에 표시할 코스가 없어요.</S.Empty>;
+  }
+
   return (
     <>
-      <S.Section aria-label="이번 주 많이 저장한 코스">
+      {popularCourses.length > 0 && <S.Section aria-label="이번 주 많이 저장한 코스">
         <S.Heading>
           <h2>이번 주 많이 저장한 코스</h2>
-          <button type="button">전체 보기</button>
+          {travelerCourses.length > 0 && <a href="#traveler-courses">전체 보기</a>}
         </S.Heading>
         <S.Carousel>
           {popularCourses.map((course) => (
             <S.PopularCard
               as={Link}
               to={travelerCoursePath(course.id)}
+              state={{ courseCatalogSearch: search }}
               aria-label={`${course.title.replace("\n", " ")} 일정 보기`}
               key={course.id}
             >
-              <S.Cover src={course.image} alt={course.city} />
+              {course.image && <S.Cover src={course.image} alt="" />}
               <S.Scrim />
               <S.PopularText>
                 <S.Meta>
@@ -41,8 +49,8 @@ function CourseCollections({
             </S.PopularCard>
           ))}
         </S.Carousel>
-      </S.Section>
-      <S.Section aria-label="이번 달 이런 여행 어때요?">
+      </S.Section>}
+      {themes.length > 0 && <S.Section aria-label="이번 달 이런 여행 어때요?">
         <S.Heading>
           <h2>이번 달 이런 여행 어때요?</h2>
         </S.Heading>
@@ -59,8 +67,8 @@ function CourseCollections({
             </S.Theme>
           ))}
         </S.Carousel>
-      </S.Section>
-      <S.Section aria-label="여행자들의 코스">
+      </S.Section>}
+      {travelerCourses.length > 0 && <S.Section id="traveler-courses" aria-label="여행자들의 코스">
         <S.Heading>
           <h2>여행자들의 코스</h2>
           <span>최신순</span>
@@ -70,6 +78,7 @@ function CourseCollections({
             <S.TravelerRow
               as={Link}
               to={travelerCoursePath(course.id)}
+              state={{ courseCatalogSearch: search }}
               aria-label={`${course.title.replace("\n", " ")} 일정 보기`}
               key={course.id}
             >
@@ -83,15 +92,14 @@ function CourseCollections({
                 <S.Author>
                   {course.avatar && <img src={course.avatar} alt="" />}
                   <span>{course.author}</span>
-                  <i />
-                  <small>{course.description}</small>
+                  {course.description && <><i /><small>{course.description}</small></>}
                 </S.Author>
               </S.TravelerText>
-              <S.Thumbnail src={course.image} alt={course.city} />
+              {course.image && <S.Thumbnail src={course.image} alt="" />}
             </S.TravelerRow>
           ))}
         </S.TravelerList>
-      </S.Section>
+      </S.Section>}
     </>
   );
 }

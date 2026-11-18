@@ -9,8 +9,7 @@ import chevronIcon from "../assets/icons/nav-chevron-right-muted.svg";
 import noticeIcon from "../assets/figma/my-flag.svg";
 import faqIcon from "../assets/figma/my-search.svg";
 import feedbackIcon from "../assets/figma/my-pen.svg";
-import blueAvatar from "../assets/images/character-blue.webp";
-import purpleAvatar from "../assets/images/character-purple.webp";
+import { profileCharacter } from "../config/profileCharacters";
 import googleMapsLogo from "../assets/images/brand-google-maps.webp";
 import checkIcon from "../assets/icons/status-selected-check.svg";
 import { getMe, getMyStats } from "../api/auth";
@@ -20,6 +19,7 @@ import { routes } from "../config/routes";
 import { myProfile } from "../data/mocks/myData";
 import {
   countEnabledNotifications,
+  profileAvatarId,
   readNotificationSettings,
   readProfileSettings,
 } from "../utils/mySettings";
@@ -67,7 +67,7 @@ function MyPage() {
           nickname: user.nickname?.trim() || user.name,
           email: user.email,
           introduction: user.bio ?? "",
-          avatar: user.characterId === 2 ? "purple" : "blue",
+          avatar: profileAvatarId(user.characterId),
         }));
         setStats({
           savedPlaceCount: nextStats.savedPlaceCount,
@@ -88,7 +88,7 @@ function MyPage() {
     return () => controller.abort();
   }, [liveProfile]);
 
-  const avatar = profile.avatar === "purple" ? purpleAvatar : blueAvatar;
+  const avatar = profileCharacter(profile.avatar).image;
 
   return (
     <S.Page>

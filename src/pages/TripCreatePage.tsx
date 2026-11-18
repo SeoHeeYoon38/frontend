@@ -121,6 +121,7 @@ function AiTripCreatePage({
     update,
     move,
     back,
+    prepareServerTrip,
     startPlacesStep,
     generate,
   } = useTripCreate(trip, places, reservations);
@@ -129,6 +130,7 @@ function AiTripCreatePage({
     <TripInfoStep
       draft={draft}
       onChange={update}
+      prepareServerTrip={prepareServerTrip}
       onNext={startPlacesStep}
       submitting={preparingTrip}
       submitError={step === 1 ? error : ""}

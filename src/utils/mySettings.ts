@@ -1,4 +1,16 @@
-export type ProfileAvatar = "blue" | "purple";
+export type ProfileAvatar = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
+
+function readProfileAvatar(value: unknown): ProfileAvatar | undefined {
+  if (value === "blue") return 1;
+  if (value === "purple") return 2;
+  if (typeof value === "number" && Number.isInteger(value) && value >= 1 && value <= 10) {
+    return value as ProfileAvatar;
+  }
+}
+
+export function profileAvatarId(value: unknown): ProfileAvatar {
+  return readProfileAvatar(value) ?? 1;
+}
 
 export interface UserProfileSettings {
   nickname: string;
@@ -50,7 +62,7 @@ export const defaultProfileSettings: UserProfileSettings = {
   nickname: "예빈",
   email: "yebin5929@gmail.com",
   introduction: "안녕하세용!",
-  avatar: "blue",
+  avatar: 1,
 };
 
 const unavailableNicknames = new Set(["도틀로", "dotlo", "관리자"]);
@@ -110,11 +122,12 @@ export function parseProfileSettings(raw: string | null): UserProfileSettings | 
 
   try {
     const value = JSON.parse(raw) as Partial<UserProfileSettings>;
+    const avatar = readProfileAvatar(value.avatar);
     if (
       typeof value.nickname !== "string" ||
       typeof value.email !== "string" ||
       typeof value.introduction !== "string" ||
-      (value.avatar !== "blue" && value.avatar !== "purple")
+      avatar === undefined
     ) {
       return null;
     }
@@ -123,7 +136,7 @@ export function parseProfileSettings(raw: string | null): UserProfileSettings | 
       nickname: value.nickname,
       email: value.email,
       introduction: value.introduction,
-      avatar: value.avatar,
+      avatar,
       ...(Array.isArray(value.travelPreferences) &&
       value.travelPreferences.every((preference) => typeof preference === "string")
         ? { travelPreferences: value.travelPreferences }
