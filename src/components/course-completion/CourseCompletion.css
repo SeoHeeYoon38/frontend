@@ -48,11 +48,6 @@
   background: #090738;
 }
 
-.course-hero--unregistered .course-hero__title,
-.course-hero--unregistered .course-hero__invite {
-  bottom: 48px;
-}
-
 .course-hero__photo {
   position: absolute;
   inset: 0;

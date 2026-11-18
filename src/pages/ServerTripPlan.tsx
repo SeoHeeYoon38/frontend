@@ -456,7 +456,7 @@ function ServerTripPlan({ tripId, userId }: { tripId: number; userId: number }) 
     <div className="course-page-shell">
       <main className="course-page">
         {data && summary && (
-          <header className={`course-hero${imported ? " course-hero--imported" : ""}${needsRegistration ? " course-hero--unregistered" : ""}`}>
+          <header className={`course-hero${imported ? " course-hero--imported" : ""}`}>
             {(importedPhoto || summary.coverImage) && <img className="course-hero__photo"
               src={importedPhoto || summary.coverImage} alt={`${summary.city} 여행`}
               onError={() => { if (importedPhoto) setImportedPhoto(undefined); }} />}
@@ -476,11 +476,12 @@ function ServerTripPlan({ tripId, userId }: { tripId: number; userId: number }) 
             <div className="course-hero__title course-hero__title--with-action">
               <span><img src={cityPin} alt="" />{summary.city}</span>
               <h1>{summary.title}</h1>
-              {!needsRegistration && (
-                <p>{formatTripDetailDateRange(data.trip.startDate, data.trip.endDate)}
-                  {" · "}{data.trip.companion === "ALONE" ? "혼자" : `${companionLabels[data.trip.companion]} ${data.trip.companionCount}명`}
-                </p>
-              )}
+              <p>
+                {formatTripDetailDateRange(data.trip.startDate, data.trip.endDate)}
+                {!needsRegistration && (
+                  <>{" · "}{data.trip.companion === "ALONE" ? "혼자" : `${companionLabels[data.trip.companion]} ${data.trip.companionCount}명`}</>
+                )}
+              </p>
             </div>
             {!shared && (
               <Link className="course-hero__invite" to={`${tripSettingsPath(origin, undefined, tripId)}&panel=invite&day=${activeDay + 1}`}>
@@ -512,7 +513,7 @@ function ServerTripPlan({ tripId, userId }: { tripId: number; userId: number }) 
           {!data && !error && <p className="course-live-region" role="status">여행 일정을 불러오고 있어요.</p>}
           {data && summary && (needsRegistration || data.itinerary) && <RegisterBanner>
             <span><img src={calendarIcon} alt="" /></span>
-            <strong>여행 날짜와 동행을 알려주세요</strong>
+            <strong>{needsRegistration ? "함께 가는 사람을 알려주세요" : "여행 날짜와 동행을 알려주세요"}</strong>
             <button type="button" onClick={() => setRegistrationOpen(true)}>
               {needsRegistration ? "등록하기" : "수정하기"}
             </button>
