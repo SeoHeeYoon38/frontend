@@ -1,5 +1,14 @@
 const maxFileSize = 20 * 1024 * 1024;
 
+export function googleMapsImportTarget(device: Pick<Navigator, "userAgent" | "platform" | "maxTouchPoints">) {
+  const mobile = /Android|iPhone|iPad|iPod/i.test(device.userAgent) ||
+    (device.platform === "MacIntel" && device.maxTouchPoints > 1);
+  // The desktop site handles the saved-list panel URL. Use the documented map action on mobile.
+  return mobile
+    ? "https://www.google.com/maps/@?api=1&map_action=map"
+    : "https://www.google.com/maps/@/data=!4m2!10m1!1e1?hl=ko";
+}
+
 export function validateTakeoutFile(file: Pick<File, "name" | "size">): string {
   if (!/\.(zip|csv)$/i.test(file.name)) return "ZIP 또는 CSV 파일을 선택해 주세요.";
   if (file.size > maxFileSize) return "20MB 이하의 파일을 선택해 주세요.";

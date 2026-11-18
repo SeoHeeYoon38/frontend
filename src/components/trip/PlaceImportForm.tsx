@@ -15,7 +15,7 @@ import linkSpinner from "../../assets/place-import/link-spinner.svg";
 import linkStatusSpinner from "../../assets/place-import/link-status-spinner.svg";
 import loadingCharacter from "../../assets/trip-generation-illustration.png";
 import loadingDots from "../../assets/place-import/loading-dots.svg";
-import { extractMapsListLink, validateMapsListLink, validateTakeoutFile } from "../../utils/placeImport";
+import { extractMapsListLink, googleMapsImportTarget, validateMapsListLink, validateTakeoutFile } from "../../utils/placeImport";
 import * as I from "./PlaceImportForm.styled";
 
 export type PlaceImportInput =
@@ -201,7 +201,7 @@ function PlaceImportForm({ onImport, onSkip, busy = false, enriching = false, im
             <li>링크로 볼 수 있도록 공개 설정을 켜요</li>
             <li>링크를 복사하고 도틀로에 돌아와 붙여넣어요</li>
           </ol>
-          <I.ExternalLink href="https://www.google.com/maps/@/data=!4m2!10m1!1e1?hl=ko" target="_blank" rel="noreferrer">
+          <I.ExternalLink href={googleMapsImportTarget(navigator)} target="_blank" rel="noreferrer">
             구글맵으로 이동하기
           </I.ExternalLink>
         </I.LinkGuide>}
