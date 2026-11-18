@@ -19,12 +19,13 @@ import { generateItinerary, getLatestItinerary } from "../api/itineraries";
 import { ApiError } from "../api/client";
 import { isApiEnabled } from "../api/config";
 import { hasAuthSession } from "../api/tokenStorage";
-import { confirmTrip, createTrip as createApiTrip, updateTrip as updateApiTrip } from "../api/trips";
+import { confirmTrip } from "../api/trips";
 import { saveFlights, saveRental, saveStays } from "../api/reservations";
 import type { ReservationResponse, TripResponse } from "../api/types";
 import { applyReservationsToDraft } from "../api/reservationAdapters";
 import { apiTripToDraft } from "../utils/serverTrip";
 import { isNewGeneratedItinerary } from "../utils/itineraryGeneration";
+import useServerTripDraft from "./useServerTripDraft";
 
 interface GenerationAttempt {
   previousVersion: number;
@@ -116,6 +117,7 @@ function useTripCreate(
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const [draft, setDraft] = useState(() => initialDraft(trip, places, reservations));
+  const prepareServerTrip = useServerTripDraft(setDraft);
   const [isGenerating, setGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState("");
@@ -169,10 +171,7 @@ function useTripCreate(
     setPreparingTrip(true);
     setError("");
     try {
-      const response = isServerTripId(draft.tripId)
-        ? await updateApiTrip(Number(draft.tripId), input)
-        : await createApiTrip(input);
-      const serverTripId = response.id;
+      const serverTripId = await prepareServerTrip(draft);
       if (draft.outbound?.apiFlight || draft.inbound?.apiFlight) {
         await saveFlights(
           serverTripId,
@@ -335,6 +334,7 @@ function useTripCreate(
     update,
     move,
     back,
+    prepareServerTrip,
     startPlacesStep,
     generate,
   };

@@ -55,12 +55,14 @@ export const MapTabs = styled.div`
   display: flex;
   gap: 8px;
   margin-top: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
 
   button {
     display: grid;
     place-items: center;
-    width: 22px;
-    height: 22px;
+    width: auto;
+    flex-shrink: 0;
     min-width: 54px;
     height: 34px;
     padding: 0 15px;
@@ -79,11 +81,11 @@ export const MapTabs = styled.div`
   }
 `;
 
-export const MapCanvas = styled.div`
+export const MapCanvas = styled.div<{ $selected: boolean }>`
   position: absolute;
   top: 100px;
   right: 0;
-  bottom: min(340px, 44dvh);
+  bottom: ${({ $selected }) => $selected ? "0" : "min(328px, 42dvh)"};
   left: 0;
   overflow: hidden;
   background: #e7edf0;
@@ -97,7 +99,10 @@ export const MapCanvas = styled.div`
 
   > .course-map {
     height: 100%;
+    border-radius: 0;
   }
+
+  ${({ $selected }) => $selected ? ".course-map__controls { bottom: 194px; }" : ""}
 
   > p {
     margin: 20px;
@@ -127,10 +132,10 @@ export const DaySheet = styled.section`
   left: 0;
   right: 0;
   bottom: 0;
-  height: min(340px, 44dvh);
+  height: min(348px, 44dvh);
   overflow-y: auto;
   padding: 28px 20px 32px;
-  border-radius: 28px 28px 0 0;
+  border-radius: 24px 24px 0 0;
   background: #fff;
   box-shadow: 0 -6px 24px rgba(16, 16, 40, 0.14);
   scrollbar-width: none;
@@ -160,22 +165,37 @@ export const DaySheet = styled.section`
 `;
 
 export const MapTravel = styled.p`
-  margin: 0 0 8px 44px;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin: 6px 0 10px 40px;
   color: #5c5c63;
   font-size: 12px;
+  img { width: 14px; height: 14px; }
 `;
 
 export const MapPlaceRow = styled.button`
   width: 100%;
   display: grid;
-  grid-template-columns: 26px 58px 1fr;
+  grid-template-columns: 26px minmax(0, 1fr);
   align-items: center;
   gap: 10px;
-  padding: 10px 0;
+  padding: 0;
+  margin-bottom: 8px;
   border: 0;
   background: transparent;
   text-align: left;
   cursor: pointer;
+
+  .map-place-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 82px;
+    padding: 11px 12px;
+    border: 1px solid #e4e6ec;
+    border-radius: 16px;
+  }
 
   b:first-child {
     display: grid;
@@ -208,6 +228,31 @@ export const MapPlaceRow = styled.button`
     margin-top: 5px;
     color: #8a8a8e;
     font-size: 12px;
+  }
+`;
+
+export const MapSelection = styled.section`
+  position: absolute;
+  z-index: 2;
+  inset: auto 24px max(28px, env(safe-area-inset-bottom));
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 6px 24px rgb(16 16 40 / 18%);
+
+  > div { display: flex; align-items: center; gap: 12px; }
+  img { width: 64px; height: 64px; object-fit: cover; border-radius: 14px; }
+  small { display: block; margin-top: 4px; color: #8a8a8e; }
+  button {
+    min-height: 48px;
+    border: 0;
+    border-radius: 12px;
+    background: #090738;
+    color: #fff;
+    font-weight: 700;
+    cursor: pointer;
   }
 `;
 

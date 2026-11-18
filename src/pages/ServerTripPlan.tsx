@@ -28,6 +28,7 @@ import { apiTripToDraft, apiTripToSummary } from "../utils/serverTrip";
 import { dateLabel, durationLabel, timeLabel } from "../utils/trip";
 import DirectTripBuilder from "../components/direct-trip/DirectTripBuilder";
 import CourseRouteMap from "../components/course-completion/CourseRouteMap";
+import CourseMapScreen from "../components/traveler-course/CourseMapScreen";
 import TripTimeline from "../components/course-completion/TripTimeline";
 import PlaceDetail from "../components/course-completion/PlaceDetail";
 import AddItineraryPlaceSheet from "../components/course-completion/AddItineraryPlaceSheet";
@@ -52,6 +53,7 @@ import avatarBlue from "../assets/course-settings/avatar-blue.png";
 import avatarPurple from "../assets/course-settings/avatar-purple.png";
 import avatarYellow from "../assets/course-settings/avatar-yellow.png";
 import { routes } from "../config/routes";
+import { isMapCoordinate } from "../utils/googleMaps";
 
 interface TripPlanData {
   trip: TripResponse;
@@ -99,21 +101,22 @@ function ServerTripPlan({ tripId, userId }: { tripId: number; userId: number }) 
   const [data, setData] = useState<TripPlanData | undefined>(() => recentPlans.get(cacheKey));
   const [error, setError] = useState("");
   const [activeDay, setActiveDay] = useState(() => readPlanDay(search) - 1);
-  const [mapExpanded, setMapExpanded] = useState(false);
+  const [mapOpen, setMapOpen] = useState(false);
+  const [mapDay, setMapDay] = useState<number>();
   const [photoPlace, setPhotoPlace] = useState<{ itemId: string; placeId: string; name: string }>();
-  const placeReturnScroll = useRef<number | null>(null);
+  const courseReturnScroll = useRef<number | null>(null);
   const [photoError, setPhotoError] = useState("");
   const [photoPending, setPhotoPending] = useState(false);
 
+  const subScreen = photoPlace ? "place" : mapOpen ? "map" : null;
   useLayoutEffect(() => {
-    if (photoPlace) {
-      if (placeReturnScroll.current === null) placeReturnScroll.current = window.scrollY;
+    if (subScreen) {
       window.scrollTo(0, 0);
-    } else if (placeReturnScroll.current !== null) {
-      window.scrollTo(0, placeReturnScroll.current);
-      placeReturnScroll.current = null;
+    } else if (courseReturnScroll.current !== null) {
+      window.scrollTo(0, courseReturnScroll.current);
+      courseReturnScroll.current = null;
     }
-  }, [photoPlace]);
+  }, [subScreen]);
   const [interactionError, setInteractionError] = useState("");
   const interactionRequest = useRef(0);
   const [editing, setEditing] = useState(false);
@@ -225,12 +228,26 @@ function ServerTripPlan({ tripId, userId }: { tripId: number; userId: number }) 
   const placesById = new Map(data?.places.map((place) => [place.placeId, place]));
   const scheduledPlaceIds = new Set(days.flatMap((item) => item.visits.map((visit) => visit.placeId)));
   const placeCount = scheduledPlaceIds.size;
-  const mapPlaces = (day?.visits ?? []).flatMap((visit, index) => {
-    const place = placesById.get(visit.placeId);
-    if (typeof place?.latitude !== "number" || typeof place.longitude !== "number" ||
-      !Number.isFinite(place.latitude) || !Number.isFinite(place.longitude)) return [];
-    return [{ id: visit.itemId, name: place.name, latitude: place.latitude, longitude: place.longitude, order: index + 1 }];
-  });
+  const courseMapDays = (mapOpen ? days : day ? [day] : []).map((item) => ({
+    label: `${days.indexOf(item) + 1}일차`,
+    places: item.visits.map((visit, index) => {
+      const place = placesById.get(visit.placeId);
+      const travel = item.visits[index + 1]?.travel;
+      return {
+        id: visit.itemId,
+        order: index + 1,
+        name: place?.name ?? "장소 정보 없음",
+        photoPlaceId: visit.placeId,
+        category: categoryLabels[place?.category ?? "OTHER"],
+        latitude: place?.latitude ?? undefined,
+        longitude: place?.longitude ?? undefined,
+        travelTime: travel ? `${travelModeLabels[travel.mode]} ${travel.minutes}분` : undefined,
+        distance: travel ? `${(travel.distanceMeters / 1000).toFixed(1)}km` : undefined,
+        distanceMeters: travel?.distanceMeters,
+      };
+    }),
+  }));
+  const mapPlaces = courseMapDays[mapOpen ? activeDay : 0]?.places.filter(isMapCoordinate) ?? [];
   const excludedPlaceIds: string[] = Array.isArray(state?.excludedPlaceIds) ? state.excludedPlaceIds : [];
   const movementModes = new Set(days.flatMap((item) => item.visits.map((visit) => visit.travel.mode)));
   const movementLabel = movementModes.size === 0
@@ -238,6 +255,17 @@ function ServerTripPlan({ tripId, userId }: { tripId: number; userId: number }) 
     : [...movementModes].map((mode) => travelModeLabels[mode]).join("·");
   const shared = (data?.members.length ?? 0) > 1;
   const memberFallbacks = [avatarBlue, avatarPurple, avatarYellow];
+
+  function openCourseMap() {
+    courseReturnScroll.current = window.scrollY;
+    setMapDay(activeDay);
+    setMapOpen(true);
+  }
+
+  function openPlace(itemId: string, placeId: string, name: string) {
+    if (!mapOpen) courseReturnScroll.current = window.scrollY;
+    setPhotoPlace({ itemId, placeId, name });
+  }
 
   async function retryConfirmation() {
     if (!data?.itinerary || confirmationPending.current) return;
@@ -456,6 +484,14 @@ function ServerTripPlan({ tripId, userId }: { tripId: number; userId: number }) 
     </div></div>;
   }
 
+  if (mapOpen && summary) {
+    return <CourseMapScreen title={summary.title} city={summary.city} days={courseMapDays} tripId={tripId}
+      activeDay={mapDay} onDayChange={setMapDay} onBack={() => setMapOpen(false)}
+      onOpenPlace={(place) => {
+        if (place.photoPlaceId) openPlace(String(place.id), place.photoPlaceId, place.name);
+      }} />;
+  }
+
   return (
     <div className="course-page-shell">
       <main className="course-page">
@@ -568,18 +604,12 @@ function ServerTripPlan({ tripId, userId }: { tripId: number; userId: number }) 
                       </button>
                     ))}
                   </div>
-                  {day && (mapPlaces.length ? (
-                    <>
-                      <CourseRouteMap places={mapPlaces} city={summary.city} day={activeDay + 1} liveTiles />
-                      <button type="button" className="course-inline-edit" onClick={() => setMapExpanded(true)}>지도 확대</button>
-                    </>
-                  ) : <p>이날 지도에 표시할 장소 좌표가 없어요.</p>)}
-                  {mapExpanded && mapPlaces.length > 0 && (
-                    <TripSheet title={`${activeDay + 1}일차 지도`} onClose={() => setMapExpanded(false)}>
-                      <CourseRouteMap places={mapPlaces} city={summary.city} day={activeDay + 1} liveTiles expanded />
-                    </TripSheet>
+                  {day && day.visits.length > 0 && (
+                    <button type="button" className="course-map-preview" aria-label={`${activeDay + 1}일차 지도 보기`} onClick={openCourseMap}>
+                      <CourseRouteMap places={mapPlaces} city={summary.city} day={activeDay + 1} live />
+                    </button>
                   )}
-                   <TripTimeline day={activeDay + 1} shared={shared} onEdit={() => setEditing(true)} onOpenPlace={(itemId, placeId, name) => setPhotoPlace({ itemId, placeId, name })} visits={(day?.visits ?? []).map((visit, index, visits) => {
+                   <TripTimeline day={activeDay + 1} shared={shared} onEdit={() => setEditing(true)} onOpenPlace={openPlace} visits={(day?.visits ?? []).map((visit, index, visits) => {
                     const place = placesById.get(visit.placeId);
                     const next = visits[index + 1];
                     const mode = next?.travel.mode;

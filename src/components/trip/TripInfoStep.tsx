@@ -17,6 +17,7 @@ import * as S from "./Trip.styled";
 import * as P from "./TripInfoStep.styled";
 import { getCities } from "../../api/trips";
 import { isApiEnabled } from "../../api/config";
+import type { PrepareServerTrip } from "../../hooks/useServerTripDraft";
 interface TripInfoStepProps {
   draft: TripDraft;
   onChange: (draft: TripDraft) => void;
@@ -24,6 +25,7 @@ interface TripInfoStepProps {
   submitting?: boolean;
   submitError?: string;
   nextLabel?: string;
+  prepareServerTrip: PrepareServerTrip;
 }
 function TripInfoStep({
   draft,
@@ -32,6 +34,7 @@ function TripInfoStep({
   submitting = false,
   submitError = "",
   nextLabel = "다음",
+  prepareServerTrip,
 }: TripInfoStepProps) {
   const [sheet, setSheet] = useState<
     "city" | "dates" | "people" | "flight" | "stay" | "car" | null
@@ -47,17 +50,13 @@ function TripInfoStep({
     const controller = new AbortController();
     void getCities(controller.signal)
       .then((cities) => {
-        const supported = cities.flatMap((city) => {
-          const visual = mockTripCities.find((item) => item.name === city.name);
-          return visual
-            ? [{
-                ...visual,
-                country: city.country,
-                latitude: city.lat,
-                longitude: city.lng,
-              }]
-            : [];
-        });
+        const supported = cities.map((city) => ({
+          name: city.name,
+          country: city.country,
+          image: mockTripCities.find((item) => item.name === city.name)?.image ?? "",
+          latitude: city.lat,
+          longitude: city.lng,
+        }));
         if (!controller.signal.aborted) {
           setDestinations(supported);
           setCitiesPending(false);
@@ -289,6 +288,7 @@ function TripInfoStep({
           key={sheet}
           mode={sheet}
           draft={draft}
+          prepareServerTrip={prepareServerTrip}
           onClose={() => setSheet(null)}
           onSave={save}
         />
