@@ -47,6 +47,17 @@ export interface PlaceCandidate {
   address: string;
   lat: number;
   lng: number;
+  category?: PlaceCategoryCode | null;
+}
+
+export interface PopularPlaceResponse {
+  placeId: string;
+  name: string;
+  address: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  category: PlaceCategoryCode | null;
+  savedCount: number;
 }
 
 export type PlaceSource =
