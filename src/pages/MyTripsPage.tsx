@@ -61,7 +61,6 @@ function MyTripsPage() {
     ["trip-deleted", "여행을 삭제했어요"],
     ["trip-left", "여행에서 나왔어요"],
   ]);
-  const toastMessage = toastMessages.get(searchParams.get("toast") ?? "");
   const myTrips = useMyTrips();
   const allTrips = myTrips.enabled
     ? myTrips.trips.map(apiTripToSummary)
@@ -69,6 +68,10 @@ function MyTripsPage() {
         ...mockTripSummary(trip),
         status: mockTripStatus(trip),
       }));
+  const savedTrip = allTrips.find((trip) => String(trip.id) === searchParams.get("savedTripId"));
+  const toastMessage = searchParams.get("toast") === "saved" && savedTrip
+    ? `${savedTrip.title} 일정을 저장했어요`
+    : toastMessages.get(searchParams.get("toast") ?? "");
   const upcomingTrips = allTrips.filter((trip) => trip.status === "upcoming");
   const pastTrips = allTrips.filter((trip) => trip.status === "past");
   const trips = tab === "past" ? pastTrips : upcomingTrips;
@@ -100,6 +103,7 @@ function MyTripsPage() {
             onClick={() => {
               const next = new URLSearchParams(searchParams);
               next.delete("toast");
+              next.delete("savedTripId");
               setSearchParams(next, { replace: true });
             }}
             aria-label="알림 닫기"
