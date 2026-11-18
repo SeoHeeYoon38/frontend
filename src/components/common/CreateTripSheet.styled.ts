@@ -8,7 +8,7 @@ export const Sheet = styled.dialog`
   max-width: none;
   max-height: calc(100dvh - 24px);
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 37px 20px 0;
   border: 0;
   border-radius: 24px 24px 0 0;
   background: #fff;
@@ -29,26 +29,6 @@ export const Sheet = styled.dialog`
   :focus-visible {
     outline: 3px solid #7a6fe0;
     outline-offset: 2px;
-  }
-`;
-
-export const Handle = styled.button`
-  display: flex;
-  width: 64px;
-  height: 37px;
-  justify-content: center;
-  margin: 0 auto;
-  padding-top: 8px;
-  border: 0;
-  background: none;
-  cursor: pointer;
-
-  &::after {
-    width: 36px;
-    height: 5px;
-    border-radius: 3px;
-    background: #d1d1d6;
-    content: "";
   }
 `;
 

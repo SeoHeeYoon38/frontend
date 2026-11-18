@@ -178,9 +178,10 @@ export const TermsSheet = styled.section`
   right: 0;
   bottom: 0;
   left: 0;
-  padding: 8px 24px max(34px, calc(env(safe-area-inset-bottom) + 18px));
+  padding: 35px 24px max(34px, calc(env(safe-area-inset-bottom) + 18px));
   border-radius: 24px 24px 0 0;
   background: #ffffff;
+  --sheet-handle-color: #d1d1d6;
 
   > h2 {
     margin: 0;
@@ -200,14 +201,6 @@ export const TermsSheet = styled.section`
     max-height: calc(100dvh - 28px);
     overflow-y: auto;
   }
-`;
-
-export const Grabber = styled.div`
-  width: 36px;
-  height: 5px;
-  margin: 0 auto 22px;
-  border-radius: 3px;
-  background: #d1d1d6;
 `;
 
 export const AllAgreement = styled.button`

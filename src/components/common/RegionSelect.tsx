@@ -3,6 +3,7 @@ import type { CourseDestination } from "../../types/course";
 import close from "../../assets/icons/action-close.svg";
 import search from "../../assets/icons/search-default.svg";
 import check from "../../assets/icons/status-selected-check.svg";
+import SheetHandle from "./SheetHandle";
 import * as S from "./RegionSelect.styled";
 
 interface RegionSelectProps {
@@ -44,7 +45,7 @@ function RegionSelect({
       aria-labelledby="region-title"
       onCancel={onClose}
     >
-      <S.Grabber />
+      <SheetHandle onClose={onClose} />
       <S.Header>
         <h2 id="region-title">
           {mode === "trip" ? "어디로 떠나세요?" : "어디로 떠나볼까요?"}

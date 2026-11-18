@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router";
+import SheetHandle from "../components/common/SheetHandle";
 import backIcon from "../assets/figma/traveler-back.svg";
 import calendarIcon from "../assets/figma/traveler-calendar.svg";
 import heartIcon from "../assets/figma/traveler-heart.svg";
@@ -341,7 +342,7 @@ function TravelerCoursePage() {
       {coursesLoadError && <S.Toast role="alert">{coursesLoadError}</S.Toast>}
       {dateSheetOpen && <ImportedSheet.Overlay role="presentation" onMouseDown={() => { if (!importPending) setDateSheetOpen(false); }}>
         <ImportedSheet.Sheet role="dialog" aria-modal="true" aria-labelledby="course-import-date-title" onMouseDown={(event) => event.stopPropagation()}>
-          <ImportedSheet.Handle />
+          <SheetHandle onClose={() => setDateSheetOpen(false)} closeDisabled={importPending} />
           <ImportedSheet.SheetHeader><div>
             <h2 id="course-import-date-title">언제 떠나세요?</h2>
             <p>코스 기간({course.duration})에 맞춰 날짜를 골라주세요</p>

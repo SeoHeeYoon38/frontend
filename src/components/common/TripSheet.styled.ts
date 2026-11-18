@@ -46,18 +46,6 @@ export const Sheet = styled.dialog<{ $minHeight: number; $course: boolean; $cour
     outline-offset: 3px;
   }
 `;
-export const Grabber = styled.div`
-  z-index: 3;
-  pointer-events: none;
-  position: absolute;
-  top: 8px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 36px;
-  height: 5px;
-  background: #d9d9de;
-  border-radius: 3px;
-`;
 export const SheetHeader = styled.div<{
   $course: boolean;
   $compact: boolean;

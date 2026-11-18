@@ -5,6 +5,7 @@ import searchIcon from "../../assets/course-completion/search.svg";
 import placeCoffee from "../../assets/course-completion/place-coffee.png";
 import closeIcon from "../../assets/icons/action-close.svg";
 import type { CourseCandidate } from "../../types/courseCompletion";
+import SheetHandle from "../common/SheetHandle";
 
 interface PlacePickerSheetProps {
   candidates: CourseCandidate[];
@@ -24,7 +25,7 @@ function PlacePickerSheet({ candidates, day, mode, replacementId, selectedIds, o
   return (
     <div className="course-overlay" role="presentation">
       <section className="course-sheet place-picker-sheet" aria-label={mode === "add" ? "장소 추가" : "장소 교체"}>
-        <div className="course-sheet__handle" />
+        <SheetHandle className="course-sheet__handle" onClose={onClose} />
         <header><h2>{mode === "add" ? `${day}일차에 장소 추가` : "장소 교체"}</h2><button type="button" onClick={onClose} aria-label="닫기"><img src={closeIcon} alt="" /></button></header>
         {mode === "add" ? (
           <>

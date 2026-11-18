@@ -63,6 +63,7 @@ function PlaceImportForm({ onImport, onSkip, busy = false, enriching = false, im
   const [dismissedImportError, setDismissedImportError] = useState("");
   const fileError = file ? validateTakeoutFile(file) : "";
   const visibleError = error || (dismissedImportError === importError ? "" : importError);
+  const mapsTarget = googleMapsImportTarget(navigator);
 
   function changeLink(value: string) {
     setLink(extractMapsListLink(value) ?? value);
@@ -104,10 +105,11 @@ function PlaceImportForm({ onImport, onSkip, busy = false, enriching = false, im
 
   function submitLink() {
     if (busy) return;
-    const message = validateMapsListLink(link);
+    const url = extractMapsListLink(link) ?? link.trim();
+    const message = validateMapsListLink(url);
     setError(message);
     setDismissedImportError("");
-    if (!message) void onImport({ method: "link", link: link.trim() });
+    if (!message) void onImport({ method: "link", link: url });
   }
 
   if (enriching) return (
@@ -180,7 +182,8 @@ function PlaceImportForm({ onImport, onSkip, busy = false, enriching = false, im
         <I.LinkField>
           <label htmlFor={linkInputId}>리스트 링크</label>
           <I.LinkInput>
-            <input id={linkInputId} type="url" placeholder="https://maps.app.goo.gl/…" value={link} readOnly={busy}
+            <input id={linkInputId} type="text" inputMode="url" autoCapitalize="none" spellCheck={false}
+              placeholder="https://maps.app.goo.gl/…" value={link} readOnly={busy}
               onChange={(event) => changeLink(event.target.value)} onPaste={busy ? undefined : pasteSharedText} />
             {busy ? <img src={linkCheck} alt="" /> : (
               <button type="button" onClick={() => void pasteLink()}><img src={linkPaste} alt="" />붙여넣기</button>
@@ -196,12 +199,12 @@ function PlaceImportForm({ onImport, onSkip, busy = false, enriching = false, im
         {!busy && <I.LinkGuide>
           <strong>리스트를 공개로 설정하는 방법</strong>
           <ol>
-            <li>지도 홈이 열리면 [나] 또는 [저장됨]을 눌러요</li>
+            {!mapsTarget.opensSavedList && <li>지도 홈이 열리면 [나] 또는 [저장됨]을 눌러요</li>}
             <li>가져올 리스트를 열고 [공유]를 눌러요</li>
             <li>링크로 볼 수 있도록 공개 설정을 켜요</li>
             <li>링크를 복사하고 도틀로에 돌아와 붙여넣어요</li>
           </ol>
-          <I.ExternalLink href={googleMapsImportTarget(navigator)} target="_blank" rel="noreferrer">
+          <I.ExternalLink href={mapsTarget.href} target="_blank" rel="noreferrer">
             구글맵으로 이동하기
           </I.ExternalLink>
         </I.LinkGuide>}

@@ -3,6 +3,7 @@ import backIcon from "../../assets/figma/map-back.svg";
 import walkIcon from "../../assets/figma/traveler-walk.svg";
 import * as S from "./TravelerCourseOverlay.styled";
 import { PlaceThumbnail } from "../common/PlacePhoto";
+import SheetHandle from "../common/SheetHandle";
 import CourseRouteMap, { type RouteMapPlace } from "../course-completion/CourseRouteMap";
 import { straightLineMeters } from "../../utils/googleMaps";
 import { dateLabel } from "../../utils/trip";
@@ -37,6 +38,7 @@ function distanceLabel(meters: number) {
 
 export default function CourseMapScreen({ title, city, days, tripId, photoCourseId, sampleMap, activeDay, onBack, onDayChange, onOpenPlace }: CourseMapScreenProps) {
   const [selectedId, setSelectedId] = useState<string>();
+  const [listHidden, setListHidden] = useState(false);
   let order = 0;
   const groups = days.flatMap((day, dayIndex) => activeDay === undefined || activeDay === dayIndex ? [{
     label: day.label,
@@ -63,6 +65,7 @@ export default function CourseMapScreen({ title, city, days, tripId, photoCourse
 
   function chooseDay(day?: number) {
     setSelectedId(undefined);
+    setListHidden(false);
     onDayChange(day);
   }
 
@@ -87,7 +90,7 @@ export default function CourseMapScreen({ title, city, days, tripId, photoCourse
           ))}
         </S.MapTabs>
       </S.MapHeader>
-      <S.MapCanvas $selected={Boolean(selected)}>
+      <S.MapCanvas $selected={Boolean(selected)} $showCourseList={!selected && !listHidden}>
         {sampleMap ? <>
           <img src={sampleMap} alt={`${city} 샘플 지도`} />
           {(activeDay === undefined || activeDay === 0) && samplePins.slice(0, groups[0]?.rows.length ?? 0).map((pin, index) => (
@@ -103,7 +106,8 @@ export default function CourseMapScreen({ title, city, days, tripId, photoCourse
           <span><strong>{selected.order}. {selected.place.name}</strong><small>{selected.place.category}</small></span>
         </div>
         <button type="button" onClick={() => onOpenPlace(selected.place)}>장소 상세</button>
-      </S.MapSelection> : <S.DaySheet aria-label="지도 아래 코스 목록">
+      </S.MapSelection> : !listHidden && <S.DaySheet aria-label="지도 아래 코스 목록">
+        <SheetHandle onClose={() => setListHidden(true)} />
         <h2>{activeDay === undefined ? "전체" : groups[0]?.label}</h2>
         <p>장소 {rows.length}곳{total !== undefined && ` · ${photoCourseId ? "직선거리 " : "이동 거리 "}${distanceLabel(total)}`}</p>
         {groups.map(({ label, rows }) => (

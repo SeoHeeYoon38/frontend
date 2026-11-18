@@ -4,6 +4,7 @@ import courseCharacter from "../../assets/images/character-blue.webp";
 import pen from "../../assets/icons/action-pen.svg";
 import chevron from "../../assets/icons/nav-chevron-right-muted.svg";
 import { routes } from "../../config/routes";
+import SheetHandle from "./SheetHandle";
 import * as S from "./CreateTripSheet.styled";
 
 const options = [
@@ -65,7 +66,7 @@ function CreateTripSheet({ onClose }: CreateTripSheetProps) {
         }
       }}
     >
-      <S.Handle type="button" aria-label="여행 만들기 닫기" onClick={onClose} />
+      <SheetHandle onClose={onClose} tapToClose />
       <h2 id={titleId}>어떻게 여행을 만들까요?</h2>
       <S.Options>
         {options.map(({ variant, to, icon, title, description }) => (

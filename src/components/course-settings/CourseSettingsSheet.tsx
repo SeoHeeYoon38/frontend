@@ -16,6 +16,7 @@ import addIcon from "../../assets/icons/action-add.svg";
 import { courseMembers } from "../../data/mocks/courseSettingsData";
 import { demoInvitePath } from "../../utils/navigation";
 import type { CourseSettingsSheet as SheetName } from "../../types/courseSettings";
+import SheetHandle from "../common/SheetHandle";
 import * as S from "./CourseSettings.styled";
 
 interface CourseSettingsSheetProps {
@@ -116,7 +117,7 @@ function CourseSettingsSheet({
         aria-modal="true"
         aria-labelledby={`${activeSheet}-sheet-title`}
       >
-        <S.Grabber />
+        <SheetHandle onClose={requestClose} closeDisabled={showCloseConfirm} />
         <S.SheetHeader>
           <h2 id={`${activeSheet}-sheet-title`}>
             {sheetTitles[activeSheet]}

@@ -5,8 +5,8 @@ export function googleMapsImportTarget(device: Pick<Navigator, "userAgent" | "pl
     (device.platform === "MacIntel" && device.maxTouchPoints > 1);
   // The desktop site handles the saved-list panel URL. Use the documented map action on mobile.
   return mobile
-    ? "https://www.google.com/maps/@?api=1&map_action=map"
-    : "https://www.google.com/maps/@/data=!4m2!10m1!1e1?hl=ko";
+    ? { href: "https://www.google.com/maps/@?api=1&map_action=map", opensSavedList: false }
+    : { href: "https://www.google.com/maps/@/data=!4m2!10m1!1e1?hl=ko", opensSavedList: true };
 }
 
 export function validateTakeoutFile(file: Pick<File, "name" | "size">): string {

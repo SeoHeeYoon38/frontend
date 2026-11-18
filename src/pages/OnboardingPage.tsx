@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router";
+import SheetHandle from "../components/common/SheetHandle";
 import { onboardingPreferencesToInput } from "../api/adapters";
 import {
   canStartGoogleLogin,
@@ -510,7 +511,7 @@ function OnboardingPage() {
             }}
           />
           <S.TermsSheet role="dialog" aria-modal="true" aria-labelledby="terms-title">
-            <S.Grabber />
+            <SheetHandle onClose={() => { if (!liveSession) navigate(routes.login); }} />
             <h2 id="terms-title">{liveSession ? "약관에 동의해 주세요" : "약관 동의 체험"}</h2>
             <p>
               {liveSession

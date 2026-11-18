@@ -42,16 +42,6 @@ export const Sheet = styled.dialog<{ $trip: boolean }>`
     outline-offset: 3px;
   }
 `;
-export const Grabber = styled.div`
-  position: absolute;
-  left: 50%;
-  top: 8px;
-  transform: translateX(-50%);
-  width: 36px;
-  height: 5px;
-  border-radius: 3px;
-  background: #d9d9de;
-`;
 export const Header = styled.div`
   position: sticky;
   top: 0;

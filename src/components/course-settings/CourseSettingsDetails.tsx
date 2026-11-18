@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { MemberResponse } from "../../api/types";
 import avatar from "../../assets/course-settings-details/member-avatar.png";
-import backIcon from "../../assets/course-settings/back.svg";
+import backIcon from "../../assets/icons/nav-back.svg";
 import addBadge from "../../assets/course-settings-details/member-add.svg";
 import memberIcon from "../../assets/course-settings-details/menu-invite.svg";
 import toggleOff from "../../assets/course-settings-details/toggle-off.svg";

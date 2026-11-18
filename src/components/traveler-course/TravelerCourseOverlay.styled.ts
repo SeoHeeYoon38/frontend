@@ -82,11 +82,11 @@ export const MapTabs = styled.div`
   button small { color: #8a8a8e; font-size: 12px; font-weight: 400; }
 `;
 
-export const MapCanvas = styled.div<{ $selected: boolean }>`
+export const MapCanvas = styled.div<{ $selected: boolean; $showCourseList: boolean }>`
   position: absolute;
   top: 100px;
   right: 0;
-  bottom: ${({ $selected }) => $selected ? "0" : "min(328px, 42dvh)"};
+  bottom: ${({ $showCourseList }) => $showCourseList ? "min(328px, 42dvh)" : "0"};
   left: 0;
   overflow: hidden;
   background: #e7edf0;
@@ -134,6 +134,7 @@ export const DaySheet = styled.section`
   right: 0;
   bottom: 0;
   height: min(348px, 44dvh);
+  max-height: calc(100% - 100px);
   overflow-y: auto;
   padding: 28px 20px 32px;
   border-radius: 24px 24px 0 0;
@@ -141,17 +142,10 @@ export const DaySheet = styled.section`
   box-shadow: 0 -6px 24px rgba(16, 16, 40, 0.14);
   scrollbar-width: none;
 
-  &::before {
-    content: "";
-    position: absolute;
-    top: 10px;
-    left: 50%;
-    width: 38px;
-    height: 4px;
-    transform: translateX(-50%);
-    border-radius: 4px;
-    background: #d1d1d6;
-  }
+  --sheet-handle-top: 10px;
+  --sheet-handle-width: 38px;
+  --sheet-handle-height: 4px;
+  --sheet-handle-color: #d1d1d6;
 
   h2 {
     margin: 0 0 4px;
