@@ -1,4 +1,11 @@
 import { apiRequest, queryString } from "./client";
+import { coordinationMessages } from "../utils/chatCoordination";
+
+export interface ChatCoordinationResult {
+  text: string;
+  card: { kind: "OPINION_SUMMARY"; summaries: Array<{ userId: number; point: string }> };
+  options: { title: string; items: Array<{ id: string; label: string }> };
+}
 
 export interface ChatMessage {
   id: number;
@@ -43,17 +50,19 @@ export function sendChatMessage(tripId: number, value: string) {
   });
 }
 
-export function coordinateChat(tripId: number) {
-  return apiRequest<unknown>(`/api/trips/${tripId}/chat/coordinate`, {
-    method: "POST", timeoutMs: 180_000,
+export function coordinateChat(tripId: number, messages: ChatMessage[], memberIds: number[]) {
+  const input = coordinationMessages(messages, memberIds);
+  if (!input.length) throw new Error("조율할 대화가 없어요. 현재 일행과 먼저 이야기를 나눠 주세요.");
+  return apiRequest<ChatCoordinationResult>(`/api/trips/${tripId}/chat/coordinate`, {
+    method: "POST", json: { messages: input }, timeoutMs: 180_000,
   });
 }
 
-export function createChatPoll(tripId: number, direction: string, messages: ChatMessage[]) {
+export function createChatPoll(tripId: number, direction: string, messages: ChatMessage[], memberIds: number[]) {
+  if (!direction.trim() || direction.length > 100) throw new Error("조율 방향은 1~100자로 선택해 주세요.");
   return apiRequest<ChatPoll>(`/api/trips/${tripId}/chat/poll-candidates`, {
     method: "POST",
-    json: { direction, messages: messages.filter((item) => item.type === "USER").slice(-100)
-      .map((item) => ({ userId: item.sender?.id ?? null, text: item.text })) },
+    json: { direction, messages: coordinationMessages(messages, memberIds) },
     timeoutMs: 180_000,
   });
 }

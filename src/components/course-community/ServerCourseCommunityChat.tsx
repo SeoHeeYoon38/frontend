@@ -6,6 +6,7 @@ import { getTripMembers } from "../../api/members";
 import { getTrip } from "../../api/trips";
 import type { MemberResponse, TripResponse } from "../../api/types";
 import { apiTripToSummary } from "../../utils/serverTrip";
+import { chatActionError, coordinationMessages, visibleChatMessages } from "../../utils/chatCoordination";
 import backIcon from "../../assets/course-settings/back.svg";
 import aiAvatar from "../../assets/course-community/ai-avatar.png";
 import avatarBlue from "../../assets/course-settings/avatar-blue.png";
@@ -41,6 +42,9 @@ export default function ServerCourseCommunityChat({ tripId, initialDay, onBack, 
   const [message, setMessage] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
+  const [syncError, setSyncError] = useState("");
+  const [localResults, setLocalResults] = useState<ChatMessage[]>([]);
+  const localId = useRef(-1);
   const [selectedPoll, setSelectedPoll] = useState<ChatPoll>();
   const [selectedDay, setSelectedDay] = useState(initialDay);
   const cursor = useRef(0);
@@ -70,9 +74,9 @@ export default function ServerCourseCommunityChat({ tripId, initialDay, onBack, 
         setMessages((current) => mergeMessages(current, response.messages));
         setPolls(response.polls);
         setReady(true);
-        setError("");
+        setSyncError("");
       } catch (reason) {
-        if (!controller.signal.aborted) setError(reason instanceof Error ? reason.message : "채팅 내용을 불러오지 못했어요.");
+        if (!controller.signal.aborted) setSyncError(reason instanceof Error ? reason.message : "채팅 내용을 불러오지 못했어요.");
       } finally {
         fetching.current = false;
       }
@@ -82,7 +86,7 @@ export default function ServerCourseCommunityChat({ tripId, initialDay, onBack, 
     return () => { controller.abort(); window.clearInterval(timer); };
   }, [tripId]);
 
-  useEffect(() => { bottom.current?.scrollIntoView({ block: "end" }); }, [messages.length, polls.length]);
+  useEffect(() => { bottom.current?.scrollIntoView({ block: "end" }); }, [messages.length, polls.length, localResults.length]);
 
   const refresh = async () => {
     const response = await getChatMessages(tripId, cursor.current || undefined);
@@ -98,9 +102,14 @@ export default function ServerCourseCommunityChat({ tripId, initialDay, onBack, 
     setError("");
     try {
       await action();
-      await refresh();
+      try {
+        await refresh();
+        setSyncError("");
+      } catch {
+        setSyncError("요청은 완료됐지만 최신 채팅을 불러오지 못했어요. 잠시 후 자동으로 다시 확인합니다.");
+      }
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "요청을 처리하지 못했어요.");
+      setError(chatActionError(reason));
     } finally {
       actionInFlight.current = false;
       setPending(false);
@@ -112,15 +121,31 @@ export default function ServerCourseCommunityChat({ tripId, initialDay, onBack, 
     setMessage("");
   };
 
+  const memberIds = members.map((member) => member.userId);
+  const appendResult = (text: string, payload: ChatMessage["payload"]) => {
+    const id = localId.current--;
+    setLocalResults((current) => [...current, {
+      id, type: "AI", sender: null, text, payload, createdAt: new Date().toISOString(),
+    }]);
+  };
+  const createPoll = async (direction: string) => {
+    const poll = await createChatPoll(tripId, direction, messages, memberIds);
+    setPolls((current) => [...current.filter((item) => item.pollId !== poll.pollId), poll]);
+    appendResult("투표할 장소를 골랐어요.", { card: { kind: "POLL", pollId: poll.pollId } });
+  };
   const chooseDirection = (label: string, isTalkMore: boolean) => void run(async () => {
-    await sendChatMessage(tripId, label);
-    if (!isTalkMore) await createChatPoll(tripId, label, messages);
+    if (isTalkMore) {
+      await sendChatMessage(tripId, label);
+      composer.current?.focus();
+      return;
+    }
+    await createPoll(label);
   });
 
   const makePoll = () => {
     const direction = [...messages].reverse().find((item) => item.type === "USER")?.text.trim().slice(0, 100);
     if (!direction) return;
-    void run(() => createChatPoll(tripId, direction, messages));
+    void run(() => createPoll(direction));
   };
 
   const me = members.find((member) => member.me);
@@ -142,6 +167,7 @@ export default function ServerCourseCommunityChat({ tripId, initialDay, onBack, 
     <section className="community-chat__messages" aria-live="polite">
       {!ready && !error && <p role="status">채팅을 불러오고 있어요.</p>}
       {error && <p role="alert">{error}</p>}
+      {syncError && <p role="alert">{syncError}</p>}
       {ready && messages.length === 0 && <article className="community-chat__ai-message">
         <img className="community-chat__ai-avatar" src={aiAvatar} alt="도틀로 AI" />
         <div><strong>도틀로 AI</strong><div className="community-chat__ai-bubble">
@@ -154,7 +180,7 @@ export default function ServerCourseCommunityChat({ tripId, initialDay, onBack, 
           </div>
         </div>
       </article>}
-      {messages.map((item) => {
+      {visibleChatMessages(messages, localResults).map((item) => {
         if (item.type === "SYSTEM") return <p className="community-chat__system" key={item.id}>{item.text}</p>;
         if (item.type === "USER") return item.sender?.id === me?.userId
           ? <p className="community-chat__my-message" key={item.id}>{item.text}</p>
@@ -213,8 +239,11 @@ export default function ServerCourseCommunityChat({ tripId, initialDay, onBack, 
     <footer className="community-chat__composer">
       <div className="community-chat__quick-actions">
         <button type="button" disabled title="일정 점검 API가 준비되지 않았어요"><b>@도틀로</b> 일정 점검</button>
-        <button type="button" disabled={pending || !messages.some((item) => item.type === "USER")}
-          onClick={() => void run(() => coordinateChat(tripId))}><b>@도틀로</b> 의견 조율</button>
+        <button type="button" disabled={pending || !ready || coordinationMessages(messages, memberIds).length === 0}
+          onClick={() => void run(async () => {
+            const result = await coordinateChat(tripId, messages, memberIds);
+            appendResult(result.text, { card: result.card, options: result.options });
+          })}><b>@도틀로</b> 의견 조율</button>
         <button type="button" disabled={pending || !messages.some((item) => item.type === "USER")}
           onClick={makePoll}><b>@도틀로</b> 투표 만들기</button>
       </div>
