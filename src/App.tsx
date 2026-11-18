@@ -62,10 +62,7 @@ function App() {
 
   if (hasSession && !signupFlowRoute && !sharedTripRoute) {
     if (signupStatus === "idle" || signupStatus === "checking") {
-      return <><GlobalStyle /><main className="auth-gate" role="status">
-        <img src={brandLogo} alt="Dotlo" />
-        <span className="auth-gate__sr-only">가입 정보를 확인하고 있어요.</span>
-      </main></>;
+      return <GlobalStyle />;
     }
     if (signupStatus === "error") {
       return (

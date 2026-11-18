@@ -6,10 +6,13 @@ import * as S from "./Trip.styled";
 interface DateRangePickerProps {
   start: string;
   end: string;
-  onChange: (start: string, end: string) => void;
+  onChange?: (start: string, end: string) => void;
   initialMonth?: string;
+  minDate?: string;
+  maxDate?: string;
+  multiple?: { selected: string[]; onToggle: (date: string) => void };
 }
-function DateRangePicker({ start, end, onChange, initialMonth }: DateRangePickerProps) {
+function DateRangePicker({ start, end, onChange, initialMonth, minDate, maxDate, multiple }: DateRangePickerProps) {
   const [month, setMonth] = useState(() => {
     const initial = validDate(start)
       ? new Date(start + "T12:00:00")
@@ -22,10 +25,10 @@ function DateRangePicker({ start, end, onChange, initialMonth }: DateRangePicker
   const m = month.getMonth();
   const blanks = new Date(year, m, 1).getDay();
   const days = new Date(year, m + 1, 0).getDate();
-  function choose(day: number) {
-    const value = `${year}-${String(m + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-    if (!start || end || value < start) onChange(value, "");
-    else onChange(start, value);
+  function choose(value: string) {
+    if (multiple) multiple.onToggle(value);
+    else if (!start || end || value < start) onChange?.(value, "");
+    else onChange?.(start, value);
   }
   return (
     <>
@@ -57,20 +60,22 @@ function DateRangePicker({ start, end, onChange, initialMonth }: DateRangePicker
         {Array.from({ length: days }, (_, i) => {
           const day = i + 1;
           const value = `${year}-${String(m + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+          const selected = multiple ? multiple.selected.includes(value) : value === start || value === end;
           return (
             <S.CalendarDay
               key={value}
               type="button"
               aria-label={value}
-              aria-pressed={value === start || value === end}
+              aria-pressed={selected}
+              disabled={Boolean((minDate && value < minDate) || (maxDate && value > maxDate))}
               $range={!!end && value > start && value < end}
-              $edge={value === start || value === end}
+              $edge={selected}
               $startEdge={!!end && start !== end && value === start}
               $endEdge={!!end && start !== end && value === end}
               $sunday={(blanks + i) % 7 === 0}
-              onClick={() => choose(day)}
+              onClick={() => choose(value)}
             >
-              {(value === start || value === end) && (
+              {selected && (
                 <img src={selectedDate} alt="" aria-hidden="true" />
               )}
               <span>{day}</span>
@@ -80,10 +85,12 @@ function DateRangePicker({ start, end, onChange, initialMonth }: DateRangePicker
       </S.CalendarGrid>
       <S.DateSummary>
         <span>
-          {dateLabel(start)}
-          {end ? ` ~ ${dateLabel(end)}` : ""}
+          {multiple
+            ? [...multiple.selected].sort().map(dateLabel).join(", ")
+            : dateLabel(start) + (end ? " ~ " + dateLabel(end) : "")}
         </span>
-        {start && end && <b>{durationLabel(start, end)}</b>}
+        {multiple ? multiple.selected.length > 0 && <b>{multiple.selected.length}일</b>
+          : start && end && <b>{durationLabel(start, end)}</b>}
       </S.DateSummary>
     </>
   );

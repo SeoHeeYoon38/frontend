@@ -3,12 +3,18 @@ import googleMapsLogo from "../../assets/images/brand-google-maps.webp";
 import checkIcon from "../../assets/place-import/upload-02.svg";
 import chevronIcon from "../../assets/place-import/upload-more.svg";
 import fileRemoveIcon from "../../assets/place-import/file-remove.svg";
-import infoIcon from "../../assets/place-import/method-info.svg";
 import linkIcon from "../../assets/place-import/method-07.svg";
 import uploadEmptyIcon from "../../assets/place-import/upload-01.svg";
 import uploadIcon from "../../assets/place-import/upload-03.svg";
 import uploadErrorIcon from "../../assets/place-import/upload-04.svg";
 import zipIcon from "../../assets/place-import/method-04.svg";
+import linkCheck from "../../assets/place-import/link-check.svg";
+import linkLock from "../../assets/place-import/link-lock.svg";
+import linkPaste from "../../assets/place-import/link-paste.svg";
+import linkSpinner from "../../assets/place-import/link-spinner.svg";
+import linkStatusSpinner from "../../assets/place-import/link-status-spinner.svg";
+import loadingCharacter from "../../assets/trip-generation-illustration.png";
+import loadingDots from "../../assets/place-import/loading-dots.svg";
 import { validateMapsListLink, validateTakeoutFile } from "../../utils/placeImport";
 import * as I from "./PlaceImportForm.styled";
 
@@ -22,6 +28,7 @@ interface PlaceImportFormProps {
   onImport: (input: PlaceImportInput) => void | Promise<void>;
   onSkip?: () => void;
   busy?: boolean;
+  enriching?: boolean;
   importError?: string;
   view?: PlaceImportView;
   onViewChange?: (view: PlaceImportView) => void;
@@ -40,7 +47,7 @@ function formatFileSize(size: number) {
   return `${(size / (1024 * 1024)).toFixed(1)}MB`;
 }
 
-function PlaceImportForm({ onImport, onSkip, busy = false, importError = "", view: controlledView, onViewChange }: PlaceImportFormProps) {
+function PlaceImportForm({ onImport, onSkip, busy = false, enriching = false, importError = "", view: controlledView, onViewChange }: PlaceImportFormProps) {
   const fileInputId = useId();
   const linkInputId = useId();
   const fileInput = useRef<HTMLInputElement>(null);
@@ -95,6 +102,15 @@ function PlaceImportForm({ onImport, onSkip, busy = false, importError = "", vie
     setDismissedImportError("");
     if (!message) void onImport({ method: "link", link: link.trim() });
   }
+
+  if (enriching) return (
+    <I.ImportProgress role="status">
+      <img className="character" src={loadingCharacter} alt="" />
+      <h1>저장한 장소를 불러오고 있어요</h1>
+      <p>장소의 주소와 위치 정보를 확인하고 있어요.<br />잠시만 기다려 주세요.</p>
+      <img className="dots" src={loadingDots} alt="" />
+    </I.ImportProgress>
+  );
 
   if (view === "method") return (
     <I.Flow aria-label="Google 지도 장소 가져오기">
@@ -152,29 +168,38 @@ function PlaceImportForm({ onImport, onSkip, busy = false, importError = "", vie
 
   if (view === "link") return (
     <I.Flow>
-      <I.Heading><h1>공유 리스트 링크를 붙여넣어 주세요</h1><p>공개로 공유된 Google 지도 리스트만 가져올 수 있어요.</p></I.Heading>
+      <I.Heading><h1>공유 리스트 링크를 붙여넣어 주세요</h1><p>Google 지도에서 공개로 설정한 리스트만 가져올 수 있어요.</p></I.Heading>
       <I.LinkForm onSubmit={(event) => { event.preventDefault(); submitLink(); }}>
-        <label htmlFor={linkInputId}>Google 지도 공유 링크</label>
-        <I.LinkInput>
-          <input id={linkInputId} type="url" placeholder="https://maps.app.goo.gl/…" value={link} disabled={busy} onChange={(event) => changeLink(event.target.value)} />
-          <button type="button" disabled={busy} onClick={() => void pasteLink()}>붙여넣기</button>
-        </I.LinkInput>
-        <I.LinkGuide>
+        <I.LinkField>
+          <label htmlFor={linkInputId}>리스트 링크</label>
+          <I.LinkInput>
+            <input id={linkInputId} type="url" placeholder="https://maps.app.goo.gl/…" value={link} readOnly={busy} onChange={(event) => changeLink(event.target.value)} />
+            {busy ? <img src={linkCheck} alt="" /> : (
+              <button type="button" onClick={() => void pasteLink()}><img src={linkPaste} alt="" />붙여넣기</button>
+            )}
+          </I.LinkInput>
+          {busy && (
+            <I.LinkProgress role="status">
+              <I.Spinner src={linkStatusSpinner} alt="" />
+              리스트를 가져오고 있어요. 잠시만 기다려 주세요.
+            </I.LinkProgress>
+          )}
+        </I.LinkField>
+        {!busy && <I.LinkGuide>
           <strong>리스트를 공개로 설정하는 방법</strong>
           <ol>
-            <li>Google 지도에서 [저장됨] 탭을 열어요.</li>
-            <li>가져올 리스트를 열고 [공유]를 눌러요.</li>
-            <li>링크로 볼 수 있도록 공개 설정을 켜요.</li>
-            <li>링크를 복사한 뒤 이 화면으로 돌아와 붙여넣어요.</li>
+            <li>Google 지도 앱에서 [저장됨] 탭을 열어요</li>
+            <li>가져올 리스트를 열고 [공유]를 눌러요</li>
+            <li>링크로 볼 수 있도록 공개 설정을 켜요</li>
+            <li>링크를 복사해 여기에 붙여넣어요</li>
           </ol>
-          <I.ExternalLink href="https://www.google.com/maps" target="_blank" rel="noreferrer">Google Maps 열기</I.ExternalLink>
-        </I.LinkGuide>
-        <I.InfoBox><img src={infoIcon} alt="" /><p>공개 리스트는 링크를 가진 누구나 볼 수 있어요. 개인적인 장소가 포함되어 있지 않은지 확인해 주세요.</p></I.InfoBox>
-        {busy && <p role="status">공유 리스트에서 장소를 가져오고 있어요.</p>}
+        </I.LinkGuide>}
+        <I.InfoBox><img src={linkLock} alt="" /><p>공개 리스트는 링크를 가진 누구나 볼 수 있어요. 개인적인 장소가 포함되어 있지 않은지 확인해 주세요.</p></I.InfoBox>
         {visibleError && <I.ErrorBox role="alert"><img src={uploadErrorIcon} alt="" /><p>{visibleError}</p></I.ErrorBox>}
         <I.FormFooter>
-          <I.PrimaryButton type="submit" disabled={busy || !link.trim()}>{busy ? "장소 가져오는 중…" : "장소 가져오기"}</I.PrimaryButton>
-          <I.GuideLink type="button" disabled={busy} onClick={() => setView("method")}>다른 방법 선택하기 <img src={chevronIcon} alt="" /></I.GuideLink>
+          <I.PrimaryButton type="submit" $busy={busy} disabled={busy || !link.trim()}>
+            {busy ? <><I.Spinner src={linkSpinner} alt="" />가져오는 중</> : link.trim() ? "장소 가져오기" : "링크를 붙여넣어 주세요"}
+          </I.PrimaryButton>
         </I.FormFooter>
       </I.LinkForm>
     </I.Flow>
@@ -199,14 +224,15 @@ function PlaceImportForm({ onImport, onSkip, busy = false, importError = "", vie
           <b><img src={uploadIcon} alt="" /> 파일 선택</b>
         </I.DropZone>
       )}
-      {busy && <p role="status">파일에서 장소를 가져오고 있어요.</p>}
       {(fileError || visibleError) && <I.ErrorBox role="alert"><img src={uploadErrorIcon} alt="" /><p>{fileError || visibleError}<br /><small>파일을 확인한 뒤 다시 시도해 주세요.</small></p></I.ErrorBox>}
       <I.SupportBox>
         <strong>올릴 수 있는 파일</strong>
         {supportRows.map((row, index) => <p key={row}><img src={index === supportRows.length - 1 ? uploadErrorIcon : checkIcon} alt="" />{row}</p>)}
       </I.SupportBox>
       <I.FormFooter>
-        <I.PrimaryButton type="button" disabled={busy || !file || Boolean(fileError)} onClick={submitFile}>{busy ? "장소 가져오는 중…" : "장소 가져오기"}</I.PrimaryButton>
+        <I.PrimaryButton type="button" $busy={busy} disabled={busy || !file || Boolean(fileError)} onClick={submitFile}>
+          {busy ? <><I.Spinner src={linkSpinner} alt="" />가져오는 중</> : "장소 가져오기"}
+        </I.PrimaryButton>
         <I.GuideLink type="button" disabled={busy} onClick={() => setView("guide")}>파일 준비 방법 보기 <img src={chevronIcon} alt="" /></I.GuideLink>
       </I.FormFooter>
     </I.Flow>

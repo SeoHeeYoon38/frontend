@@ -161,7 +161,15 @@ test("백엔드 코스 목록을 홈과 코스 둘러보기 화면 모델로 변
 test("백엔드 예약 응답을 여행 정보 화면에 다시 채운다", () => {
   const restored = applyReservationsToDraft(draft, {
     tripId: 12,
-    flights: null,
+    flights: {
+      outbound: {
+        number: "KE723",
+        airline: "대한항공",
+        departure: { airport: "ICN", time: "2026-11-19T09:30:00", lat: 37.46, lng: 126.44 },
+        arrival: { airport: "KIX", time: "2026-11-19T11:20:00", lat: 34.43, lng: 135.24 },
+      },
+      return: null,
+    },
     stays: [{
       placeId: "hotel-1",
       name: "난바 호텔",
@@ -183,6 +191,7 @@ test("백엔드 예약 응답을 여행 정보 화면에 다시 채운다", () =
 
   assert.equal(restored.stays[0]?.placeId, "hotel-1");
   assert.equal(restored.stays[0]?.name, "난바 호텔");
+  assert.equal(restored.outbound?.date, "2026-11-19");
   assert.deepEqual(restored.rental, {
     days: ["2026-11-20"],
     location: "간사이 공항",

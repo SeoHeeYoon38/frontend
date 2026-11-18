@@ -1,4 +1,7 @@
-import styled from "styled-components";
+import styled, { keyframes } from "styled-components";
+
+const spin = keyframes`to { transform: rotate(360deg); }`;
+const fade = keyframes`50% { opacity: 0.4; }`;
 
 export const Flow = styled.section`
   display: flex; min-height: 100%; flex: 1; flex-direction: column; gap: 20px; color: #1a1a1a;
@@ -38,9 +41,9 @@ export const Badges = styled.span`
 `;
 
 export const InfoBox = styled.div`
-  display: flex; align-items: flex-start; gap: 8px; padding: 14px; border-radius: 12px; background: #f6f6f8;
-  img { width: 16px; height: 16px; margin-top: 1px; }
-  p { margin: 0; color: #77777d; font-size: 11px; line-height: 17px; word-break: keep-all; }
+  display: flex; align-items: flex-start; gap: 8px; padding: 14px 16px; border-radius: 12px; background: #f3f5fa;
+  img { flex: none; margin-top: 1px; }
+  p { margin: 0; color: #5c5c63; font-size: 12px; line-height: 16px; }
 `;
 
 export const SkipButton = styled.button`
@@ -122,14 +125,26 @@ export const FormFooter = styled.div`
   flex-shrink: 0;
 `;
 
-export const PrimaryButton = styled.button`
-  width: 100%; min-height: 54px; border-radius: 14px; background: #090738; color: #fff; font-size: 15px; font-weight: 700;
+export const PrimaryButton = styled.button<{ $busy?: boolean }>`
+  width: 100%; min-height: 56px; border-radius: 16px; background: #090738; color: #fff; font-size: 16px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
   padding: 12px 16px;
   line-height: 1.5;
   text-align: center;
   white-space: normal;
   overflow-wrap: anywhere;
-  &:disabled { background: #ececf1; color: #a8a8ae; cursor: default; }
+  &:disabled {
+    background: ${({ $busy }) => $busy ? "#090738" : "#e4e6ec"};
+    color: ${({ $busy }) => $busy ? "#fff" : "#8a8a8e"};
+    cursor: default;
+  }
+`;
+
+export const Spinner = styled.img`
+  display: block;
+  flex: none;
+  animation: ${spin} 0.85s linear infinite;
+  @media (prefers-reduced-motion: reduce) { animation: none; }
 `;
 
 export const GuideLink = styled.button`
@@ -138,19 +153,54 @@ export const GuideLink = styled.button`
 `;
 
 export const LinkForm = styled.form`
-  display: flex; min-height: 320px; flex: 1; flex-direction: column; gap: 10px;
-  label { font-size: 13px; font-weight: 700; }
+  display: flex; min-height: 320px; flex: 1; flex-direction: column; gap: 24px;
+`;
+
+export const LinkField = styled.div`
+  display: grid; gap: 8px;
+  label { color: #5c5c63; font-size: 13px; font-weight: 500; line-height: 18px; }
 `;
 
 export const LinkInput = styled.div`
-  display: flex; gap: 8px; align-items: center; padding: 8px; border-radius: 12px; background: #f1f3f9;
+  display: flex; gap: 8px; align-items: center; min-height: 52px; padding: 8px 8px 8px 16px;
+  border-radius: 12px; background: #f3f5fa;
   &:focus-within { outline: 1px solid #090738; }
-  input { flex: 1; min-width: 0; padding: 8px; border: 0; background: transparent; font-size: 13px; }
-  button { flex-shrink: 0; min-height: 36px; padding: 6px 10px; border: 1px solid #e0e3eb; border-radius: 8px; background: #fff; font-size: 13px; }
+  input { flex: 1; min-width: 0; padding: 0; border: 0; background: transparent; font-size: 14px; }
+  input:focus-visible { outline: none; }
+  input::placeholder { color: #b4b5bd; }
+  input[readonly] { color: #8a8a8e; text-overflow: ellipsis; }
+  > img { flex: none; margin-right: 8px; }
+  button {
+    display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0;
+    min-height: 36px; padding: 6px 12px; border: 1px solid #e4e6ec; border-radius: 8px;
+    background: #fff; color: #5c5c63; font-size: 13px; font-weight: 500;
+  }
+`;
+
+export const LinkProgress = styled.p`
+  display: flex; align-items: center; gap: 8px;
+  min-height: 16px; margin: 0; padding-left: 4px;
+  color: #5c5c63; font-size: 12px; line-height: 16px;
 `;
 
 export const LinkGuide = styled.section`
   padding: 16px; border: 1px solid #e0e3eb; border-radius: 16px;
   strong { font-size: 14px; }
-  ol { display: grid; gap: 8px; margin: 12px 0; padding-inline-start: 24px; font-size: 12px; line-height: 18px; color: #5c5c63; }
+  ol { display: grid; gap: 12px; margin: 12px 0 0; padding: 0; list-style: none; counter-reset: step; }
+  li { display: flex; align-items: center; gap: 10px; color: #5c5c63; font-size: 12px; line-height: 18px; }
+  li::before {
+    counter-increment: step; content: counter(step);
+    display: grid; place-items: center; width: 20px; height: 20px; flex: none;
+    border-radius: 50%; background: #f3f5fa; font-size: 11px; font-weight: 600;
+  }
+`;
+
+export const ImportProgress = styled.div`
+  display: flex; flex: 1; min-height: 360px; flex-direction: column;
+  align-items: center; justify-content: center; text-align: center;
+  .character { width: 160px; height: 160px; object-fit: contain; }
+  h1 { margin: 20px 0 14px; font-size: 20px; line-height: 28px; }
+  p { margin: 0 0 16px; color: #8a8a8e; font-size: 14px; line-height: 19px; }
+  .dots { animation: ${fade} 1.4s ease-in-out infinite; }
+  @media (prefers-reduced-motion: reduce) { .dots { animation: none; } }
 `;
