@@ -181,7 +181,7 @@ function ServerSavedPlaces({
           latest = response.places;
           setPlaces(latest);
         }
-        if (onPickMany && !pickedPlaceIds?.has(id)) {
+        if ((isTripCreation || onPickMany) && !pickedPlaceIds?.has(id)) {
           const saved = latest.find((place) => place.placeId === id && place.matchStatus === "MATCHED");
           if (saved) setSelectedIds((current) => current.includes(saved.id) ? current : [...current, saved.id]);
         }
