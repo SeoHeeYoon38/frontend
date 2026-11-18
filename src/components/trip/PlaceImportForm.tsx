@@ -1,4 +1,4 @@
-import { useId, useRef, useState } from "react";
+import { useId, useRef, useState, type ClipboardEvent } from "react";
 import googleMapsLogo from "../../assets/images/brand-google-maps.webp";
 import checkIcon from "../../assets/place-import/upload-02.svg";
 import chevronIcon from "../../assets/place-import/upload-more.svg";
@@ -15,7 +15,7 @@ import linkSpinner from "../../assets/place-import/link-spinner.svg";
 import linkStatusSpinner from "../../assets/place-import/link-status-spinner.svg";
 import loadingCharacter from "../../assets/trip-generation-illustration.png";
 import loadingDots from "../../assets/place-import/loading-dots.svg";
-import { validateMapsListLink, validateTakeoutFile } from "../../utils/placeImport";
+import { extractMapsListLink, validateMapsListLink, validateTakeoutFile } from "../../utils/placeImport";
 import * as I from "./PlaceImportForm.styled";
 
 export type PlaceImportInput =
@@ -65,7 +65,7 @@ function PlaceImportForm({ onImport, onSkip, busy = false, enriching = false, im
   const visibleError = error || (dismissedImportError === importError ? "" : importError);
 
   function changeLink(value: string) {
-    setLink(value);
+    setLink(extractMapsListLink(value) ?? value);
     setError("");
     setDismissedImportError(importError);
   }
@@ -77,6 +77,13 @@ function PlaceImportForm({ onImport, onSkip, busy = false, enriching = false, im
     } catch {
       setError("링크 입력란에 직접 붙여넣어 주세요.");
     }
+  }
+
+  function pasteSharedText(event: ClipboardEvent<HTMLInputElement>) {
+    const url = extractMapsListLink(event.clipboardData.getData("text/plain"));
+    if (!url) return;
+    event.preventDefault();
+    changeLink(url);
   }
 
   function selectFile(selected: File | null) {
@@ -169,11 +176,12 @@ function PlaceImportForm({ onImport, onSkip, busy = false, enriching = false, im
   if (view === "link") return (
     <I.Flow>
       <I.Heading><h1>공유 리스트 링크를 붙여넣어 주세요</h1><p>Google 지도에서 공개로 설정한 리스트만 가져올 수 있어요.</p></I.Heading>
-      <I.LinkForm onSubmit={(event) => { event.preventDefault(); submitLink(); }}>
+      <I.LinkForm noValidate onSubmit={(event) => { event.preventDefault(); submitLink(); }}>
         <I.LinkField>
           <label htmlFor={linkInputId}>리스트 링크</label>
           <I.LinkInput>
-            <input id={linkInputId} type="url" placeholder="https://maps.app.goo.gl/…" value={link} readOnly={busy} onChange={(event) => changeLink(event.target.value)} />
+            <input id={linkInputId} type="url" placeholder="https://maps.app.goo.gl/…" value={link} readOnly={busy}
+              onChange={(event) => changeLink(event.target.value)} onPaste={busy ? undefined : pasteSharedText} />
             {busy ? <img src={linkCheck} alt="" /> : (
               <button type="button" onClick={() => void pasteLink()}><img src={linkPaste} alt="" />붙여넣기</button>
             )}

@@ -83,7 +83,7 @@ function initialDraft(
       apiTripToDraft(trip, draft.tripId === String(trip.id) ? draft : undefined),
       reservations,
     );
-    if (!places) return resumed;
+    if (!places) return { ...resumed, selectedPlaceIds: [] };
     const placeIds = new Set(places.filter((place) => !place.closed && !place.needsMatch).map((place) => place.id));
     return {
       ...resumed,

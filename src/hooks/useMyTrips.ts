@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { isApiEnabled } from "../api/config";
 import { hasAuthSession } from "../api/tokenStorage";
-import { getInProgressTrip, getTrips } from "../api/trips";
+import { getTrips } from "../api/trips";
 import type { TripResponse } from "../api/types";
 
 interface TripListState {
@@ -10,15 +10,13 @@ interface TripListState {
   error: string;
 }
 
-export function useMyTrips(includeInProgress = false) {
+export function useMyTrips() {
   const [enabled] = useState(() => isApiEnabled() && hasAuthSession());
   const [state, setState] = useState<TripListState>({
     trips: [],
     pending: enabled,
     error: "",
   });
-  const [inProgress, setInProgress] = useState<TripResponse>();
-  const [inProgressError, setInProgressError] = useState(false);
 
   useEffect(() => {
     if (!enabled) return;
@@ -38,15 +36,8 @@ export function useMyTrips(includeInProgress = false) {
       },
     );
 
-    if (includeInProgress) {
-      void getInProgressTrip(signal).then(
-        (trip) => { if (!signal.aborted) setInProgress(trip); },
-        () => { if (!signal.aborted) setInProgressError(true); },
-      );
-    }
-
     return () => controller.abort();
-  }, [enabled, includeInProgress]);
+  }, [enabled]);
 
-  return { enabled, ...state, inProgress, inProgressError };
+  return { enabled, ...state };
 }

@@ -1,4 +1,5 @@
 import { apiRequest } from "./client";
+import { isMapCoordinate } from "../utils/googleMaps";
 import type {
   CityResponse,
   TripInput,
@@ -24,6 +25,15 @@ export function getSharedTrip(token: string, signal?: AbortSignal) {
 
 export function getCities(signal?: AbortSignal) {
   return apiRequest<CityResponse[]>("/api/cities", { auth: false, signal });
+}
+
+export async function getTripCity(name: string, signal?: AbortSignal) {
+  const cities = await getCities(signal);
+  const city = cities.find((item) => item.name === name);
+  if (!city || !isMapCoordinate({ latitude: city.lat, longitude: city.lng })) {
+    throw new Error("여행지 위치를 불러오지 못했어요.");
+  }
+  return city;
 }
 
 export function getTrips(signal?: AbortSignal) {

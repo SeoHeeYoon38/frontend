@@ -4,7 +4,7 @@ import walkIcon from "../../assets/figma/traveler-walk.svg";
 import * as S from "./TravelerCourseOverlay.styled";
 import { PlaceThumbnail } from "../common/PlacePhoto";
 import CourseRouteMap, { type RouteMapPlace } from "../course-completion/CourseRouteMap";
-import { isMapCoordinate } from "../../utils/googleMaps";
+import { straightLineMeters } from "../../utils/googleMaps";
 import { dateLabel } from "../../utils/trip";
 
 export interface CourseMapStop extends RouteMapPlace {
@@ -30,15 +30,6 @@ interface CourseMapScreenProps {
 }
 
 const samplePins = [{ x: 80, y: 35 }, { x: 60, y: 27 }, { x: 47, y: 20 }, { x: 22, y: 8 }];
-
-function straightLineMeters(from: CourseMapStop, to: CourseMapStop) {
-  if (!isMapCoordinate(from) || !isMapCoordinate(to)) return;
-  const radians = Math.PI / 180;
-  const haversine = Math.sin((to.latitude - from.latitude) * radians / 2) ** 2 +
-    Math.cos(from.latitude * radians) * Math.cos(to.latitude * radians) *
-    Math.sin((to.longitude - from.longitude) * radians / 2) ** 2;
-  return 2 * 6_371_000 * Math.asin(Math.sqrt(Math.min(1, haversine)));
-}
 
 function distanceLabel(meters: number) {
   return meters < 1000 ? `${Math.round(meters)}m` : `${(meters / 1000).toFixed(1)}km`;

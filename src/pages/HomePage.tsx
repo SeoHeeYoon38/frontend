@@ -17,7 +17,7 @@ import { courseSummaryToHomeCourse } from "../api/adapters";
 import { hasAuthSession } from "../api/tokenStorage";
 import { apiTripToSummary } from "../utils/serverTrip";
 import { useMyTrips } from "../hooks/useMyTrips";
-import { resumeTripPath, serverTripPlanPath } from "../utils/navigation";
+import { serverTripPlanPath } from "../utils/navigation";
 
 function HomePage() {
   const location = useLocation();
@@ -28,7 +28,7 @@ function HomePage() {
   );
   const [coursePending, setCoursePending] = useState(isApiEnabled());
   const [courseError, setCourseError] = useState("");
-  const myTrips = useMyTrips(true);
+  const myTrips = useMyTrips();
   const nickname = readProfileSettings(window.localStorage).nickname;
   const [accountName, setAccountName] = useState<string>();
   const [accountError, setAccountError] = useState("");
@@ -112,9 +112,7 @@ function HomePage() {
         name={myTrips.enabled ? accountName ?? "" : nickname}
         trip={featuredTrip}
         tripPath={tripPath}
-        resumePath={myTrips.inProgress && resumeTripPath(myTrips.inProgress.id)}
       />
-      {myTrips.inProgressError && <p role="alert">진행 중인 여행을 확인하지 못했어요.</p>}
       {myTrips.pending && <p role="status">내 여행을 불러오고 있어요.</p>}
       {myTrips.error && <p role="alert">{myTrips.error}</p>}
       {!myTrips.pending && !myTrips.error && (

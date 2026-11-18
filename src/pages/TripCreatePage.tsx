@@ -19,7 +19,7 @@ import { isDirectTripMode } from "../utils/navigation";
 import * as S from "./TripCreatePage.styled";
 import { isServerTripId, savedPlaceToTripPlace } from "../api/adapters";
 import { getSavedPlaces } from "../api/places";
-import { getTrip } from "../api/trips";
+import { getTrip, getTripCity } from "../api/trips";
 import { getReservations } from "../api/reservations";
 import type { ReservationResponse, TripResponse } from "../api/types";
 import { routes } from "../config/routes";
@@ -27,6 +27,7 @@ import type { TripPlace } from "../types/trip";
 import { isApiEnabled } from "../api/config";
 import { hasAuthSession } from "../api/tokenStorage";
 import { tripResourceWarning } from "../utils/tripResources";
+import { savedPlacesForTripCity } from "../utils/tripPlaces";
 
 function TripCreatePage() {
   const location = useLocation();
@@ -54,7 +55,8 @@ function ResumeTrip({ tripId }: { tripId: number }) {
     void getTrip(tripId, signal).then(async (trip) => {
       if (signal.aborted) return;
       const [savedResult, reservationsResult] = await Promise.allSettled([
-        getSavedPlaces(tripId, signal),
+        Promise.all([getSavedPlaces(tripId, signal), getTripCity(trip.city, signal)]).then(([saved, city]) =>
+          savedPlacesForTripCity(saved.places, city).map((place) => savedPlaceToTripPlace(place, trip.city))),
         getReservations(tripId, signal),
       ]);
       if (!signal.aborted) {
@@ -64,7 +66,7 @@ function ResumeTrip({ tripId }: { tripId: number }) {
           : undefined;
         setResumed({
           trip,
-          places: saved?.places.map((place) => savedPlaceToTripPlace(place, trip.city)),
+          places: saved,
           reservations,
           loadWarning: tripResourceWarning({
             places: savedResult.status === "rejected",

@@ -15,10 +15,9 @@ interface HomeIntroProps {
   name: string;
   trip: TripSummary | null;
   tripPath?: (id: string) => string;
-  resumePath?: string;
 }
 
-function HomeIntro({ name, trip, tripPath = (id) => tripPlanPath("home", id), resumePath }: HomeIntroProps) {
+function HomeIntro({ name, trip, tripPath = (id) => tripPlanPath("home", id) }: HomeIntroProps) {
   return (
     <>
       <S.Greeting>
@@ -27,13 +26,6 @@ function HomeIntro({ name, trip, tripPath = (id) => tripPlanPath("home", id), re
         다음 여행은 어디로 갈까요?
       </S.Greeting>
       <S.Create>
-        {resumePath && (
-          <S.ManualAction as={Link} to={resumePath}>
-            <S.ManualIcon><img src={pen} alt="" /></S.ManualIcon>
-            <S.ManualText><strong>이어서 만들기</strong></S.ManualText>
-            <img src={manualChevron} alt="" />
-          </S.ManualAction>
-        )}
         <S.Actions>
           <S.Action as={Link} to={routes.createTrip} $variant="ai">
             <strong>

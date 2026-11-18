@@ -22,3 +22,13 @@ export function validateMapsListLink(value: string): string {
     return error;
   }
 }
+
+export function extractMapsListLink(value: string): string | undefined {
+  const trimmed = value.trim();
+  if (!/\s/.test(trimmed) && !validateMapsListLink(trimmed)) return trimmed;
+
+  for (const [url] of trimmed.matchAll(/https:\/\/[^\s<>"“”‘’]+/gi)) {
+    const candidate = url.replace(/[)\]},.!?;:…]+$/, "");
+    if (!validateMapsListLink(candidate)) return candidate;
+  }
+}

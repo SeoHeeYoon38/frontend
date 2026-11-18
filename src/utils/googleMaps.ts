@@ -3,9 +3,20 @@ export interface MapCoordinate {
   longitude: number;
 }
 
-export function isMapCoordinate<T extends { latitude?: number | null; longitude?: number | null }>(point: T): point is T & MapCoordinate {
+type PossibleMapCoordinate = { latitude?: number | null; longitude?: number | null };
+
+export function isMapCoordinate<T extends PossibleMapCoordinate>(point: T): point is T & MapCoordinate {
   return typeof point.latitude === "number" && Math.abs(point.latitude) <= 90 &&
     typeof point.longitude === "number" && Math.abs(point.longitude) <= 180;
+}
+
+export function straightLineMeters(from: PossibleMapCoordinate, to: PossibleMapCoordinate) {
+  if (!isMapCoordinate(from) || !isMapCoordinate(to)) return;
+  const radians = Math.PI / 180;
+  const haversine = Math.sin((to.latitude - from.latitude) * radians / 2) ** 2 +
+    Math.cos(from.latitude * radians) * Math.cos(to.latitude * radians) *
+    Math.sin((to.longitude - from.longitude) * radians / 2) ** 2;
+  return 2 * 6_371_000 * Math.asin(Math.sqrt(Math.min(1, haversine)));
 }
 
 function projectMapCoordinate({ latitude, longitude }: MapCoordinate) {
