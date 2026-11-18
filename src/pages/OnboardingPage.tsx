@@ -37,6 +37,7 @@ type AgreementKey = "service" | "privacy" | "age" | "location" | "marketing";
 type AgreementState = Record<AgreementKey, boolean>;
 
 interface OnboardingState {
+  loginError?: string;
   agreements?: Record<AgreementKey, boolean>;
   nickname?: string;
   preferences?: string[];
@@ -150,7 +151,7 @@ function OnboardingPage() {
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileError, setProfileError] = useState("");
   const profileRequestPending = useRef(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(onboarding?.loginError ?? "");
   const liveGoogleLogin = isApiEnabled() && canStartGoogleLogin();
   const demoAuthentication = allowDemoAuthentication(import.meta.env.DEV, apiMode);
   const liveSession = isApiEnabled() && hasAuthSession();
@@ -497,6 +498,7 @@ function OnboardingPage() {
                 ? "Google 로그인 데모 시작"
                 : "Google 로그인 준비 중"}
           </S.ProviderButton>
+          {error && <S.ValidText $error role="alert">{error}</S.ValidText>}
           {demoAuthentication && (
             <S.GuestButton type="button" onClick={() => navigate(routes.home)}>
               먼저 둘러볼게요

@@ -55,15 +55,6 @@ select {
   height: auto;
 }
 
-.auth-gate__sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
 .auth-gate--error p {
   margin: 0;
   color: #5c5c63;

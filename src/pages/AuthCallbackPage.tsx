@@ -1,7 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { loginWithGoogleCode, validateOAuthState } from "../api/auth";
-import brandLogo from "../assets/images/brand-dotlo-logo.png";
 import { routes } from "../config/routes";
 import { shouldCompleteSignup } from "../utils/authFlow";
 import { takePendingInvitePath } from "../utils/navigation";
@@ -12,14 +11,13 @@ function AuthCallbackPage() {
   const code = params.get("code");
   const state = params.get("state");
   const cancelled = params.has("error");
-  const [failure, setFailure] = useState<{ code: string | null; state: string | null; message: string }>();
   const exchange = useRef<{ code: string | null; state: string | null; request: ReturnType<typeof loginWithGoogleCode> } | null>(null);
-  const error = cancelled
-    ? "Google 로그인이 취소되었어요."
-    : failure && failure.code === code && failure.state === state ? failure.message : "";
 
   useEffect(() => {
-    if (cancelled) return;
+    if (cancelled) {
+      navigate(routes.login, { replace: true, state: { loginError: "Google 로그인이 취소되었어요." } });
+      return;
+    }
     let attempt = exchange.current;
     if (!attempt || attempt.code !== code || attempt.state !== state) {
       // StrictMode에서 effect가 다시 실행돼도 같은 인증 코드 교환을 사용한다.
@@ -46,33 +44,18 @@ function AuthCallbackPage() {
       })
       .catch((reason: unknown) => {
         if (active) {
-          setFailure({
-            code,
-            state,
-            message: reason instanceof Error
-              ? reason.message
-              : "로그인을 완료하지 못했어요. 다시 시도해 주세요.",
+          navigate(routes.login, {
+            replace: true,
+            state: {
+              loginError: reason instanceof Error ? reason.message : "로그인을 완료하지 못했어요. 다시 시도해 주세요.",
+            },
           });
         }
       });
     return () => { active = false; };
   }, [cancelled, code, state, navigate]);
 
-  return (
-    <main className={`auth-gate${error ? " auth-gate--error" : ""}`}>
-      <img src={brandLogo} alt="Dotlo" />
-      {error ? (
-        <>
-          <p role="alert">{error}</p>
-          <button type="button" onClick={() => navigate(routes.login, { replace: true })}>
-            로그인 화면으로 돌아가기
-          </button>
-        </>
-      ) : (
-        <p className="auth-gate__sr-only" role="status">Google 로그인을 마무리하고 있어요.</p>
-      )}
-    </main>
-  );
+  return null;
 }
 
 export default AuthCallbackPage;
