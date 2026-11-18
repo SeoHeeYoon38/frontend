@@ -86,6 +86,7 @@ function TravelerCoursePage() {
   const [course, setCourse] = useState<TravelerCourseView | undefined>(() =>
     apiEnabled ? undefined : travelerCourse,
   );
+  const [serverCoverImageUrl, setServerCoverImageUrl] = useState<string>();
   const [loadError, setLoadError] = useState(() => apiEnabled && !liveCourseId ? "코스 주소를 확인해 주세요." : "");
   const [activeDay, setActiveDay] = useState(0);
   const [mapDay, setMapDay] = useState<number>();
@@ -107,6 +108,7 @@ function TravelerCoursePage() {
       (response) => {
         if (controller.signal.aborted) return;
         setCourse(courseView(response));
+        setServerCoverImageUrl(response.coverImageUrl || undefined);
         setActiveDay(0);
         setLoadError("");
       },
@@ -176,7 +178,7 @@ function TravelerCoursePage() {
       const result = await importApiCourse(liveCourseId, importStartDate);
       navigate(serverTripPlanPath("my-trips", String(result.tripId)), {
         replace: true,
-        state: { courseImported: true },
+        state: { courseImported: true, importedCoverImageUrl: serverCoverImageUrl },
       });
     } catch (reason) {
       setImportError(reason instanceof Error ? reason.message : "코스를 가져오지 못했어요. 다시 시도해 주세요.");
