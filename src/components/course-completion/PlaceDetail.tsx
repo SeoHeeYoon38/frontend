@@ -23,6 +23,8 @@ interface PlaceDetailProps {
     interactions?: TripInteractions;
     loadError?: string;
     onRefresh: () => Promise<void>;
+    currentUserId?: number;
+    onChange: (update: (current: TripInteractions) => TripInteractions) => void;
   };
   removePending?: boolean;
   removeError?: string;
@@ -85,7 +87,8 @@ function PlaceDetail({ place, onBack, onRemove, server, removePending = false, r
 
         {!detailsExpanded && (server
           ? <><ServerCompanionOpinions tripId={server.tripId} itemId={server.itemId}
-              interactions={server.interactions} loadError={server.loadError} onRefresh={server.onRefresh} /></>
+              interactions={server.interactions} loadError={server.loadError} onRefresh={server.onRefresh}
+              currentUserId={server.currentUserId} onChange={server.onChange} /></>
           : <CompanionOpinions placeName={place.name} />)}
 
         {detailsExpanded && (

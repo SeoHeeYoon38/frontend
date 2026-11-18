@@ -46,3 +46,7 @@ export function setCommentLike(commentId: number, liked: boolean) {
     method: liked ? "POST" : "DELETE",
   });
 }
+
+export function deleteItemComment(commentId: number) {
+  return apiRequest<void>(`/api/comments/${commentId}`, { method: "DELETE" });
+}

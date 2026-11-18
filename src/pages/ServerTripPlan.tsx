@@ -91,6 +91,7 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
   const [photoError, setPhotoError] = useState("");
   const [photoPending, setPhotoPending] = useState(false);
   const [interactionError, setInteractionError] = useState("");
+  const interactionRequest = useRef(0);
   const [editing, setEditing] = useState(false);
   const [showAddPlace, setShowAddPlace] = useState(false);
   const [showAiEdit, setShowAiEdit] = useState(false);
@@ -219,7 +220,9 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
   };
 
   const refreshInteractions = async () => {
+    const request = ++interactionRequest.current;
     const interactions = await getTripInteractions(tripId);
+    if (request !== interactionRequest.current) return;
     setData((current) => current ? { ...current, interactions } : current);
     setInteractionError("");
   };
@@ -365,7 +368,13 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
         removePending={photoPending}
         removeError={photoError}
         server={{ tripId, itemId: photoPlace.itemId, placeId: photoPlace.placeId,
-          interactions: data.interactions, loadError: interactionError, onRefresh: refreshInteractions }}
+          interactions: data.interactions, loadError: interactionError, onRefresh: refreshInteractions,
+          currentUserId: data.members.find((member) => member.me)?.userId,
+          onChange: (update) => {
+            interactionRequest.current += 1;
+            setData((current) => current?.interactions
+              ? { ...current, interactions: update(current.interactions) } : current);
+          } }}
       />
     </div></div>;
   }
