@@ -178,6 +178,10 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
         .filter((place): place is DirectTripPlace => Boolean(place)),
     [dayPlaces, selectedDay, directTripPlaces, live, livePlaces],
   );
+  const nearbyAnchor = placesForDay[placesForDay.length - 1];
+  const nearbyCenter = nearbyAnchor?.latitude !== undefined && nearbyAnchor.longitude !== undefined
+    ? { lat: nearbyAnchor.latitude, lng: nearbyAnchor.longitude }
+    : undefined;
 
   const placeCount = Object.values(dayPlaces).reduce(
     (total, places) => total + places.length,
@@ -586,6 +590,7 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
         tripId={live ? Number(draft.tripId) : undefined}
         city={draft.city}
         selectedDay={selectedDay}
+        nearbyCenter={nearbyCenter}
         days={directTripDays.map((day) => ({ ...day, placeCount: dayPlaces[day.day]?.length ?? 0 }))}
         pickedPlaceIds={new Set(live
           ? (dayPlaces[selectedDay] ?? []).map((id) => livePlaces[id]?.visit.placeId).filter((id): id is string => Boolean(id))

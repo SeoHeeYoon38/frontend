@@ -1,4 +1,8 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router";
+import { getUnreadNotifications } from "../../api/notifications";
+import { isApiEnabled } from "../../api/config";
+import { hasAuthSession } from "../../api/tokenStorage";
 import flowBack from "../../assets/icons/nav-back-trip.svg";
 import logo from "../../assets/images/brand-dotlo-logo.png";
 import back from "../../assets/icons/nav-back.svg";
@@ -21,6 +25,22 @@ function Header({
   hideProgress = false,
   backDisabled = false,
 }: HeaderProps) {
+  const [hasUnread, setHasUnread] = useState(false);
+
+  useEffect(() => {
+    if (variant !== "home" || !isApiEnabled() || !hasAuthSession()) return;
+    const controller = new AbortController();
+    void getUnreadNotifications(controller.signal).then(
+      (response) => {
+        if (!controller.signal.aborted) setHasUnread(response.hasUnread);
+      },
+      () => {
+        if (!controller.signal.aborted) setHasUnread(false);
+      },
+    );
+    return () => controller.abort();
+  }, [variant]);
+
   return (
     <>
       {variant === "trip" ? (
@@ -75,6 +95,7 @@ function Header({
           </S.Logo>
           <S.NotificationButton to={routes.notifications} aria-label="알림">
             <img src={bell} alt="" />
+            {hasUnread && <S.UnreadDot aria-hidden="true" />}
           </S.NotificationButton>
         </S.Header>
       )}

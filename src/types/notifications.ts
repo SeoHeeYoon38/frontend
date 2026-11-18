@@ -10,6 +10,7 @@ export type NotificationIcon =
 
 export interface NotificationItem {
   id: string;
+  tripId?: number;
   group: "오늘" | "이번 주" | "이전";
   category: Exclude<NotificationFilter, "all">;
   label: string;

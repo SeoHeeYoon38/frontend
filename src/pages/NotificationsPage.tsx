@@ -1,5 +1,10 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
+import { getNotifications, markAllNotificationsRead, markNotificationRead } from "../api/notifications";
+import { isApiEnabled } from "../api/config";
+import { hasAuthSession } from "../api/tokenStorage";
+import { serverTripPlanPath } from "../utils/navigation";
+import { toNotificationItem } from "../utils/notifications";
 import airplane from "../assets/icons/transport-airplane.svg";
 import friend from "../assets/icons/nav-profile.svg";
 import route from "../assets/icons/status-ai-sparkle.svg";
@@ -12,6 +17,7 @@ import { mockNotifications } from "../data/mocks/notificationData";
 import type {
   NotificationFilter,
   NotificationIcon,
+  NotificationItem,
 } from "../types/notifications";
 import * as S from "./NotificationsPage.styled";
 
@@ -35,19 +41,76 @@ const icons: Record<NotificationIcon, string> = {
 
 function NotificationsPage() {
   const navigate = useNavigate();
+  const live = isApiEnabled() && hasAuthSession();
   const [filter, setFilter] = useState<NotificationFilter>("all");
+  const [notifications, setNotifications] = useState<NotificationItem[]>(
+    live ? [] : mockNotifications,
+  );
+  const [loading, setLoading] = useState(live);
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
   const [invitationState, setInvitationState] = useState<
     "pending" | "accepted" | "declined"
   >("pending");
 
+  useEffect(() => {
+    if (!live) return;
+    const controller = new AbortController();
+    void getNotifications(controller.signal).then(
+      (response) => {
+        if (controller.signal.aborted) return;
+        setNotifications(response.notifications.map((item) => toNotificationItem(item)));
+        setLoading(false);
+      },
+      (reason: unknown) => {
+        if (controller.signal.aborted) return;
+        setError(reason instanceof Error ? reason.message : "알림을 불러오지 못했어요.");
+        setLoading(false);
+      },
+    );
+    return () => controller.abort();
+  }, [live]);
+
+  const openNotification = async (item: NotificationItem) => {
+    if (!live || saving || !item.tripId) return;
+    setSaving(true);
+    try {
+      if (item.unread) {
+        await markNotificationRead(Number(item.id));
+        setNotifications((current) => current.map((entry) =>
+          entry.id === item.id ? { ...entry, unread: false } : entry,
+        ));
+      }
+      navigate(serverTripPlanPath("home", String(item.tripId)));
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "알림을 읽음 처리하지 못했어요.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const readAll = async () => {
+    if (saving) return;
+    setSaving(true);
+    try {
+      await markAllNotificationsRead();
+      setNotifications((current) => current.map((item) => ({ ...item, unread: false })));
+      setError("");
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "알림을 읽음 처리하지 못했어요.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const visible = useMemo(
     () =>
       filter === "all"
-        ? mockNotifications
-        : mockNotifications.filter((item) => item.category === filter),
-    [filter],
+        ? notifications
+        : notifications.filter((item) => item.category === filter),
+    [filter, notifications],
   );
-  const hasNotifications = mockNotifications.length > 0;
+  const hasNotifications = notifications.length > 0;
 
   return (
     <S.Shell $empty={!hasNotifications}>
@@ -56,7 +119,13 @@ function NotificationsPage() {
           <img src={back} alt=""  />
         </button>
         <h1>알림</h1>
+        {live && notifications.some((item) => item.unread) && (
+          <S.ReadAll type="button" onClick={() => { void readAll(); }} disabled={saving}>
+            모두 읽음
+          </S.ReadAll>
+        )}
       </S.Navigation>
+      {error && <S.Error role="alert">{error}</S.Error>}
       {hasNotifications && (
         <S.Filters aria-label="알림 분류">
           {filters.map((item) => (
@@ -71,7 +140,9 @@ function NotificationsPage() {
           ))}
         </S.Filters>
       )}
-      {hasNotifications ? (
+      {loading ? (
+        <S.Empty role="status">알림을 불러오고 있어요.</S.Empty>
+      ) : hasNotifications ? (
         <S.Body>
           {visible.length ? (
             groups.map((group) => {
@@ -82,6 +153,14 @@ function NotificationsPage() {
                   <h2>{group}</h2>
                   {items.map((item) => (
                     <S.Item key={item.id} $unread={Boolean(item.unread)}>
+                      {live && item.tripId && (
+                        <S.ItemTrigger
+                          type="button"
+                          aria-label={`${item.label}: ${item.message}`}
+                          disabled={saving}
+                          onClick={() => { void openNotification(item); }}
+                        />
+                      )}
                       <S.Icon>
                         <img src={icons[item.icon]} alt="" />
                       </S.Icon>

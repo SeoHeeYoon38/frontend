@@ -43,6 +43,8 @@ const categoryLabels: Record<string, string> = {
   OTHER: "기타",
 };
 
+const coordinateName = /^\s*-?\d+(?:\.\d+)?\s*,\s*-?\d+(?:\.\d+)?\s*$/;
+
 interface ServerSavedPlacesProps {
   tripId: number;
   recommendationCity?: string;
@@ -321,7 +323,7 @@ function ServerSavedPlaces({
                   <P.InlineActions>
                     <P.MatchButton type="button" disabled={busy} onClick={() => {
                       setMatchId(place.id);
-                      setQuery(place.name);
+                      setQuery(coordinateName.test(place.name) ? "" : place.name);
                       setResults(undefined);
                     }}>장소 확인</P.MatchButton>
                     <P.MatchButton type="button" disabled={busy} aria-label={`${place.name} 저장 장소에서 삭제`} onClick={() => {

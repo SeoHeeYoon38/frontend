@@ -1,6 +1,7 @@
 import { apiRequest, queryString } from "./client";
 import type {
   PlaceCandidate,
+  PlaceCategoryCode,
   PlaceImportResponse,
   MySavedPlaceResponse,
   PopularPlaceResponse,
@@ -25,6 +26,35 @@ export function searchPlaces(
 export function getPopularPlaces(tripId: number, signal?: AbortSignal) {
   return apiRequest<PopularPlaceResponse[]>(
     `/api/places/popular${queryString({ tripId })}`,
+    { signal },
+  );
+}
+
+export interface PlaceHoursResponse {
+  open24h: boolean;
+  openNow: boolean;
+  days: Array<{
+    day: "MONDAY" | "TUESDAY" | "WEDNESDAY" | "THURSDAY" | "FRIDAY" | "SATURDAY" | "SUNDAY";
+    hours: Array<{ open: string; close: string }>;
+  }>;
+}
+
+export function getNearbyPlaces(
+  tripId: number,
+  lat: number,
+  lng: number,
+  category?: PlaceCategoryCode,
+  signal?: AbortSignal,
+) {
+  return apiRequest<PlaceCandidate[]>(
+    `/api/places/nearby${queryString({ tripId, lat, lng, category })}`,
+    { signal },
+  );
+}
+
+export function getPlaceHours(tripId: number, placeId: string, signal?: AbortSignal) {
+  return apiRequest<PlaceHoursResponse | undefined>(
+    `/api/places/${encodeURIComponent(placeId)}/hours${queryString({ tripId })}`,
     { signal },
   );
 }
