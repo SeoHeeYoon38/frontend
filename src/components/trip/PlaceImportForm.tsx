@@ -193,13 +193,9 @@ function PlaceImportForm({ onImport, onSkip, busy = false, enriching = false, im
             <li>링크로 볼 수 있도록 공개 설정을 켜요</li>
             <li>링크를 복사하고 도틀로에 돌아와 붙여넣어요</li>
           </ol>
-<<<<<<< HEAD
-          <I.ExternalLink href="https://www.google.com/maps" target="_blank" rel="noreferrer">Google Maps로 이동하기</I.ExternalLink>
-=======
           <I.ExternalLink href="https://www.google.com/maps/@/data=!4m2!10m1!1e1?hl=ko" target="_blank" rel="noreferrer">
             구글맵으로 이동하기
           </I.ExternalLink>
->>>>>>> 99bbe7ecb3665f12961a0704f42c861ecdbb1527
         </I.LinkGuide>}
         <I.InfoBox><img src={linkLock} alt="" /><p>공개 리스트는 링크를 가진 누구나 볼 수 있어요. 개인적인 장소가 포함되어 있지 않은지 확인해 주세요.</p></I.InfoBox>
         {visibleError && <I.ErrorBox role="alert"><img src={uploadErrorIcon} alt="" /><p>{visibleError}</p></I.ErrorBox>}

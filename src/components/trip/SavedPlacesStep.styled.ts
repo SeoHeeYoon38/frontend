@@ -199,7 +199,7 @@ export const Checkbox = styled.input`
   &:checked {
     background: #090738;
     border-color: #090738;
-    background-image: url(${selectedCheck});
+    background-image: url("${selectedCheck}");
     background-position: center;
     background-repeat: no-repeat;
     background-size: 20px 20px;
