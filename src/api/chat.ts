@@ -1,5 +1,6 @@
 import { apiRequest, queryString } from "./client";
 import { coordinationMessages } from "../utils/chatCoordination";
+import { readRecentPolls } from "../utils/chatPolls";
 
 export interface ChatCoordinationResult {
   text: string;
@@ -65,6 +66,10 @@ export function createChatPoll(tripId: number, direction: string, messages: Chat
     json: { direction, messages: coordinationMessages(messages, memberIds) },
     timeoutMs: 180_000,
   });
+}
+
+export async function getRecentChatPolls(tripId: number, signal?: AbortSignal) {
+  return readRecentPolls(await apiRequest<unknown>(`/api/trips/${tripId}/chat/polls`, { signal }));
 }
 
 export function voteChatPoll(tripId: number, pollId: number, candidateId: number) {
