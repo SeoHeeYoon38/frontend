@@ -1,12 +1,12 @@
 import styled from "styled-components";
-export const Sheet = styled.dialog<{ $minHeight: number; $course: boolean }>`
+export const Sheet = styled.dialog<{ $minHeight: number; $course: boolean; $courseHeight?: number }>`
   min-height: min(${({ $minHeight }) => $minHeight}px, calc(100dvh - 24px));
   position: fixed;
   inset: auto 0 0;
   max-width: 402px;
   width: 100%;
   max-height: ${({ $course }) => ($course ? "calc(100dvh - clamp(80px,17.2dvh,150px))" : "calc(100dvh - 56px)")};
-  height: ${({ $course }) => ($course ? "min(724px,calc(100dvh - clamp(80px,17.2dvh,150px)))" : "auto")};
+  height: ${({ $course, $courseHeight }) => ($courseHeight ? `min(${$courseHeight}px, calc(100dvh - 24px))` : $course ? "min(724px,calc(100dvh - clamp(80px,17.2dvh,150px)))" : "auto")};
   border: 0;
   border-radius: 24px 24px 0 0;
   margin: 0 auto;

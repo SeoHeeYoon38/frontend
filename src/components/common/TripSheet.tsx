@@ -7,6 +7,7 @@ interface TripSheetProps {
   children: ReactNode;
   footer?: ReactNode;
   minHeight?: number;
+  courseHeight?: number;
   variant?: "default" | "course" | "people" | "dates";
   contentGap?: number;
   compactHeader?: boolean;
@@ -18,6 +19,7 @@ function TripSheet({
   children,
   footer,
   minHeight = 0,
+  courseHeight,
   variant = "default",
   contentGap,
   compactHeader = false,
@@ -37,6 +39,7 @@ function TripSheet({
     <S.Sheet
       $minHeight={minHeight}
       $course={variant === "course"}
+      $courseHeight={courseHeight}
       ref={ref}
       aria-labelledby={id}
       onCancel={(event) => {
