@@ -9,7 +9,10 @@ import {
   searchPlaces,
   uploadTakeout,
 } from "../../api/places";
-import type { PlaceCandidate, SavedPlaceResponse } from "../../api/types";
+import { getTripCity } from "../../api/trips";
+import type { CityResponse, PlaceCandidate, SavedPlaceResponse } from "../../api/types";
+import { isMapCoordinate } from "../../utils/googleMaps";
+import { savedPlacesForTripCity } from "../../utils/tripPlaces";
 import PlaceImportForm, { type PlaceImportInput, type PlaceImportView } from "./PlaceImportForm";
 import ServerRecommendedCourses from "./ServerRecommendedCourses";
 import { PlaceThumbnail } from "../common/PlacePhoto";
@@ -45,6 +48,14 @@ const categoryLabels: Record<string, string> = {
 
 const coordinateName = /^\s*-?\d+(?:\.\d+)?\s*,\s*-?\d+(?:\.\d+)?\s*$/;
 
+async function loadSavedPlaces(tripId: number, cityName: string | undefined, signal: AbortSignal) {
+  const [response, city] = await Promise.all([
+    getSavedPlaces(tripId, signal),
+    cityName ? getTripCity(cityName, signal) : undefined,
+  ]);
+  return { places: response.places, city };
+}
+
 interface ServerSavedPlacesProps {
   tripId: number;
   recommendationCity?: string;
@@ -66,6 +77,7 @@ function ServerSavedPlaces({
 }: ServerSavedPlacesProps) {
   const isTripCreation = Boolean(onContinue);
   const [places, setPlaces] = useState<SavedPlaceResponse[]>();
+  const [city, setCity] = useState<CityResponse>();
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [tab, setTab] = useState<"saved" | "recommended">("saved");
   const [category, setCategory] = useState<CategoryFilter>("ALL");
@@ -82,11 +94,13 @@ function ServerSavedPlaces({
   useEffect(() => {
     const controller = new AbortController();
     const { signal } = controller;
-    void getSavedPlaces(tripId, signal).then(
+    void loadSavedPlaces(tripId, recommendationCity, signal).then(
       (response) => {
         if (!signal.aborted) {
+          setCity(response.city);
           setPlaces(response.places);
-          setShowImport(isTripCreation && response.places.length === 0);
+          const currentPlaces = response.city ? savedPlacesForTripCity(response.places, response.city) : response.places;
+          setShowImport(isTripCreation && currentPlaces.length === 0);
         }
       },
       () => { if (!signal.aborted) setError("저장 장소를 불러오지 못했어요."); },
@@ -95,7 +109,13 @@ function ServerSavedPlaces({
       controller.abort();
       request.current?.abort();
     };
-  }, [tripId, isTripCreation]);
+  }, [tripId, isTripCreation, recommendationCity]);
+
+  function openImport() {
+    setError("");
+    onImportViewChange?.("method");
+    setShowImport(true);
+  }
 
   async function run(action: (signal: AbortSignal) => Promise<void>) {
     if (request.current) return false;
@@ -155,14 +175,15 @@ function ServerSavedPlaces({
     });
   }
 
-  const selectablePlaces = (places ?? []).filter((place) =>
+  const cityPlaces = places && (!recommendationCity
+    ? places
+    : city?.name === recommendationCity ? savedPlacesForTripCity(places, city) : undefined);
+  const cityPlaceCount = city ? cityPlaces?.filter(isMapCoordinate).length : cityPlaces?.length;
+  const selectablePlaces = (cityPlaces ?? []).filter((place) =>
     place.matchStatus === "MATCHED" && place.placeId && !pickedPlaceIds?.has(place.placeId));
-  const visiblePlaces = (places ?? []).filter((place) =>
+  const visiblePlaces = (cityPlaces ?? []).filter((place) =>
     category === "ALL" || place.category === category);
-  const selection = selectablePlaces.filter((place) =>
-    place.matchStatus === "MATCHED" && place.placeId &&
-    !pickedPlaceIds?.has(place.placeId) && selectedIds.includes(place.id),
-  );
+  const selection = selectablePlaces.filter((place) => selectedIds.includes(place.id));
   const canContinue = selection.length > 0;
   const allSelected = selectablePlaces.length > 0 && selectablePlaces.every((place) => selectedIds.includes(place.id));
 
@@ -186,7 +207,8 @@ function ServerSavedPlaces({
           if (saved) setSelectedIds((current) => current.includes(saved.id) ? current : [...current, saved.id]);
         }
       }
-      if (ids.some((id) => !latest.some((place) => place.placeId === id && place.matchStatus === "MATCHED"))) {
+      const currentPlaces = city ? savedPlacesForTripCity(latest, city) : latest;
+      if (ids.some((id) => !currentPlaces.some((place) => place.placeId === id && place.matchStatus === "MATCHED"))) {
         throw new Error("일부 장소를 일정에 담을 수 없어요. 저장 장소에서 장소 상태를 확인해 주세요.");
       }
     });
@@ -213,7 +235,12 @@ function ServerSavedPlaces({
       {onContinue && (
         <P.PlacesLead>
           <h1>여행에 담을 장소를 골라주세요</h1>
-          <p><img src={googleMapsLogo} alt="" />Google Maps에 저장한 장소를 불러왔어요</p>
+          <P.PlacesSummary>
+            <p><img src={googleMapsLogo} alt="" />Google Maps에 저장한 장소를 불러왔어요</p>
+            {cityPlaces && <P.PlaceSearchButton type="button" disabled={busy} onClick={openImport} aria-label="Google Maps에서 장소 가져오기">
+              가져오기
+            </P.PlaceSearchButton>}
+          </P.PlacesSummary>
         </P.PlacesLead>
       )}
       {!onContinue && <P.PlacesTitle>저장 장소</P.PlacesTitle>}
@@ -229,14 +256,17 @@ function ServerSavedPlaces({
       )}
       {importNotice && <p role="status">{importNotice}</p>}
       {error && <S.ErrorText role="alert">{error}</S.ErrorText>}
-      {!places && !error && <p role="status">저장 장소를 불러오고 있어요.</p>}
-      {!places && error && (
+      {!cityPlaces && !error && <p role="status">저장 장소를 불러오고 있어요.</p>}
+      {!cityPlaces && error && (
         <P.MatchButton type="button" disabled={busy} onClick={() => void run(async (signal) => {
-          const response = await getSavedPlaces(tripId, signal);
-          if (!signal.aborted) setPlaces(response.places);
+          const response = await loadSavedPlaces(tripId, recommendationCity, signal);
+          if (!signal.aborted) {
+            setPlaces(response.places);
+            setCity(response.city);
+          }
         })}>다시 불러오기</P.MatchButton>
       )}
-      {places && tab === "recommended" && recommendationCity && (
+      {cityPlaces && tab === "recommended" && recommendationCity && (
         <ServerRecommendedCourses
           city={recommendationCity}
           busy={busy}
@@ -245,18 +275,19 @@ function ServerSavedPlaces({
           onAdd={addRecommended}
         />
       )}
-      {places && tab === "saved" && (
+      {cityPlaces && tab === "saved" && (
         <>
-          {places.length === 0 && <p>저장된 장소가 없어요. 장소를 검색하거나 Google Maps에서 가져와 보세요.</p>}
-          {places.length > 0 && (
+          {cityPlaces.length === 0 && <p>{recommendationCity ? `${recommendationCity}에 저장한 장소가 없어요.` : "저장된 장소가 없어요."}</p>}
+          {cityPlaces.length > 0 && (
             <>
               <P.PlacesSummary>
-                <span>{recommendationCity ?? "여행지"}에 저장한 장소 <b>{places.length}곳</b></span>
+                <span>{recommendationCity ?? "여행지"}에 저장한 장소 <b>{cityPlaceCount}곳</b></span>
                 {(onContinue || onPickMany) && (
                   <label>
                     <P.Checkbox
                       type="checkbox"
                       checked={allSelected}
+                      disabled={busy || selectablePlaces.length === 0}
                       aria-label="저장 장소 전체 선택"
                       onChange={(event) => toggleAll(event.currentTarget.checked)}
                     />
@@ -380,7 +411,7 @@ function ServerSavedPlaces({
               ))}
             </P.PlaceList>
           ) : <p role="status">검색 결과가 없어요.</p>)}
-          {places.length === 0 && <P.MatchButton type="button" disabled={busy} aria-expanded={showImport} onClick={() => setShowImport(!showImport)}>Google Maps에서 가져오기</P.MatchButton>}
+          {!onContinue && cityPlaces.length === 0 && <P.MatchButton type="button" disabled={busy} onClick={openImport}>Google Maps에서 가져오기</P.MatchButton>}
         </>
       )}
       {onContinue && <S.Footer><S.Primary type="button" disabled={busy || !canContinue} onClick={() => onContinue(selection)}>{selection.length ? `장소 ${selection.length}곳 선택 완료` : "장소를 선택해 주세요"}</S.Primary></S.Footer>}
