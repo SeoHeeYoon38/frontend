@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { apiMode, isApiEnabled } from "../api/config";
+import { courseTitle } from "../api/adapters";
 import { hasAuthSession } from "../api/tokenStorage";
 import { bookmarkCourse, getCourseBookmarks, unbookmarkCourse } from "../api/courses";
 import { deleteSavedPlace, getMySavedPlaces } from "../api/places";
@@ -50,7 +51,7 @@ function toSavedPlace({ trip, place }: MySavedPlaceResponse): SavedPlace {
 function toSavedCourse(course: CourseSummaryResponse): SavedCourse {
   return {
     id: String(course.id),
-    title: course.title,
+    title: courseTitle(course.title),
     durationLabel: `${course.nightCount}박 ${course.dayCount}일`,
     city: course.city,
     placeCount: course.stopCount,

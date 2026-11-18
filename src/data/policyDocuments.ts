@@ -18,7 +18,7 @@ export const policyDocuments: Record<PolicyDocumentId, PolicyDocument> = {
   service: {
     id: "service",
     title: "서비스 이용약관",
-    effectiveDate: "2026년 4월 2일",
+    effectiveDate: "2026년 11월 20일",
     summary: "도틀로 서비스 이용에 필요한 기본 권리와 의무를 안내합니다.",
     sections: [
       { heading: "제1조 목적", paragraphs: ["이 약관은 도틀로가 제공하는 여행 일정 생성과 공유 서비스의 이용 조건 및 절차를 정하는 것을 목적으로 합니다."] },
@@ -31,7 +31,7 @@ export const policyDocuments: Record<PolicyDocumentId, PolicyDocument> = {
   privacy: {
     id: "privacy",
     title: "개인정보 처리방침",
-    effectiveDate: "2026년 4월 2일",
+    effectiveDate: "2026년 11월 20일",
     summary: "도틀로가 어떤 개인정보를 왜 수집하고 어떻게 보호하는지 안내합니다.",
     sections: [
       { heading: "1. 수집하는 정보", paragraphs: ["회원 가입과 서비스 제공 과정에서 필요한 최소한의 정보를 수집합니다."], bullets: ["소셜 로그인 식별자, 이메일, 닉네임", "여행 일정과 저장한 장소", "서비스 이용 기록 및 오류 기록"] },
@@ -45,7 +45,7 @@ export const policyDocuments: Record<PolicyDocumentId, PolicyDocument> = {
   location: {
     id: "location",
     title: "위치기반 서비스 이용약관",
-    effectiveDate: "2026년 4월 2일",
+    effectiveDate: "2026년 11월 20일",
     summary: "여행 장소 검색과 이동 경로 안내에 위치 정보가 사용되는 방식을 안내합니다.",
     sections: [
       { heading: "제1조 목적", paragraphs: ["이 약관은 위치 정보를 활용한 장소 검색과 여행 경로 제공 기능의 이용 조건을 정합니다."] },
@@ -57,7 +57,7 @@ export const policyDocuments: Record<PolicyDocumentId, PolicyDocument> = {
   marketing: {
     id: "marketing",
     title: "혜택 및 이벤트 알림 동의",
-    effectiveDate: "2026년 4월 2일",
+    effectiveDate: "2026년 11월 20일",
     summary: "새로운 여행 코스와 이벤트 소식을 받기 위한 선택 동의 항목입니다.",
     sections: [
       { heading: "수신 정보", paragraphs: ["도틀로의 새로운 기능, 추천 여행 코스, 이벤트와 혜택 정보를 앱 알림으로 보내드릴 수 있습니다."] },

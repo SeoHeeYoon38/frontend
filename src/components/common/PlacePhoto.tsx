@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { getPlacePhoto, type PlacePhoto } from "../../api/placePhotos";
 import chevronIcon from "../../assets/icons/nav-chevron-right.svg";
 import "./PlacePhoto.css";
@@ -9,10 +9,11 @@ interface PhotoSource {
   name: string;
 }
 
-function Photo({ placeId, courseId, name, index = 0, thumbnail = false, onCount }: PhotoSource & {
+function Photo({ placeId, courseId, name, index = 0, thumbnail = false, onCount, placeholder }: PhotoSource & {
   index?: number;
   thumbnail?: boolean;
   onCount?: (count: number) => void;
+  placeholder?: ReactNode;
 }) {
   const ref = useRef<HTMLSpanElement>(null);
   const [result, setResult] = useState<PlacePhoto | null>();
@@ -57,14 +58,14 @@ function Photo({ placeId, courseId, name, index = 0, thumbnail = false, onCount 
         </>
       ) : (
         <span className="place-photo__placeholder">
-          {failed ? "사진 조회 실패" : result === null ? "사진 없음" : thumbnail ? "" : "사진을 불러오고 있어요"}
+          {placeholder ?? (failed ? "사진 조회 실패" : result === null ? "사진 없음" : thumbnail ? "" : "사진을 불러오고 있어요")}
         </span>
       )}
     </span>
   );
 }
 
-export function PlaceThumbnail(props: PhotoSource) {
+export function PlaceThumbnail(props: PhotoSource & { placeholder?: ReactNode }) {
   return <Photo key={JSON.stringify([props.courseId, props.placeId])} {...props} thumbnail />;
 }
 

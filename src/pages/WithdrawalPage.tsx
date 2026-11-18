@@ -1,13 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router";
-import { getWithdrawalPreview, withdrawAccount, type WithdrawalPreview } from "../api/auth";
+import { getMyStats, getWithdrawalPreview, withdrawAccount, type WithdrawalPreview } from "../api/auth";
+import type { MyStatsResponse } from "../api/types";
 import { clearAuthTokens } from "../api/tokenStorage";
 import airplaneIcon from "../assets/icons/transport-airplane.svg";
 import courseIcon from "../assets/icons/my-route.svg";
 import backIcon from "../assets/icons/nav-back.svg";
 import profileIcon from "../assets/icons/nav-profile.svg";
-import character from "../assets/images/character-blue.webp";
-import checkIcon from "../assets/icons/status-selected-check.svg";
+import locationIcon from "../assets/course-settings/pin.svg";
+import checkIcon from "../assets/figma/my-maps-imported.svg";
+import { profileCharacter } from "../config/profileCharacters";
+import SettingsConfirmDialog from "../components/common/SettingsConfirmDialog";
 import { routes } from "../config/routes";
 import {
   GOOGLE_MAPS_STORAGE_KEY,
@@ -40,11 +43,13 @@ function WithdrawalPage() {
   const [detail, setDetail] = useState("");
   const [showFinalDialog, setShowFinalDialog] = useState(false);
   const [preview, setPreview] = useState<WithdrawalPreview>();
+  const [stats, setStats] = useState<MyStatsResponse>();
   const [previewError, setPreviewError] = useState(false);
   const [previewAttempt, setPreviewAttempt] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const requestPending = useRef(false);
+  const tripCount = preview ? tripGroups.reduce((count, group) => count + preview[group.key].length, 0) : 0;
 
   useEffect(() => {
     const controller = new AbortController();
@@ -55,6 +60,10 @@ function WithdrawalPage() {
       () => {
         if (!controller.signal.aborted) setPreviewError(true);
       },
+    );
+    void getMyStats(controller.signal).then(
+      (result) => { if (!controller.signal.aborted) setStats(result); },
+      () => undefined,
     );
     return () => controller.abort();
   }, [previewAttempt]);
@@ -99,7 +108,7 @@ function WithdrawalPage() {
       {step === "notice" ? (
         <S.NoticeBody>
           <h2>탈퇴하기 전에<br />꼭 확인해 주세요</h2>
-          <p>탈퇴하면 프로필과 취향 정보가 삭제돼요. 여행은 아래 안내에 따라 정리돼요.</p>
+          <p>탈퇴하면 저장한 정보가 지워지고 되돌릴 수 없어요</p>
           {previewError ? (
             <>
               <p role="alert">탈퇴 안내를 불러오지 못했어요.</p>
@@ -109,6 +118,26 @@ function WithdrawalPage() {
               }}>다시 시도</S.Retry>
             </>
           ) : preview ? (
+            <>
+              <S.LostList>
+                <li><span><img src={locationIcon} alt="" /></span><div>
+                  <strong>저장한 장소{stats && " " + stats.savedPlaceCount + "곳"}</strong>
+                  <small>Google Maps에서 불러온 장소 포함</small>
+                </div></li>
+                <li><span><img src={courseIcon} alt="" /></span><div>
+                  <strong>저장한 코스{stats && " " + stats.savedCourseCount + "개"}</strong>
+                  <small>직접 만든 코스와 담은 코스</small>
+                </div></li>
+                <li><span><img src={airplaneIcon} alt="" /></span><div>
+                  <strong>여행 일정 {tripCount}개</strong>
+                  <small>함께하는 여행에서는 자동으로 나가요</small>
+                </div></li>
+                <li><span><img src={profileIcon} alt="" /></span><div>
+                  <strong>프로필과 활동 기록</strong>
+                  <small>닉네임, 남긴 의견과 댓글</small>
+                </div></li>
+              </S.LostList>
+              {tripCount > 0 && <S.TripDetails><summary>정리되는 여행 보기</summary>
             <S.LostList>
               {tripGroups.map(({ key, icon, title }) => (
                 <li key={key}>
@@ -125,12 +154,10 @@ function WithdrawalPage() {
                 </li>
               ))}
             </S.LostList>
+              </S.TripDetails>}
+            </>
           ) : <p role="status">탈퇴 안내를 불러오고 있어요.</p>}
           <S.Footnote>같은 계정으로 다시 가입해도 삭제된 정보는 복구되지 않아요.</S.Footnote>
-          <S.Agree>
-            <button type="button" role="checkbox" aria-label="탈퇴 안내 확인 및 동의" aria-checked={agreed} disabled={!preview} onClick={() => setAgreed((value) => !value)}>{agreed && <img src={checkIcon} alt="" />}</button>
-            <span>안내 내용을 모두 확인했고, 탈퇴에 동의해요</span>
-          </S.Agree>
         </S.NoticeBody>
       ) : (
         <S.ReasonBody>
@@ -146,7 +173,7 @@ function WithdrawalPage() {
           </S.Reasons>
           {reason === "기타" && (
             <S.Textarea>
-              <textarea value={detail} maxLength={200} onChange={(event) => setDetail(event.target.value)} />
+              <textarea aria-label="기타 탈퇴 이유" value={detail} maxLength={200} onChange={(event) => setDetail(event.target.value)} />
               <span>{detail.length}/200</span>
             </S.Textarea>
           )}
@@ -154,6 +181,13 @@ function WithdrawalPage() {
       )}
 
       <S.Cta>
+        {step === "notice" && (
+          <S.Agree>
+            <input type="checkbox" checked={agreed} disabled={!preview} onChange={(event) => setAgreed(event.currentTarget.checked)} />
+            <span>{agreed && <img src={checkIcon} alt="" />}</span>
+            안내 내용을 모두 확인했고, 탈퇴에 동의해요
+          </S.Agree>
+        )}
         <button
           type="button"
           disabled={submitting || (step === "notice" && (!preview || !agreed))}
@@ -168,17 +202,10 @@ function WithdrawalPage() {
       </S.Cta>
 
       {showFinalDialog && (
-        <S.Overlay>
-          <S.Dialog role="alertdialog" aria-modal="true" aria-labelledby="withdrawal-confirm-title">
-            <strong id="withdrawal-confirm-title">정말 탈퇴할까요?</strong>
-            <p>안내된 대로 여행과 계정 정보가 정리되며 탈퇴는 되돌릴 수 없어요.</p>
-            {submitError && <p role="alert">{submitError}</p>}
-            <div>
-              <button type="button" disabled={submitting} onClick={() => setShowFinalDialog(false)}>취소</button>
-              <button type="button" data-danger disabled={submitting} onClick={() => void completeWithdrawal()}>{submitting ? "처리 중…" : "탈퇴하기"}</button>
-            </div>
-          </S.Dialog>
-        </S.Overlay>
+        <SettingsConfirmDialog title="정말 탈퇴할까요?"
+          description={<>계정과 저장한 장소·코스가 지워지고<br />탈퇴는 되돌릴 수 없어요</>}
+          confirmLabel={submitting ? "처리 중…" : "탈퇴하기"} tone="danger" pending={submitting} error={submitError}
+          onCancel={() => setShowFinalDialog(false)} onConfirm={() => void completeWithdrawal()} />
       )}
     </S.Page>
   );
@@ -192,7 +219,7 @@ export function WithdrawalCompletePage() {
   return (
     <S.Page>
       <S.Done>
-        <S.DoneAvatar><img src={character} alt="" /></S.DoneAvatar>
+        <S.DoneAvatar><img src={profileCharacter(1).image} alt="" /></S.DoneAvatar>
         <h1>탈퇴가 완료됐어요</h1>
         <p>그동안 도틀로와 함께해 주셔서 고마워요<br />다음 여행에서 다시 만나요</p>
       </S.Done>

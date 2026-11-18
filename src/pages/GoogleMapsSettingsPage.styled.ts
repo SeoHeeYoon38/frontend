@@ -1,4 +1,5 @@
 import styled from "styled-components";
+import { Link } from "react-router";
 
 export const Page = styled.div`
   width: 100%; max-width: 402px; min-height: 100dvh; margin: 0 auto; padding-bottom: 34px;
@@ -14,14 +15,14 @@ export const Header = styled.header`
 `;
 export const Status = styled.section`
   display: flex; align-items: center; gap: 14px; padding: 24px 20px;
-  > span { display: flex; flex-direction: column; gap: 3px; }
+  > span:nth-child(2) { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
   strong { display: flex; align-items: center; gap: 6px; font-size: 17px; line-height: 24px; }
   strong i { width: 6px; height: 6px; border-radius: 50%; background: #00c7df; }
   strong b { color: #0079c2; font-size: 12px; font-weight: 500; }
-  small { color: #8a8a8e; font-size: 13px; line-height: 18px; }
+  small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #8a8a8e; font-size: 13px; line-height: 18px; }
 `;
 export const Logo = styled.span`
-  width: 48px; height: 48px; display: grid; place-items: center; border: 1px solid #e4e6ec; border-radius: 14px;
+  width: 48px; height: 48px; flex: none; display: grid; place-items: center; border: 1px solid #e4e6ec; border-radius: 14px;
   img { width: 31px; height: 29px; object-fit: contain; }
 `;
 export const Imported = styled.section`
@@ -30,7 +31,8 @@ export const Imported = styled.section`
   strong { font-size: 15px; line-height: 22px; font-weight: 500; }
   strong b { color: #0079c2; }
   small { overflow: hidden; color: #8a8a8e; font-size: 12px; white-space: nowrap; text-overflow: ellipsis; }
-  button { flex: 0 0 auto; padding: 7px 12px; border: 1px solid #e4e6ec; border-radius: 16px; font-size: 13px; font-weight: 700; }
+  button { display: inline-flex; align-items: center; gap: 4px; flex: 0 0 auto; padding: 7px 12px; border: 1px solid #e4e6ec; border-radius: 16px; font-size: 13px; font-weight: 700; }
+  button:disabled { color: #8a8a8e; cursor: default; }
 `;
 export const Band = styled.div`height: 8px; background: #f3f5fa;`;
 export const ListSection = styled.section`
@@ -40,10 +42,17 @@ export const ListSection = styled.section`
 `;
 export const CheckRow = styled.div`
   min-height: 48px; display: flex; align-items: center; gap: 12px;
-  button { width: 22px; height: 22px; display: grid; place-items: center; border: 1.5px solid #e4e6ec; border-radius: 6px; color: #ffffff; font-size: 15px; font-weight: 700; }
-  button[aria-checked="true"] { border-color: #090738; background: #090738; }
-  strong { min-width: 0; flex: 1; font-size: 15px; line-height: 22px; font-weight: 500; }
+  img { flex: none; }
+  strong { min-width: 0; flex: 1; overflow-wrap: anywhere; font-size: 15px; line-height: 22px; font-weight: 500; }
   span { color: #8a8a8e; font-size: 13px; }
+`;
+export const ImportLink = styled(Link)`
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  color: #0079c2 !important;
+  font-size: 13px;
+  font-weight: 700;
 `;
 export const AutoImport = styled.section`
   display: flex; align-items: center; gap: 12px; padding: 18px 20px;

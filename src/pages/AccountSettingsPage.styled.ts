@@ -35,12 +35,23 @@ export const AccountCard = styled.section`
 
   > span { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 6px; }
   strong { overflow: hidden; font-size: 15px; line-height: 22px; text-overflow: ellipsis; white-space: nowrap; }
-  small { display: flex; align-items: center; gap: 5px; color: #5c5c63; font-size: 11px; line-height: 15px; }
-  small i { width: 12px; height: 12px; border: 3px solid #fee500; border-radius: 50%; background: #1a1a1a; }
-  small b { margin-left: 6px; color: #8a8a8e; font-weight: 400; }
+  small { display: flex; flex-wrap: wrap; align-items: center; gap: 5px 8px; color: #5c5c63; font-size: 11px; line-height: 15px; }
+  small b { color: #8a8a8e; font-weight: 400; white-space: nowrap; }
 `;
 
-export const Avatar = styled.span`
+export const Provider = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 6px;
+  border-radius: 10px;
+  background: #f3f5fa;
+  color: #1a1a1a;
+  white-space: nowrap;
+  img { width: 12px; height: 12px; object-fit: contain; }
+`;
+
+export const Avatar = styled.div`
   width: 48px;
   height: 48px;
   flex: 0 0 auto;
@@ -48,8 +59,9 @@ export const Avatar = styled.span`
   place-items: center;
   border-radius: 50%;
   background: #ddf9fd;
+  overflow: hidden;
 
-  img { width: 42px; height: 42px; object-fit: contain; }
+  img { width: 44px; height: 44px; object-fit: contain; }
 `;
 
 export const Band = styled.div`

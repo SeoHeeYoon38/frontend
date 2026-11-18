@@ -11,7 +11,7 @@ export const Header = styled.header`
   img { width: 10px; height: 18px; }
   h1 { margin: 0; font-size: 17px; line-height: 24px; }
 `;
-const bodyBase = `padding: 20px 20px 140px; h2 { margin: 0; font-size: 24px; line-height: 32px; letter-spacing: -0.24px; } > p { margin: 8px 0 0; color: #5c5c63; font-size: 14px; line-height: 20px; }`;
+const bodyBase = `padding: 26px 20px 152px; h2 { margin: 0; font-size: 24px; line-height: 32px; letter-spacing: -0.24px; } > p { margin: 8px 0 0; color: #5c5c63; font-size: 14px; line-height: 20px; }`;
 export const NoticeBody = styled.main`${bodyBase}`;
 export const ReasonBody = styled.main`${bodyBase}`;
 export const Retry = styled.button`
@@ -30,14 +30,22 @@ export const LostList = styled.ul`
   small { color: #8a8a8e; font-size: 12px; line-height: 17px; }
 `;
 export const Footnote = styled.p`
+  border-top: 1px solid #e4e6ec;
+  padding-top: 16px;
   color: #8a8a8e !important; font-size: 12px !important; line-height: 17px !important;
 `;
-export const Agree = styled.div`
-  display: flex; align-items: center; gap: 10px; margin-top: 24px;
-  button { width: 22px; height: 22px; display: grid; place-items: center; border: 1.5px solid #e4e6ec; border-radius: 6px; color: #ffffff; font-weight: 700; }
-  button[aria-checked="true"] { border-color: #090738; background: #090738; }
-  button img { width: 18px; height: 18px; }
-  span { font-size: 14px; line-height: 20px; }
+export const TripDetails = styled.details`
+  color: #5c5c63; font-size: 13px; margin-bottom: 14px;
+  summary { cursor: pointer; }
+  ul { margin: 12px 0 16px; }
+`;
+export const Agree = styled.label`
+  display: flex; align-items: center; gap: 10px; margin: 0 0 16px;
+  position: relative; font-size: 14px; line-height: 20px;
+  input { position: absolute; opacity: 0; }
+  input:focus-visible + span { outline: 2px solid #090738; outline-offset: 2px; }
+  span { display: grid; place-items: center; width: 22px; height: 22px; flex: none; border-radius: 6px; border: 1.5px solid #e4e6ec; }
+  input:checked + span { border: 0; }
 `;
 export const Reasons = styled.div`
   display: flex; flex-direction: column; margin-top: 16px;
@@ -53,7 +61,7 @@ export const Textarea = styled.div`
   span { color: #8a8a8e; font-size: 12px; line-height: 17px; text-align: right; }
 `;
 export const Cta = styled.footer`
-  position: fixed; z-index: 3; right: 0; bottom: 0; left: 0; width: min(100%, 402px); margin: auto; padding: 12px 20px 0; background: #ffffff;
+  position: fixed; z-index: 3; right: 0; bottom: 0; left: 0; width: min(100%, 402px); margin: auto; padding: 12px 20px max(20px, env(safe-area-inset-bottom)); background: #ffffff;
   > button { width: 100%; min-height: 56px; border-radius: 14px; color: #ffffff; background: #090738; text-align: center; font-size: 16px; font-weight: 700; }
   > button:disabled { background: #e4e6ec; cursor: default; }
 `;
@@ -68,7 +76,7 @@ export const Dialog = styled.div`
   button:disabled { opacity: 0.65; cursor: default; }
 `;
 export const Done = styled.main`
-  display: flex; flex-direction: column; align-items: center; padding: 170px 20px 130px; text-align: center;
+  display: flex; flex-direction: column; align-items: center; padding: min(27dvh, 230px) 20px 130px; text-align: center;
   h1 { margin: 28px 0 8px; font-size: 24px; line-height: 32px; }
   p { margin: 0; color: #5c5c63; font-size: 15px; line-height: 22px; }
 `;
