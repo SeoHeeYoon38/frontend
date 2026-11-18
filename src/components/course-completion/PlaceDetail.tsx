@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import placeDetailActions from "../../assets/course-completion/place-detail-actions.svg";
 import placeDetailBack from "../../assets/course-completion/place-detail-back.svg";
 import placeDetailMap from "../../assets/course-completion/place-detail-map.png";
@@ -10,6 +10,7 @@ import CompanionOpinions from "../course-community/CompanionOpinions";
 import ServerCompanionOpinions from "../course-community/ServerCompanionOpinions";
 import { PlaceGallery } from "../common/PlacePhoto";
 import type { TripInteractions } from "../../api/interactions";
+import { getPlaceHours, type PlaceHoursResponse } from "../../api/places";
 import type { CoursePlace } from "../../types/courseCompletion";
 
 interface PlaceDetailProps {
@@ -33,6 +34,25 @@ interface PlaceDetailProps {
 function PlaceDetail({ place, onBack, onRemove, server, removePending = false, removeError }: PlaceDetailProps) {
   const [detailsExpanded, setDetailsExpanded] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState(false);
+  const [hoursResult, setHoursResult] = useState<{
+    key: string;
+    value: PlaceHoursResponse | null;
+    error: boolean;
+  }>();
+  const serverTripId = server?.tripId;
+  const serverPlaceId = server?.placeId;
+  const hoursKey = `${serverTripId ?? ""}:${serverPlaceId ?? ""}`;
+  const hours = hoursResult?.key === hoursKey ? hoursResult.value : undefined;
+  const hoursError = hoursResult?.key === hoursKey && hoursResult.error;
+  useEffect(() => {
+    if (!detailsExpanded || serverTripId === undefined || !serverPlaceId) return;
+    const controller = new AbortController();
+    void getPlaceHours(serverTripId, serverPlaceId, controller.signal).then(
+      (result) => { if (!controller.signal.aborted) setHoursResult({ key: hoursKey, value: result ?? null, error: false }); },
+      () => { if (!controller.signal.aborted) setHoursResult({ key: hoursKey, value: null, error: true }); },
+    );
+    return () => controller.abort();
+  }, [detailsExpanded, serverTripId, serverPlaceId, hoursKey]);
   const isKuromon = !server && place.name === "구로몬 시장";
   const showMap = () => {
     const query = place.latitude !== undefined && place.longitude !== undefined
@@ -114,6 +134,21 @@ function PlaceDetail({ place, onBack, onRemove, server, removePending = false, r
                 <div><dt>가는 법</dt><dd>난바역 도보 6분, 숙소에서 도보 5분 <button type="button">길찾기</button></dd></div>
                 <div><dt>전화</dt><dd>+81 6-6631-0007</dd></div>
                 <div><dt>예약</dt><dd>예약 없이 방문</dd></div>
+              </dl>
+            </section>}
+
+            {server && <section>
+              <h2>정보</h2>
+              <dl className="place-detail__info">
+                <div><dt>영업시간</dt><dd>
+                  {hoursError ? "영업시간을 불러오지 못했어요." : hours === undefined ? "영업시간을 확인하고 있어요."
+                    : hours === null ? "영업시간 정보가 없어요."
+                      : <><b>{hours.openNow ? "지금 영업 중" : "지금 영업 종료"}</b><br />
+                        {hours.open24h ? "24시간 영업" : hours.days.map(({ day, hours: periods }) => (
+                          <span key={day}>{({ MONDAY: "월", TUESDAY: "화", WEDNESDAY: "수", THURSDAY: "목", FRIDAY: "금", SATURDAY: "토", SUNDAY: "일" } as const)[day]}요일 {periods.length
+                            ? periods.map(({ open, close }) => `${open} - ${close}`).join(", ") : "휴무"}<br /></span>
+                        ))}</>}
+                </dd></div>
               </dl>
             </section>}
 

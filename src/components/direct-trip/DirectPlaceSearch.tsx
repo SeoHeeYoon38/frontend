@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { addSavedPlace, enrichSavedPlaces, getPopularPlaces, getSavedPlaces, importSharedList, searchPlaces, uploadTakeout } from "../../api/places";
+import { addSavedPlace, enrichSavedPlaces, getNearbyPlaces, getPopularPlaces, getSavedPlaces, importSharedList, searchPlaces, uploadTakeout } from "../../api/places";
 import type { PlaceCandidate, PlaceCategoryCode, PopularPlaceResponse, SavedPlaceResponse } from "../../api/types";
 import { PlaceThumbnail } from "../common/PlacePhoto";
 import PlaceImportForm, { type PlaceImportInput } from "../trip/PlaceImportForm";
@@ -37,6 +37,7 @@ interface DirectPlaceSearchProps {
   tripId?: number;
   city: string;
   selectedDay: number;
+  nearbyCenter?: { lat: number; lng: number };
   days: DayOption[];
   pickedPlaceIds: Set<string>;
   demoPlaces?: DirectTripPlace[];
@@ -126,7 +127,7 @@ function readRecent(city: string) {
 }
 
 export default function DirectPlaceSearch({
-  tripId, city, selectedDay, days, pickedPlaceIds, demoPlaces, demoGoogleUnlinked = false, initialQuery = "",
+  tripId, city, selectedDay, nearbyCenter, days, pickedPlaceIds, demoPlaces, demoGoogleUnlinked = false, initialQuery = "",
   onSelectDay, onAddLive, onAddDemo, onClose,
 }: DirectPlaceSearchProps) {
   const live = tripId !== undefined;
@@ -135,6 +136,7 @@ export default function DirectPlaceSearch({
   const [query, setQuery] = useState(initialQuery);
   const [saved, setSaved] = useState<SavedPlaceResponse[]>();
   const [popular, setPopular] = useState<PopularPlaceResponse[]>();
+  const [nearby, setNearby] = useState<PlaceCandidate[]>();
   const [searchResult, setSearchResult] = useState<{ query: string; places: PlaceCandidate[] }>();
   const [selected, setSelected] = useState<Choice[]>([]);
   const [recent, setRecent] = useState(() => readRecent(city));
@@ -147,6 +149,8 @@ export default function DirectPlaceSearch({
   const [saveError, setSaveError] = useState("");
   const [reload, setReload] = useState(0);
   const savePending = useRef(false);
+  const nearbyLat = nearbyCenter?.lat;
+  const nearbyLng = nearbyCenter?.lng;
 
   useEffect(() => {
     if (!live) return;
@@ -154,15 +158,20 @@ export default function DirectPlaceSearch({
     void Promise.allSettled([
       getSavedPlaces(tripId, controller.signal),
       getPopularPlaces(tripId, controller.signal),
-    ]).then(([savedResult, popularResult]) => {
+      nearbyLat !== undefined && nearbyLng !== undefined
+        ? getNearbyPlaces(tripId, nearbyLat, nearbyLng, undefined, controller.signal)
+        : Promise.resolve(undefined),
+    ]).then(([savedResult, popularResult, nearbyResult]) => {
       if (controller.signal.aborted) return;
       if (savedResult.status === "fulfilled") setSaved(savedResult.value.places);
       else setLoadError("저장한 장소를 불러오지 못했어요.");
       if (popularResult.status === "fulfilled") setPopular(popularResult.value);
       else setLoadError((current) => current || "추천 장소를 불러오지 못했어요.");
+      if (nearbyResult.status === "fulfilled" && nearbyResult.value) setNearby(nearbyResult.value);
+      else if (nearbyResult.status === "rejected") setLoadError((current) => current || "가까운 장소를 불러오지 못했어요.");
     });
     return () => controller.abort();
-  }, [live, tripId, reload]);
+  }, [live, tripId, city, nearbyLat, nearbyLng, reload]);
 
   useEffect(() => {
     const value = query.trim();
@@ -254,6 +263,7 @@ export default function DirectPlaceSearch({
     : demoLinked ? demoChoices.filter((item) => item.source === "saved") : [];
   const popularChoices = live ? (popular ?? []).map(popularChoice)
     : demoChoices.filter((item) => item.source === "popular");
+  const nearbyChoices = live ? (nearby ?? []).map(candidateChoice) : [];
   const normalizedQuery = query.trim().toLowerCase();
   const matchingSaved = savedChoices.filter((item) =>
     `${item.name} ${item.address}`.toLowerCase().includes(normalizedQuery));
@@ -334,6 +344,7 @@ export default function DirectPlaceSearch({
                 {recent.length > 0 && <S.Section><S.SectionHead><h2>최근 검색</h2><button type="button" onClick={() => { setRecent([]); try { sessionStorage.removeItem(recentKey(city)); } catch { /* 선택 기능 */ } }}>전체 삭제</button></S.SectionHead>
                   <S.Recent>{recent.map((value) => <button type="button" key={value} onClick={() => setQuery(value)}>{value}<img src={removeIcon} alt="" /></button>)}</S.Recent>
                 </S.Section>}
+                {nearbyChoices.length > 0 && <S.Section><h2>지금 동선에서 가까운 곳</h2>{nearbyChoices.map(placeRow)}</S.Section>}
                 <S.Section><h2>{city}에서 많이 담는 곳</h2>
                   {live && !popular && !loadError && <S.State role="status">추천 장소를 불러오고 있어요.</S.State>}
                   {popularChoices.map(placeRow)}
