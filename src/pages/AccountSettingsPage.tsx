@@ -24,7 +24,6 @@ function AccountSettingsPage() {
   const account = useOutletContext<UserResponse | undefined>();
   const [profile] = useState(() => readProfileSettings(window.localStorage));
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [logoutError, setLogoutError] = useState(false);
   const signedIn = hasAuthSession();
   const [googlePlaceCount, setGooglePlaceCount] = useState(myProfile.googlePlaceCount);
   const avatar = account
@@ -46,11 +45,10 @@ function AccountSettingsPage() {
     setIsLoggingOut(true);
     try {
       await logout();
-      navigate(routes.login, { replace: true });
     } catch {
-      setLogoutError(true);
+      // 서버가 토큰을 거부해도 이 브라우저의 토큰은 제거되어 있습니다.
     } finally {
-      setIsLoggingOut(false);
+      navigate(routes.login, { replace: true });
     }
   }
 
@@ -112,7 +110,6 @@ function AccountSettingsPage() {
           ) : <Link to={routes.login}>로그인</Link>}
           {signedIn && <><i aria-hidden="true" /><Link to={routes.withdrawal}>회원 탈퇴</Link></>}
         </S.AccountActions>
-        {logoutError && <p role="alert">이 기기에서 로그아웃했어요. 서버 세션 종료는 확인하지 못했어요.</p>}
       </S.Section>
       <S.HomeIndicator />
 
