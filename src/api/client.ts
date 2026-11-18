@@ -90,6 +90,7 @@ async function refreshTokens(): Promise<AuthTokens> {
     }
     const tokens = body as AuthTokens;
     saveAuthTokens(tokens);
+    console.info("[auth] refresh confirmed by server");
     return tokens;
   })().finally(() => {
     refreshRequest = null;

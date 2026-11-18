@@ -106,11 +106,14 @@ export async function logout() {
     await waitForPendingTokenRefresh().catch(() => undefined);
     const tokens = getAuthTokens();
     if (!tokens) return;
-    const revoke = (refreshToken: string) => apiRequest<void>("/api/auth/logout", {
-      method: "POST",
-      auth: false,
-      json: { refreshToken },
-    });
+    const revoke = async (refreshToken: string) => {
+      await apiRequest<void>("/api/auth/logout", {
+        method: "POST",
+        auth: false,
+        json: { refreshToken },
+      });
+      console.info("[auth] logout confirmed by server");
+    };
     try {
       await revoke(tokens.refreshToken);
     } catch (reason) {
@@ -124,6 +127,11 @@ export async function logout() {
       }
       throw reason;
     }
+  } catch (reason) {
+    console.warn("[auth] logout could not be confirmed", reason instanceof ApiError
+      ? { status: reason.status, code: reason.code }
+      : String(reason));
+    throw reason;
   } finally {
     clearAuthTokens();
   }
