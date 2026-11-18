@@ -3,6 +3,7 @@ import type { CourseDestination } from "../../types/course";
 import close from "../../assets/icons/action-close.svg";
 import search from "../../assets/icons/search-default.svg";
 import check from "../../assets/icons/status-selected-check.svg";
+import { destinationParticle } from "../../utils/trip";
 import SheetHandle from "./SheetHandle";
 import * as S from "./RegionSelect.styled";
 
@@ -118,7 +119,7 @@ function RegionSelect({
       <S.Footer>
         <button type="button" onClick={() => onSelect(selected)}>
           {mode === "trip"
-            ? `${selected.name}로 정하기`
+            ? `${selected.name}${destinationParticle(selected.name)} 정하기`
             : `${selected.name} 코스 보기`}
         </button>
       </S.Footer>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { TripDraft } from "../../types/trip";
-import { basicError, dateLabel, durationLabel } from "../../utils/trip";
+import { basicError, dateLabel, destinationParticle, durationLabel } from "../../utils/trip";
 import { mockTripCities } from "../../data/mocks/tripData";
 import RegionSelect from "../common/RegionSelect";
 import BasicInfoSheet from "./BasicInfoSheet";
@@ -81,6 +81,7 @@ function TripInfoStep({
   const valid = !basicError(draft);
   const datesReady =
     !!draft.startDate && !!draft.endDate && draft.endDate >= draft.startDate;
+  const cityParticle = destinationParticle(draft.city);
   function save(updated: TripDraft) {
     onChange(updated);
     setSheet(null);
@@ -140,7 +141,7 @@ function TripInfoStep({
               >
                 {draft.city}
               </P.Highlight>
-              로
+              {cityParticle}
             </div>
             <div>
               <P.Highlight
@@ -177,7 +178,7 @@ function TripInfoStep({
                 {draft.city || (citiesPending ? "도시 불러오는 중" : "어디로")}
                 <img src={chevron} alt="" />
               </P.FieldButton>
-              로
+              {cityParticle}
             </P.SentenceRow>
             <P.SentenceRow>
               <P.FieldButton

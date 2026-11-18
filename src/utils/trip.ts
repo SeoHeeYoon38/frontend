@@ -7,6 +7,14 @@ import type {
 
 export const DRAFT_KEY = "dotlo:trip-draft:v1";
 export const companions: Companion[] = ["혼자", "친구", "연인", "가족"];
+
+export function destinationParticle(city: string): "로" | "으로" {
+  const last = city.trimEnd().slice(-1).charCodeAt(0);
+  if (!(last >= 0xac00 && last <= 0xd7a3)) return "로";
+  const finalConsonant = (last - 0xac00) % 28;
+  return finalConsonant === 0 || finalConsonant === 8 ? "로" : "으로";
+}
+
 export function emptyDraft(): TripDraft {
   return {
     version: 1,
