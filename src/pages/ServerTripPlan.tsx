@@ -42,7 +42,6 @@ import { RegisterBanner } from "./ImportedTripPage.styled";
 import calendarIcon from "../assets/course-completion/icon-calendar.svg";
 import backIcon from "../assets/icons/nav-back.svg";
 import settingsIcon from "../assets/course-completion/settings.svg";
-import heroPhoto from "../assets/course-completion/hero-photo.png";
 import aiAvatar from "../assets/course-community/ai-avatar.png";
 import addIcon from "../assets/icons/action-add.svg";
 import checkIcon from "../assets/icons/status-selected-check.svg";
@@ -451,8 +450,8 @@ function ServerTripPlan({ tripId, userId }: { tripId: number; userId: number }) 
       <main className="course-page">
         {data && summary && (
           <header className={`course-hero${imported ? " course-hero--imported" : ""}`}>
-            {(imported ? importedPhoto : summary.city === "오사카" ? heroPhoto : summary.coverImage) && <img className="course-hero__photo"
-              src={imported ? importedPhoto : summary.city === "오사카" ? heroPhoto : summary.coverImage} alt={`${summary.city} 여행`} />}
+            {(imported ? importedPhoto : summary.coverImage) && <img className="course-hero__photo"
+              src={imported ? importedPhoto : summary.coverImage} alt={`${summary.city} 여행`} />}
             <div className="course-hero__scrim" />
             <nav className="course-navigation" aria-label="코스 화면 탐색">
               <Link to={backPath} aria-label="뒤로 가기"><img src={backIcon} alt="" /></Link>
