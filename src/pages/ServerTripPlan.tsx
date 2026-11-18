@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router";
 import { ApiError } from "../api/client";
 import { canRevertVersion, restoredPlan, revertErrorMessage } from "../utils/itineraryRevert";
@@ -101,8 +101,19 @@ function ServerTripPlan({ tripId, userId }: { tripId: number; userId: number }) 
   const [activeDay, setActiveDay] = useState(() => readPlanDay(search) - 1);
   const [mapExpanded, setMapExpanded] = useState(false);
   const [photoPlace, setPhotoPlace] = useState<{ itemId: string; placeId: string; name: string }>();
+  const placeReturnScroll = useRef<number | null>(null);
   const [photoError, setPhotoError] = useState("");
   const [photoPending, setPhotoPending] = useState(false);
+
+  useLayoutEffect(() => {
+    if (photoPlace) {
+      if (placeReturnScroll.current === null) placeReturnScroll.current = window.scrollY;
+      window.scrollTo(0, 0);
+    } else if (placeReturnScroll.current !== null) {
+      window.scrollTo(0, placeReturnScroll.current);
+      placeReturnScroll.current = null;
+    }
+  }, [photoPlace]);
   const [interactionError, setInteractionError] = useState("");
   const interactionRequest = useRef(0);
   const [editing, setEditing] = useState(false);
