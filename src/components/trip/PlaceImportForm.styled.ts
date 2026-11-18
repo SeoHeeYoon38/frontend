@@ -185,6 +185,7 @@ export const LinkProgress = styled.p`
 
 export const LinkGuide = styled.section`
   padding: 16px; border: 1px solid #e0e3eb; border-radius: 16px;
+  > a { margin-top: 12px; }
   strong { font-size: 14px; }
   ol { display: grid; gap: 12px; margin: 12px 0 0; padding: 0; list-style: none; counter-reset: step; }
   li { display: flex; align-items: center; gap: 10px; color: #5c5c63; font-size: 12px; line-height: 18px; }
