@@ -70,7 +70,7 @@ function TripSheet({
       <S.SheetBody $course={variant === "course"} $gap={contentGap}>
         {children}
       </S.SheetBody>
-      {footer && <S.SheetFooter>{footer}</S.SheetFooter>}
+      {footer && <S.SheetFooter $compact={Boolean(courseHeight)}>{footer}</S.SheetFooter>}
     </S.Sheet>
   );
 }

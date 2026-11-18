@@ -99,11 +99,11 @@ export const SheetBody = styled.div<{ $course: boolean; $gap?: number }>`
   flex-direction: column;
   gap: ${({ $course, $gap }) => $gap ?? ($course ? 12 : 20)}px;
 `;
-export const SheetFooter = styled.div`
+export const SheetFooter = styled.div<{ $compact: boolean }>`
   position: sticky;
   bottom: 0;
   z-index: 2;
   background: white;
-  padding: 24px 0 max(36px, env(safe-area-inset-bottom));
+  padding: ${({ $compact }) => $compact ? "24px 0 8px" : "24px 0 max(36px, env(safe-area-inset-bottom))"};
   margin-top: auto;
 `;
