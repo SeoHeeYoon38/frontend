@@ -547,7 +547,8 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
                       day={activeDay + 1}
                       scheduledPlaceIds={scheduledPlaceIds}
                       onClose={() => setShowAddPlace(false)}
-                      onSaved={({ itinerary, reason, placeName }, place) => {
+                      onSaved={({ itinerary, reason, placeName }, place, selectedDay) => {
+                        setActiveDay(selectedDay - 1);
                         setData((current) => {
                           if (!current) return current;
                           const places = current.places.filter((item) => item.placeId !== place.placeId);
@@ -558,6 +559,7 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
                         setNotice(reason || `${placeName}을(를) 일정에 추가했어요.`);
                         setShowAddPlace(false);
                         void reloadHistory().catch(() => undefined);
+                        void refreshInteractions().catch(() => setInteractionError("일행 의견을 불러오지 못했어요."));
                       }}
                     />
                   )}
