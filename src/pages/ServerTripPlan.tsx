@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router";
 import { ApiError } from "../api/client";
+import { canRevertVersion, restoredPlan, revertErrorMessage } from "../utils/itineraryRevert";
 import {
   applyItineraryEdit,
   getItineraryHistory,
@@ -105,6 +106,7 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
   const [editMessage, setEditMessage] = useState("");
   const [editPreview, setEditPreview] = useState<ItineraryEditPreview>();
   const [editPending, setEditPending] = useState(false);
+  const reverting = useRef(false);
   const [actionError, setActionError] = useState("");
   const [notice, setNotice] = useState(state?.courseImported === true ? "내 일정으로 가져왔어요" : "");
   const [inviteAccepted, setInviteAccepted] = useState(state?.inviteAccepted === true);
@@ -304,18 +306,32 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
   };
 
   const revert = async (version: number) => {
-    if (editPending) return;
+    if (editPending || reverting.current || !data?.itinerary || !canRevertVersion(version, data.itinerary.version)) return;
+    reverting.current = true;
     setEditPending(true);
     setActionError("");
+    setNotice("");
     try {
       const itinerary = await revertItinerary(tripId, version);
-      setData((current) => current ? { ...current, itinerary } : current);
+      interactionRequest.current += 1;
+      setData((current) => current ? restoredPlan(current, itinerary) : current);
+      setEditPreview(undefined);
+      setTravelModes({});
+      setTravelSelection(undefined);
+      setPhotoPlace(undefined);
       setActiveDay(0);
       setNotice(`${version}번 일정으로 되돌렸어요.`);
-      await reloadHistory();
+      const [historyResult, interactionsResult] = await Promise.allSettled([reloadHistory(), refreshInteractions()]);
+      if (historyResult.status === "rejected") {
+        setActionError("일정은 복원했지만 변경 이력을 다시 불러오지 못했어요.");
+      }
+      if (interactionsResult.status === "rejected") {
+        setInteractionError("일정은 복원했지만 일행 의견을 불러오지 못했어요. 장소 상세에서 다시 조회해 주세요.");
+      }
     } catch (reason) {
-      setActionError(reason instanceof Error ? reason.message : "일정을 되돌리지 못했어요.");
+      setActionError(revertErrorMessage(reason));
     } finally {
+      reverting.current = false;
       setEditPending(false);
     }
   };
@@ -615,8 +631,8 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
                       <ul>
                         {data.history.map((item) => (
                           <li key={item.version}>
-                            <span>{sourceLabels[item.source]} · {new Date(item.createdAt).toLocaleString("ko-KR")}</span>
-                            {item.version !== data.itinerary?.version && (
+                            <span>v{item.version} · {sourceLabels[item.source]} · {new Date(item.createdAt).toLocaleString("ko-KR")}</span>
+                            {data.itinerary && canRevertVersion(item.version, data.itinerary.version) && (
                               <button type="button" disabled={editPending} onClick={() => void revert(item.version)}>
                                 이 버전으로 되돌리기
                               </button>
