@@ -5,9 +5,11 @@ import {
   importedTripPath,
   readPlanDay,
   readPlanOrigin,
+  savePendingCourseLogin,
   savePendingInvite,
   settingsBackPath,
   takePendingInvitePath,
+  takePendingLoginPath,
   tripCommunityPath,
   tripPlanBackPath,
   tripPlanPath,
@@ -27,6 +29,18 @@ test("인증 완료 후 같은 초대장으로 한 번 복귀한다", () => {
   savePendingInvite(storage, "invite-token");
   assert.equal(takePendingInvitePath(storage), "/invite/invite-token");
   assert.equal(takePendingInvitePath(storage), undefined);
+});
+
+test("비회원이 코스를 가져오던 중 로그인하면 원래 코스의 날짜 선택으로 복귀한다", () => {
+  const values = new Map<string, string>();
+  const storage = {
+    getItem: (key: string) => values.get(key) ?? null,
+    setItem: (key: string, value: string) => { values.set(key, value); },
+    removeItem: (key: string) => { values.delete(key); },
+  };
+  savePendingCourseLogin(storage, 12, true);
+  assert.equal(takePendingLoginPath(storage), "/courses/12?import=1");
+  assert.equal(takePendingLoginPath(storage), undefined);
 });
 
 test("일정 결과 경로에 진입 출처와 코스가 유지된다", () => {

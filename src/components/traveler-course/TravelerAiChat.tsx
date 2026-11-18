@@ -7,12 +7,13 @@ import * as S from "./TravelerCourseOverlay.styled";
 
 interface TravelerAiChatProps {
   place?: TravelerCoursePlace;
+  live?: boolean;
   onBack: () => void;
 }
 
 const suggestions = ["근처 찻집 추천해 줘", "계단이 많은 편인가요?", "사진 찍기 좋은 시간은?"];
 
-function TravelerAiChat({ place, onBack }: TravelerAiChatProps) {
+function TravelerAiChat({ place, live = false, onBack }: TravelerAiChatProps) {
   const name = place?.name || "산넨자카 골목";
   const image = place?.image;
   const [message, setMessage] = useState("");
@@ -28,8 +29,11 @@ function TravelerAiChat({ place, onBack }: TravelerAiChatProps) {
       <S.AiMessages>
         <S.AiMessage>
           <img src={aiAvatar} alt="" />
-          <div><small>도틀로 AI</small><p>{name}에 대해 궁금한 걸 물어보세요.<br />영업시간, 근처 맛집, 동선까지 알려드릴게요.</p></div>
+          <div><small>도틀로 AI</small><p>{live ? "공개 코스의 장소 AI 답변은 아직 이용할 수 없어요." : <>
+            {name}에 대해 궁금한 걸 물어보세요.<br />영업시간, 근처 맛집, 동선까지 알려드릴게요.
+          </>}</p></div>
         </S.AiMessage>
+        {!live && <>
         <S.UserMessage>여기에 입장료가 있나요?</S.UserMessage>
         <S.AiMessage>
           <img src={aiAvatar} alt="" />
@@ -39,15 +43,16 @@ function TravelerAiChat({ place, onBack }: TravelerAiChatProps) {
             <button type="button">참고한 정보 보기</button>
           </div>
         </S.AiMessage>
+        </>}
       </S.AiMessages>
 
       <S.AiComposer>
-        <S.AiSuggestions>
+        {!live && <S.AiSuggestions>
           {suggestions.map((suggestion) => <button type="button" key={suggestion} onClick={() => setMessage(suggestion)}>{suggestion}</button>)}
-        </S.AiSuggestions>
+        </S.AiSuggestions>}
         <form onSubmit={(event) => event.preventDefault()}>
-          <input aria-label={`${name} 질문`} value={message} onChange={(event) => setMessage(event.target.value)} placeholder={`${name.replace(" 골목", "")}에 대해 물어보세요`} />
-          <button type="submit" aria-label="질문 보내기"><img src={sendIcon} alt="" /></button>
+          <input aria-label={`${name} 질문`} disabled={live} value={message} onChange={(event) => setMessage(event.target.value)} placeholder={`${name.replace(" 골목", "")}에 대해 물어보세요`} />
+          <button type="submit" aria-label="질문 보내기" disabled={live}><img src={sendIcon} alt="" /></button>
         </form>
       </S.AiComposer>
     </S.AiScreen>

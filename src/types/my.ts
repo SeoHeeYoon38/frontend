@@ -29,4 +29,5 @@ export interface SavedCourse {
   city: string;
   placeCount: number;
   image: string;
+  author?: string;
 }

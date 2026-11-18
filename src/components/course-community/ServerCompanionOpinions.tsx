@@ -1,12 +1,11 @@
 import { useRef, useState } from "react";
 import { addItemComment, deleteItemComment, setCommentLike, setItemLike, type TripInteractions } from "../../api/interactions";
 import { appendComment, canDeleteComment, commentInputValid, removeComment } from "../../utils/tripInteractions";
-import avatarBlue from "../../assets/course-settings/avatar-blue.png";
-import avatarPurple from "../../assets/course-settings/avatar-purple.png";
-import avatarYellow from "../../assets/course-settings/avatar-yellow.png";
+import { profileCharacter } from "../../config/profileCharacters";
 import heartIcon from "../../assets/figma/opinion-like.svg";
 import commentHeartIcon from "../../assets/figma/opinion-comment-like.svg";
 import heartFilledIcon from "../../assets/figma/opinion-comment-like-filled.svg";
+import closeIcon from "../../assets/place-import/link-clear.svg";
 import "./CourseCommunity.css";
 
 interface Props {
@@ -16,14 +15,11 @@ interface Props {
   loadError?: string;
   onRefresh: () => Promise<void>;
   currentUserId?: number;
+  currentCharacterId?: number | null;
   onChange: (update: (current: TripInteractions) => TripInteractions) => void;
 }
 
-function avatarFor(characterId: number | null) {
-  return characterId === 2 ? avatarPurple : characterId === 3 ? avatarYellow : avatarBlue;
-}
-
-export default function ServerCompanionOpinions({ tripId, itemId, interactions, loadError, onRefresh, currentUserId, onChange }: Props) {
+export default function ServerCompanionOpinions({ tripId, itemId, interactions, loadError, onRefresh, currentUserId, currentCharacterId, onChange }: Props) {
   const [message, setMessage] = useState("");
   const [replyTo, setReplyTo] = useState<number | null>(null);
   const [pending, setPending] = useState(false);
@@ -31,6 +27,7 @@ export default function ServerCompanionOpinions({ tripId, itemId, interactions, 
   const [syncFailed, setSyncFailed] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<number>();
   const inFlight = useRef(false);
+  const composer = useRef<HTMLInputElement>(null);
   const summary = interactions?.items.find((item) => item.itemId === itemId);
   const comments = interactions?.comments.filter((item) => item.itemId === itemId) ?? [];
   const replyTarget = comments.find((item) => item.id === replyTo);
@@ -82,7 +79,7 @@ export default function ServerCompanionOpinions({ tripId, itemId, interactions, 
           const parentName = comments.find((item) => item.id === comment.parentId)?.author.nickname;
           return <article className={comment.parentId ? "companion-comment is-reply" : "companion-comment"} key={comment.id}>
             {comment.parentId && <span className="companion-comment__thread-line" aria-hidden="true" />}
-            <img src={avatarFor(comment.author.characterId)} alt="" />
+            <img src={profileCharacter(comment.author.characterId).image} alt="" />
             <div>
               <p className="companion-comment__meta">
                 <strong>{comment.author.nickname}</strong>
@@ -102,7 +99,7 @@ export default function ServerCompanionOpinions({ tripId, itemId, interactions, 
                   <img src={comment.liked ? heartFilledIcon : commentHeartIcon} alt="" /> <span>{comment.likeCount}</span>
                 </button>
                 <button type="button" disabled={pending || syncFailed || !summary}
-                  onClick={() => setReplyTo(comment.parentId ?? comment.id)}>답글 달기</button>
+                  onClick={() => { setReplyTo(comment.parentId ?? comment.id); composer.current?.focus(); }}>답글 달기</button>
                 {canDeleteComment(comment, currentUserId) && <button type="button"
                   disabled={pending || syncFailed || !summary} onClick={() => setDeleteTarget(comment.id)}>삭제</button>}
                 {deleteTarget === comment.id && <div role="group" aria-label="댓글 삭제 확인">
@@ -121,7 +118,12 @@ export default function ServerCompanionOpinions({ tripId, itemId, interactions, 
           </article>;
         })}
       </div>
-      <form className="companion-composer" onSubmit={(event) => {
+      <div className="companion-composer-frame">
+        {replyAuthor && <div className="companion-reply-target">
+          <span><strong>{replyAuthor}</strong>님에게 답글 남기는 중</span>
+          <button type="button" aria-label="답글 취소" disabled={pending} onClick={() => setReplyTo(null)}><img src={closeIcon} alt="" /></button>
+        </div>}
+        <form className="companion-composer" onSubmit={(event) => {
         event.preventDefault();
         const content = message.trim();
         if (!commentInputValid(content) || !summary || syncFailed) return;
@@ -137,18 +139,19 @@ export default function ServerCompanionOpinions({ tripId, itemId, interactions, 
           setReplyTo(null);
         });
       }}>
-        <img src={avatarBlue} alt="" />
+        <img src={profileCharacter(currentCharacterId).image} alt="" />
         <label>
           <span className="course-community__sr-only">일행에게 의견 남기기</span>
-          <input value={message} maxLength={500} disabled={!summary || pending || syncFailed}
+          {replyAuthor && <strong className="companion-reply-mention" aria-hidden="true">@{replyAuthor}</strong>}
+          <input ref={composer} value={message} maxLength={500} disabled={!summary || pending || syncFailed}
             placeholder={replyAuthor ? `@${replyAuthor}에게 답글 남기기` : "일행에게 의견을 남겨보세요"}
             onChange={(event) => setMessage(event.target.value)} />
           <button type="submit" disabled={!commentInputValid(message) || !summary || pending || syncFailed} aria-label="의견 보내기">
             <span aria-hidden="true" />
           </button>
         </label>
-      </form>
-      {replyTo !== null && <button type="button" disabled={pending} onClick={() => setReplyTo(null)}>답글 취소</button>}
+        </form>
+      </div>
     </section>
   );
 }

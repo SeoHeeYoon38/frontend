@@ -4,7 +4,7 @@ import airDropIcon from "../../assets/course-settings/share-airdrop.png";
 import messagesIcon from "../../assets/course-settings/share-messages.png";
 import kakaoIcon from "../../assets/course-settings/share-kakao.png";
 import mailIcon from "../../assets/course-settings/share-mail.png";
-import memberAvatar from "../../assets/course-settings-details/member-avatar.png";
+import { profileCharacter } from "../../config/profileCharacters";
 import { createInvite, getTripMembers } from "../../api/members";
 import { createTripShare } from "../../api/trips";
 import type { MemberResponse } from "../../api/types";
@@ -146,10 +146,10 @@ export default function ServerInviteSheet({ tripId, onClose, publicShare = false
               </S.ShareList>
             </S.ShareSection>
             {!publicShare && members.length > 0 && <S.MemberSection>
-              <h3>함께하는 사람</h3>
+              <h3>참여자 {members.length}명</h3>
               <S.MemberList>
                 {members.map((member) => <li key={member.userId}>
-                  <img src={member.profileImageUrl || memberAvatar} alt="" />
+                  <img src={profileCharacter(member.characterId).image} alt="" />
                   <strong>{member.name}{member.me && <small> (나)</small>}</strong>
                   <span>{member.role === "OWNER" ? "여행 생성자" : "참여자"}</span>
                 </li>)}

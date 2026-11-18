@@ -12,7 +12,7 @@ import {
 import { getTripCity } from "../../api/trips";
 import type { CityResponse, PlaceCandidate, SavedPlaceResponse } from "../../api/types";
 import { isMapCoordinate } from "../../utils/googleMaps";
-import { savedPlacesForTripCity } from "../../utils/tripPlaces";
+import { savedPlaceCategoryLabels, savedPlacesForTripCity } from "../../utils/tripPlaces";
 import PlaceImportForm, { type PlaceImportInput, type PlaceImportView } from "./PlaceImportForm";
 import SavedPlacesEmptyState from "./SavedPlacesEmptyState";
 import ServerRecommendedCourses from "./ServerRecommendedCourses";
@@ -34,18 +34,6 @@ const categoryFilters: Array<{ value: CategoryFilter; label: string; icon?: stri
   { value: "SIGHTSEEING", label: "명소", icon: sightseeingIcon },
   { value: "SHOPPING", label: "쇼핑", icon: shoppingIcon },
 ];
-
-const categoryLabels: Record<string, string> = {
-  FOOD: "맛집",
-  CAFE: "카페",
-  SIGHTSEEING: "명소",
-  SHOPPING: "쇼핑",
-  NATURE: "자연",
-  CULTURE: "문화",
-  NIGHTLIFE: "야경",
-  ACTIVITY: "체험",
-  OTHER: "기타",
-};
 
 const coordinateName = /^\s*-?\d+(?:\.\d+)?\s*,\s*-?\d+(?:\.\d+)?\s*$/;
 
@@ -80,7 +68,8 @@ function ServerSavedPlaces({
   const [places, setPlaces] = useState<SavedPlaceResponse[]>();
   const [city, setCity] = useState<CityResponse>();
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
-  const [tab, setTab] = useState<"saved" | "recommended">("saved");
+  const [tab, setTab] = useState<"saved" | "popular" | "recommended">("saved");
+  const [showPopularTab, setShowPopularTab] = useState(false);
   const [category, setCategory] = useState<CategoryFilter>("ALL");
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<PlaceCandidate[]>();
@@ -153,6 +142,8 @@ function ServerSavedPlaces({
           setImportNotice(imported.totalNewCount > 0
             ? `새 장소 ${imported.totalNewCount}곳을 가져왔어요.`
             : "가져오기를 완료했어요. 새로 추가된 장소는 없어요.");
+          setShowPopularTab(false);
+          setTab("saved");
           onImportViewChange?.("method");
           setShowImport(false);
         }
@@ -191,6 +182,7 @@ function ServerSavedPlaces({
 
   function openRecommended() {
     setError("");
+    if (isTripCreation && cityPlaces?.length === 0) setShowPopularTab(true);
     setTab("recommended");
   }
 
@@ -221,13 +213,23 @@ function ServerSavedPlaces({
     });
   }
 
+  function toggleRecommended(placeId: string) {
+    const picked = selection.find((place) => place.placeId === placeId);
+    if (picked) {
+      setSelectedIds((current) => current.filter((id) => id !== picked.id));
+      return;
+    }
+    void addRecommended([placeId]);
+  }
+
   if (showImport) {
     return (
       <P.ConnectStep>
         <PlaceImportForm
           onImport={importPlaces}
           onSkip={() => {
-            if (cityPlaces?.length === 0) setTab("saved");
+            setShowPopularTab(false);
+            setTab("saved");
             onImportViewChange?.("method");
             setShowImport(false);
           }}
@@ -247,7 +249,9 @@ function ServerSavedPlaces({
         <P.PlacesLead>
           <h1>여행에 담을 장소를 골라주세요</h1>
           <P.PlacesSummary>
-            <p><img src={googleMapsLogo} alt="" />Google Maps에 저장한 장소를 불러왔어요</p>
+            {tab === "saved" ? (
+              <p><img src={googleMapsLogo} alt="" />Google Maps에 저장한 장소를 불러왔어요</p>
+            ) : <p>코스에 포함된 장소를 확인하고 선택해 보세요</p>}
             {cityPlaces && <P.PlaceSearchButton type="button" disabled={busy} onClick={openImport} aria-label="Google Maps에서 장소 가져오기">
               가져오기
             </P.PlaceSearchButton>}
@@ -257,8 +261,8 @@ function ServerSavedPlaces({
       {!onContinue && <P.PlacesTitle>저장 장소</P.PlacesTitle>}
       {recommendationCity && (
         <P.PlaceTabs aria-label="장소 선택 방법">
-          <button type="button" aria-pressed={tab === "saved"} disabled={busy} onClick={() => { setError(""); setTab("saved"); }}>
-            저장 장소
+          <button type="button" aria-pressed={tab === (showPopularTab ? "popular" : "saved")} disabled={busy} onClick={() => { setError(""); setTab(showPopularTab ? "popular" : "saved"); }}>
+            {showPopularTab ? "인기 장소" : "저장 장소"}
           </button>
           <button type="button" aria-pressed={tab === "recommended"} disabled={busy} onClick={openRecommended}>
             추천 코스
@@ -277,13 +281,17 @@ function ServerSavedPlaces({
           }
         })}>다시 불러오기</P.MatchButton>
       )}
-      {cityPlaces && tab === "recommended" && recommendationCity && (
+      {cityPlaces && tab !== "saved" && city && (
         <ServerRecommendedCourses
-          city={recommendationCity}
+          city={city}
+          tripId={tripId}
+          view={tab}
+          selectedPlaces={selection}
           busy={busy}
           saveError={error}
           onOpen={() => setError("")}
           onAdd={addRecommended}
+          onToggle={toggleRecommended}
         />
       )}
       {cityPlaces && tab === "saved" && (
@@ -332,7 +340,7 @@ function ServerSavedPlaces({
                 <P.PlaceCopy>
                   <div>
                     <strong>{place.name}</strong>
-                    <P.PlaceStatus>{place.matchStatus === "MATCHED" ? categoryLabels[place.category ?? "OTHER"] : place.matchStatus === "CLOSED" ? "폐업" : place.matchStatus === "OUT_OF_CITY" ? "여행 도시 밖" : "확인 필요"}</P.PlaceStatus>
+                    <P.PlaceStatus>{place.matchStatus === "MATCHED" ? savedPlaceCategoryLabels[place.category ?? "OTHER"] : place.matchStatus === "CLOSED" ? "폐업" : place.matchStatus === "OUT_OF_CITY" ? "여행 도시 밖" : "확인 필요"}</P.PlaceStatus>
                   </div>
                   <p>{place.note || place.address || "저장한 장소"}</p>
                 </P.PlaceCopy>
@@ -435,7 +443,7 @@ function ServerSavedPlaces({
             </S.Primary>
           ) : (
             <S.Primary type="button" disabled={busy || !canContinue} onClick={() => onContinue(selection)}>
-              {selection.length ? `장소 ${selection.length}곳 선택 완료` : "장소를 선택해 주세요"}
+              {selection.length ? `선택한 장소 ${selection.length}곳 담기` : "장소를 선택해 주세요"}
             </S.Primary>
           )}
         </S.Footer>

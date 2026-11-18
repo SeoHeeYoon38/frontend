@@ -55,9 +55,10 @@ const Apply = styled(Primary)`
   }
 `;
 
-export default function ProfileCharacterSheet({ current, title, confirmLabel = "적용하기", onClose, onApply }: {
+export default function ProfileCharacterSheet({ current, title, description = "도틀로 캐릭터를 골라보세요", confirmLabel = "적용하기", onClose, onApply }: {
   current: ProfileAvatar;
   title: string;
+  description?: string;
   confirmLabel?: string;
   onClose: () => void;
   onApply: (value: ProfileAvatar) => void;
@@ -66,7 +67,7 @@ export default function ProfileCharacterSheet({ current, title, confirmLabel = "
   return (
     <TripSheet title={title} variant="course" courseHeight={337} contentGap={0} onClose={onClose}
       footer={<Apply type="button" onClick={() => onApply(selected)}>{confirmLabel}</Apply>}>
-      <Label>도틀로 캐릭터를 골라보세요</Label>
+      <Label>{description}</Label>
       <Choices role="group" aria-label="기본 이미지">
         {profileCharacters.map(({ id, image, label, color }) => (
           <Choice key={id} type="button" $color={color} aria-label={label} aria-pressed={id === selected}

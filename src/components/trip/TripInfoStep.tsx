@@ -124,6 +124,8 @@ function TripInfoStep({
   ];
   const startMonth = Number(draft.startDate.slice(5, 7));
   const startDay = Number(draft.startDate.slice(8, 10));
+  const companionText = !draft.companion ? "누구와"
+    : draft.companion === "혼자" ? "혼자" : `${draft.companion} ${draft.people}명`;
   return (
     <>
       <P.InfoStep $complete={valid}>
@@ -156,7 +158,7 @@ function TripInfoStep({
                 $tone="people"
                 onClick={() => setSheet("people")}
               >
-                {draft.companion} {draft.people}명
+                {companionText}
               </P.Highlight>
               {draft.companion === "혼자" ? " 떠날 거예요" : "과 떠날 거예요"}
             </div>
@@ -200,9 +202,7 @@ function TripInfoStep({
                 aria-haspopup="dialog"
               >
                 <img src={people} alt="" />
-                {draft.companion
-                  ? `${draft.companion} ${draft.people}명`
-                  : "누구와"}
+                {companionText}
                 <img src={chevron} alt="" />
               </P.FieldButton>
               {draft.companion === "혼자" ? "떠날 거예요" : "과 떠날 거예요"}

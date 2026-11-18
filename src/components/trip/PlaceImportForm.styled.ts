@@ -36,8 +36,7 @@ export const MethodContent = styled.span`
 
 export const Badges = styled.span`
   display: flex; flex-wrap: wrap; gap: 4px;
-  b, span { padding: 3px 7px; border-radius: 999px; background: #f4f4f7; color: #8a8a8e; font-size: 10px; line-height: 14px; font-weight: 500; }
-  b { background: #e9f8ff; color: #0079c2; font-weight: 700; }
+  span { padding: 3px 7px; border-radius: 999px; background: #f4f4f7; color: #8a8a8e; font-size: 10px; line-height: 14px; font-weight: 500; }
 `;
 
 export const InfoBox = styled.div`
@@ -74,18 +73,34 @@ export const GuideStep = styled.li`
 
 export const GuideChecks = styled.section`
   display: grid; gap: 8px; padding: 14px; border-radius: 12px; background: #f1f3f9;
-  p { display: flex; gap: 8px; margin: 0; align-items: flex-start; font-size: 13px; line-height: 19px; }
-  img { width: 14px; height: 14px; flex: 0 0 auto; }
+  p { display: flex; gap: 8px; margin: 0; align-items: center; font-size: 14px; line-height: 19px; }
+  img { width: 16px; height: 16px; flex: 0 0 auto; }
+`;
+
+export const WaitTime = styled.span`
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: #fff8d6;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+  img { width: 14px; height: 14px; }
 `;
 
 export const ExternalLink = styled.a`
-  min-height: 42px; display: grid; place-items: center; border-radius: 12px; background: #daf5fc;
-  color: #0079c2; font-size: 13px; font-weight: 700; text-decoration: none;
+  min-height: 42px; display: flex; align-items: center; justify-content: center; gap: 6px;
+  border-radius: 12px; background: #ddf7ff; color: #0079c2;
+  font-size: 13px; font-weight: 500; text-decoration: none;
+  img { width: 14px; height: 14px; }
 `;
 
-export const DropZone = styled.label`
+export const DropZone = styled.button`
   min-height: 234px; display: flex; align-items: center; justify-content: center; flex-direction: column;
-  border: 1.5px dashed #d9d9df; border-radius: 18px; cursor: pointer;
+  border: 1px dashed #d1d1d6; border-radius: 18px; background: #fff; cursor: pointer;
   strong { margin-top: 12px; font-size: 15px; } span { margin-top: 4px; color: #a0a0a5; font-size: 11px; }
   > b { display: flex; align-items: center; gap: 5px; margin-top: 13px; padding: 7px 12px; border: 1px solid #dedee5; border-radius: 8px; font-size: 11px; }
   > b img { width: 14px; height: 14px; }
@@ -97,29 +112,51 @@ export const EmptyIcon = styled.span`
 `;
 
 export const SelectedFile = styled.div<{ $error: boolean }>`
-  display: flex; align-items: center; gap: 10px; padding: 13px; border: 1px solid ${({ $error }) => $error ? "#e5484d" : "#e4e4e9"}; border-radius: 14px;
+  display: flex; align-items: center; gap: 12px; padding: 16px; border: 1px solid ${({ $error }) => $error ? "#e5484d" : "#e4e6ec"}; border-radius: 16px;
   > div { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 2px; }
-  strong { overflow: hidden; font-size: 12px; line-height: 18px; text-overflow: ellipsis; white-space: nowrap; }
-  span { color: #8a8a8e; font-size: 10px; } button { flex: 0 0 auto; color: #6b6b70; font-size: 11px; }
+  strong { overflow: hidden; font-size: 14px; line-height: 19px; text-overflow: ellipsis; white-space: nowrap; }
+  span { color: ${({ $error }) => $error ? "#e5484d" : "#8a8a8e"}; font-size: 12px; line-height: 16px; }
+  button { flex: 0 0 auto; color: #5c5c63; font-size: 13px; }
+  button:first-of-type { padding: 6px 10px; border-radius: 8px; background: #f3f5fa; }
+  button:last-of-type { display: grid; place-items: center; width: 28px; height: 28px; }
   button img { width: 18px; height: 18px; }
 `;
 
 export const FileIcon = styled.span<{ $error: boolean }>`
-  width: 38px; height: 38px; display: grid; place-items: center; border-radius: 10px;
-  background: ${({ $error }) => $error ? "#fff0f0" : "#e8f7ff"}; img { width: 22px; height: 22px; }
+  width: 44px; height: 44px; display: grid; flex: none; place-items: center; border-radius: 12px;
+  background: ${({ $error }) => $error ? "#e4e6ec" : "#ddf7ff"};
+  img { width: 22px; height: 22px; filter: ${({ $error }) => $error ? "grayscale(1)" : "none"}; }
+`;
+
+export const FileField = styled.div`
+  display: grid;
+  gap: 8px;
 `;
 
 export const SupportBox = styled.div`
-  display: flex; flex-direction: column; gap: 8px; padding: 14px; border-radius: 14px; background: #f6f6f8;
-  > strong { margin-bottom: 2px; font-size: 12px; }
-  p { display: flex; align-items: flex-start; gap: 7px; margin: 0; color: #6f6f75; font-size: 10px; line-height: 16px; }
-  p img { width: 14px; height: 14px; flex: 0 0 auto; }
+  display: flex; flex-direction: column; gap: 8px; padding: 16px; border-radius: 12px; background: #f3f5fa;
+  > strong { margin-bottom: 2px; font-size: 14px; line-height: 19px; }
+  p { display: flex; align-items: flex-start; gap: 8px; margin: 0; color: #5c5c63; font-size: 12px; line-height: 16px; }
+  p img { width: 16px; height: 16px; flex: 0 0 auto; }
 `;
 
 export const ErrorBox = styled.div`
-  display: flex; align-items: flex-start; gap: 8px; padding: 12px; border: 1px solid #ffd1d1; border-radius: 12px; background: #fff5f5;
+  display: flex; align-items: flex-start; gap: 12px; padding: 16px; border-radius: 12px; background: #fff0f0;
   img { width: 16px; height: 16px; flex: 0 0 auto; }
-  p { margin: 0; color: #ba3131; font-size: 12px; line-height: 18px; } small { color: #8a6363; font-size: 10px; }
+  p { display: grid; gap: 4px; margin: 0; }
+  strong { color: #e5484d; font-size: 14px; line-height: 19px; }
+  small { color: #5c5c63; font-size: 12px; line-height: 16px; }
+`;
+
+export const FieldError = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 0 4px;
+  color: #e5484d;
+  font-size: 12px;
+  line-height: 16px;
+  img { width: 16px; height: 16px; flex: none; }
 `;
 
 export const FormFooter = styled.div`
@@ -150,7 +187,8 @@ export const Spinner = styled.img`
 `;
 
 export const GuideLink = styled.button`
-  min-height: 36px; display: flex; align-items: center; justify-content: center; gap: 2px; color: #0079c2; font-size: 11px;
+  min-height: 36px; display: flex; align-items: center; justify-content: center; gap: 2px; color: #0079c2; font-size: 12px;
+  margin-top: -8px;
   img { width: 13px; height: 13px; }
 `;
 
@@ -163,10 +201,11 @@ export const LinkField = styled.div`
   label { color: #5c5c63; font-size: 13px; font-weight: 500; line-height: 18px; }
 `;
 
-export const LinkInput = styled.div`
+export const LinkInput = styled.div<{ $invalid: boolean }>`
   display: flex; gap: 8px; align-items: center; min-height: 52px; padding: 8px 8px 8px 16px;
+  border: 1px solid ${({ $invalid }) => $invalid ? "#e5484d" : "transparent"};
   border-radius: 12px; background: #f3f5fa;
-  &:focus-within { outline: 1px solid #090738; }
+  &:focus-within { border-color: ${({ $invalid }) => $invalid ? "#e5484d" : "#090738"}; }
   input { flex: 1; min-width: 0; padding: 0; border: 0; background: transparent; font-size: 14px; }
   input:focus-visible { outline: none; }
   input::placeholder { color: #b4b5bd; }
@@ -176,6 +215,14 @@ export const LinkInput = styled.div`
     display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0;
     min-height: 36px; padding: 6px 12px; border: 1px solid #e4e6ec; border-radius: 8px;
     background: #fff; color: #5c5c63; font-size: 13px; font-weight: 500;
+  }
+  .clear-link {
+    width: 34px;
+    min-height: 34px;
+    justify-content: center;
+    padding: 0;
+    border: 0;
+    background: transparent;
   }
 `;
 

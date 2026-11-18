@@ -1,15 +1,16 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router";
+import { Link, useLocation } from "react-router";
 import { getUnreadNotifications } from "../../api/notifications";
 import { isApiEnabled } from "../../api/config";
 import { hasAuthSession } from "../../api/tokenStorage";
 import flowBack from "../../assets/icons/nav-back-trip.svg";
 import logo from "../../assets/images/brand-dotlo-logo.png";
 import back from "../../assets/icons/nav-back.svg";
-import bookmark from "../../assets/icons/nav-bookmark.svg";
+import heart from "../../assets/figma/course-favorites.svg";
 import bell from "../../assets/icons/nav-notification.svg";
 import search from "../../assets/icons/search-default.svg";
 import { routes } from "../../config/routes";
+import { courseFavoritesPath } from "../../utils/navigation";
 import * as S from "./Header.styled";
 interface HeaderProps {
   variant?: "home" | "courses" | "trip" | "myTrips" | "my";
@@ -25,6 +26,7 @@ function Header({
   hideProgress = false,
   backDisabled = false,
 }: HeaderProps) {
+  const { search: courseCatalogSearch } = useLocation();
   const [hasUnread, setHasUnread] = useState(false);
 
   useEffect(() => {
@@ -70,9 +72,9 @@ function Header({
             <img src={back} alt="" />
           </Link>
           <h1>코스 둘러보기</h1>
-          <button type="button" aria-label="보관함">
-            <img src={bookmark} alt="" />
-          </button>
+          <Link to={courseFavoritesPath} state={{ courseCatalogSearch }} aria-label="찜 목록">
+            <img src={heart} alt="" />
+          </Link>
         </S.CourseHeader>
       ) : variant === "my" ? (
         <S.MyHeader>

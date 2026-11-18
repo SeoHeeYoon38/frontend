@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useId, useState } from "react";
+import styled from "styled-components";
 import type { Companion, TripDraft } from "../../types/trip";
 import { changeDates, companions, validDate } from "../../utils/trip";
 import solo from "../../assets/images/companion-solo.png";
 import friends from "../../assets/images/companion-friends.png";
 import couple from "../../assets/images/companion-couple.png";
 import family from "../../assets/images/companion-family.png";
+import infoIcon from "../../assets/place-import/method-info.svg";
 import TripSheet from "../common/TripSheet";
 import DateRangePicker from "./DateRangePicker";
 import * as S from "./Trip.styled";
@@ -15,6 +17,31 @@ const companionGuides = {
   연인: { image: couple, title: "연인과 함께 떠나요" },
   가족: { image: family, title: "가족과 함께 떠나요" },
 } satisfies Record<Companion, { image: string; title: string }>;
+
+const Info = styled.button`
+  display: grid;
+  width: 22px;
+  height: 24px;
+  flex: none;
+  place-items: center;
+  img { width: 20px; height: 20px; }
+`;
+
+const CompanionTooltip = styled.p`
+  position: absolute;
+  left: 0;
+  top: 71px;
+  z-index: 1;
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #1a1a1a;
+  color: #fff;
+  font-size: 13px;
+  line-height: 19.5px;
+  font-weight: 500;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 12%);
+`;
 interface BasicInfoSheetProps {
   mode: "dates" | "people";
   draft: TripDraft;
@@ -25,8 +52,10 @@ function BasicInfoSheet({ mode, draft, onClose, onSave }: BasicInfoSheetProps) {
   const [start, setStart] = useState(draft.startDate);
   const [end, setEnd] = useState(draft.endDate);
   const [companion, setCompanion] = useState<Companion>(
-    draft.companion ?? "친구",
+    draft.companion ?? "혼자",
   );
+  const [infoOpen, setInfoOpen] = useState(false);
+  const infoId = useId();
   const datesValid = validDate(start) && validDate(end) && end >= start;
   const guide = companionGuides[companion];
   function save() {
@@ -41,6 +70,13 @@ function BasicInfoSheet({ mode, draft, onClose, onSave }: BasicInfoSheetProps) {
   return (
     <TripSheet
       title={mode === "dates" ? "언제 떠나세요?" : "누구와 떠나세요?"}
+      titleAdornment={mode === "people" && <>
+        <Info type="button" aria-label="혼자 여행 안내" aria-expanded={infoOpen} aria-controls={infoOpen ? infoId : undefined}
+          onClick={() => setInfoOpen((open) => !open)}><img src={infoIcon} alt="" /></Info>
+        {infoOpen && <CompanionTooltip id={infoId} role="status">
+          혼자로 골라도 코스를 만든 뒤<br />함께 떠나는 여행으로 바꿀 수 있어요
+        </CompanionTooltip>}
+      </>}
       variant={mode}
       contentGap={mode === "people" ? 16 : undefined}
       compactHeader={mode === "dates"}
@@ -79,7 +115,7 @@ function BasicInfoSheet({ mode, draft, onClose, onSave }: BasicInfoSheetProps) {
                 type="button"
                 $active={companion === item}
                 aria-pressed={companion === item}
-                onClick={() => setCompanion(item)}
+                onClick={() => { setCompanion(item); setInfoOpen(false); }}
               >
                 {item}
               </S.Chip>

@@ -15,6 +15,7 @@ interface TimelineVisit {
   address?: string | null;
   timing?: string;
   category?: string;
+  added?: boolean;
   connection?: ReactNode;
   reactions?: { likeCount: number; commentCount: number };
 }
@@ -29,7 +30,7 @@ export default function TripTimeline({ day, visits, onOpenPlace, onEdit, shared 
   if (!visits.length) return <p>이날 일정에 담긴 장소가 없어요.</p>;
   return (
     <div className="place-timeline" aria-label={`${day}일차 장소 타임라인`}>
-      {visits.map(({ id, name = "장소 정보 없음", photoPlaceId, address, timing, category = "장소", connection, reactions }, index) => (
+      {visits.map(({ id, name = "장소 정보 없음", photoPlaceId, address, timing, category = "장소", added, connection, reactions }, index) => (
         <div className="place-stop" key={id}>
           <div className="place-stop__rail" aria-hidden="true">
             <span className="place-stop__rail-before" />
@@ -54,6 +55,7 @@ export default function TripTimeline({ day, visits, onOpenPlace, onEdit, shared 
                 {photoPlaceId && <PlaceThumbnail placeId={photoPlaceId} name={name} />}
               </div>
               <div className="place-card__copy">
+                {added && <span className="place-card__added">새로 추가</span>}
                 <strong>{name}</strong>
                 <div className="place-card__meta">
                   <img src={category.includes("카페") ? cafeIcon : category.includes("맛집") ? foodIcon : sightIcon} alt="" />

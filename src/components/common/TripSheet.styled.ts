@@ -66,13 +66,19 @@ export const SheetHeader = styled.div<{
     font-size: ${({ $course, $basic, $tripInfo }) => ($course || $tripInfo ? "22px" : $basic ? "26px" : "24px")};
     line-height: 1.4;
   }
-  button {
+  > button {
     width: 28px;
     height: 28px;
     display: grid;
     place-items: center;
     flex-shrink: 0;
   }
+`;
+export const SheetHeading = styled.div`
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 6px;
 `;
 export const SheetBody = styled.div<{ $course: boolean; $gap?: number }>`
   flex: 1 1 auto;

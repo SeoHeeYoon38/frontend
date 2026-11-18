@@ -2,6 +2,7 @@ import { useEffect, useEffectEvent, useRef, useState } from "react";
 import type { Preferences, TripDraft } from "../../types/trip";
 import type { PlaceCategoryCode, PreferenceProfile, PreferenceView, UserPreferenceView } from "../../api/types";
 import promptAi from "../../assets/icons/ai-prompt-ai.svg";
+import promptError from "../../assets/icons/ai-prompt-error.svg";
 import food from "../../assets/icons/ai-prompt-food.svg";
 import camera from "../../assets/icons/ai-prompt-camera.svg";
 import shopping from "../../assets/icons/ai-prompt-shopping.svg";
@@ -243,14 +244,14 @@ function PreferencesStep({ draft, onChange, onGenerate, error }: PreferencesStep
         <div>
           <P.AiBadge><img src={promptAi} alt="" />도틀로 AI</P.AiBadge>
           <S.Title>어떤 여행을 원하세요?</S.Title>
-          <S.Subtitle>편하게 말해주면 AI가 코스에 맞게 정리해요</S.Subtitle>
+          <S.Subtitle>하고 싶은 여행을 편하게 말해주세요</S.Subtitle>
         </div>
         <P.Prompt $active={Boolean(text)} $exceeded={excess > 0}>
           <textarea
             aria-label="원하는 여행"
             aria-invalid={excess > 0}
             aria-describedby={excess > 0 ? "ai-prompt-error" : undefined}
-            placeholder="예) 맛집 위주로 먹고 싶고, 밤에는 야경도 보고 싶어요"
+            placeholder="예) 맛집 위주로 먹고, 밤에는 야경도 보고 싶어요"
             value={text}
             readOnly={submitting}
             onChange={(event) => changeText(event.target.value)}
@@ -261,6 +262,7 @@ function PreferencesStep({ draft, onChange, onGenerate, error }: PreferencesStep
         </P.Prompt>
         {excess > 0 && (
           <P.PromptError id="ai-prompt-error" role="status">
+            <img src={promptError} alt="" />
             {promptLimit}자까지 입력할 수 있어요. {excess}자를 줄여주세요
           </P.PromptError>
         )}
@@ -326,7 +328,7 @@ function PreferencesStep({ draft, onChange, onGenerate, error }: PreferencesStep
           disabled={loadingPreferences || submitting || composing || (!text.trim() && !preferences.analyzed) || excess > 0}
           onClick={() => void submit()}
         >
-          코스 만들기
+          {preferences.analyzed && excess === 0 ? "이대로 코스 만들기" : "코스 만들기"}
         </P.MakeCourse>
       </S.Footer>
     </>

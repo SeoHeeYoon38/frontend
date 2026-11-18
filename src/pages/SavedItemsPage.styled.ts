@@ -105,6 +105,11 @@ export const Tabs = styled.div`
   button[aria-pressed="true"] b {
     color: #0079c2;
   }
+
+  [data-favorites="true"] & {
+    button { font-size: 14px; }
+    button[aria-pressed="true"] b { color: #090738; }
+  }
 `;
 
 export const Content = styled.main`
@@ -112,6 +117,7 @@ export const Content = styled.main`
   flex-direction: column;
   gap: 14px;
   padding: 14px 20px 24px;
+  [data-favorites="true"] & { padding-top: 8px; }
 `;
 
 export const RegionFilters = styled.div`
@@ -172,6 +178,15 @@ export const List = styled.div`
   display: flex;
   flex-direction: column;
   gap: 4px;
+
+  [data-favorites="true"] & {
+    gap: 0;
+    > article { align-items: flex-start; padding: 16px 0; }
+    > article:not(:last-child) { border-bottom: 1px solid #e4e6ec; }
+    > article[data-kind="course"] > :is(img, span) { width: 96px; height: 96px; }
+    > article[data-kind="place"] > :is(img, span) { width: 80px; height: 80px; }
+    > article[data-kind="place"] { align-items: center; }
+  }
 `;
 
 const ItemRow = styled.article`
@@ -291,6 +306,12 @@ export const ItemText = styled.div`
     font-style: normal;
     font-weight: 700;
   }
+
+  [data-favorites="true"] & {
+    gap: 4px;
+    strong { white-space: pre-line; overflow-wrap: anywhere; }
+    em { color: #6b6bd9; font-weight: 500; }
+  }
 `;
 
 export const BookmarkButton = styled.button`
@@ -308,6 +329,11 @@ export const BookmarkButton = styled.button`
   &:disabled {
     cursor: wait;
     opacity: 0.55;
+  }
+  [data-favorites="true"] & {
+    width: 28px;
+    height: 28px;
+    img { width: 18px; height: 18px; }
   }
 `;
 
