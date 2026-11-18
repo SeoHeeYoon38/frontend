@@ -206,7 +206,8 @@ export const CalendarDay = styled.button<{
   cursor: pointer;
   font-size: 14px;
   color: ${({ $edge, $sunday }) => ($edge ? "white" : $sunday ? "#f04452" : "#1a1a1a")};
-  background: ${({ $range, $startEdge, $endEdge }) => ($range ? "#efefff" : $startEdge ? "linear-gradient(to right,transparent 50%,#efefff 50%)" : $endEdge ? "linear-gradient(to right,#efefff 50%,transparent 50%)" : "transparent")};
+  background: ${({ $range, $startEdge, $endEdge }) => ($range ? "#ddf7ff" : $startEdge ? "linear-gradient(to right,transparent 50%,#ddf7ff 50%)" : $endEdge ? "linear-gradient(to right,#ddf7ff 50%,transparent 50%)" : "transparent")};
+  &:disabled { color: #b4b5bd; cursor: default; }
   > img {
     position: absolute;
     left: 50%;
@@ -328,161 +329,6 @@ export const NightHeader = styled.div<{ $columns: number }>`
     color: #1a1a1a;
   }
 `;
-export const Timeline = styled.div`
-  padding: 14px 12px;
-  background: #f6f6f9;
-  border-radius: 20px;
-  overflow-x: auto;
-  scrollbar-width: thin;
-`;
-export const StayRow = styled.div`
-  position: relative;
-  height: 60px;
-  margin-top: 14px;
-`;
-export const StayBlock = styled.div<{
-  $start: number;
-  $span: number;
-  $nights: number;
-  $active: boolean;
-}>`
-  position: absolute;
-  top: 0;
-  height: 56px;
-  left: ${({ $start, $nights }) => ($start / $nights) * 100}%;
-  width: calc(${({ $span, $nights }) => ($span / $nights) * 100}% - 6px);
-  min-width: 0;
-  border-radius: 14px;
-  background: ${({ $active }) => ($active ? "#090738" : "#e5e3ff")};
-  color: ${({ $active }) => ($active ? "white" : "#4d499f")};
-  display: flex;
-  align-items: center;
-  padding: 8px 12px;
-  > button {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    width: 100%;
-    min-width: 0;
-    gap: 2px;
-    text-align: left;
-  }
-  strong {
-    display: block;
-    width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-size: 13px;
-    line-height: 18px;
-  }
-  small {
-    font-size: 11px;
-    line-height: 16px;
-  }
-`;
-export const ResizeHandle = styled.span<{
-  $edge: "start" | "end";
-  $active: boolean;
-}>`
-  position: absolute;
-  z-index: 1;
-  top: 50%;
-  transform: translateY(-50%);
-  ${({ $edge }) => ($edge === "start" ? "left:-4px;" : "right:-4px;")}
-  width:8px;
-  height: 26px;
-  border: 2px solid #090738;
-  border-radius: 5px;
-  background: white;
-  cursor: ew-resize;
-  touch-action: none;
-  opacity: ${({ $active }) => ($active ? 1 : 0)};
-  &:focus-visible {
-    opacity: 1;
-  }
-`;
-export const AddStay = styled.button<{
-  $start: number;
-  $span: number;
-  $nights: number;
-}>`
-  position: absolute;
-  top: 0;
-  height: 56px;
-  left: ${({ $start, $nights }) => ($start / $nights) * 100}%;
-  width: calc(${({ $span, $nights }) => ($span / $nights) * 100}% - 6px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  min-width: 0;
-  padding: 0 8px;
-  border: 1px dashed #c9cbd6;
-  border-radius: 14px;
-  background: white;
-  color: #7669db;
-  font-size: 13px;
-  font-weight: 700;
-  img {
-    flex-shrink: 0;
-  }
-  span {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-`;
-export const RentalDays = styled.div`
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  button {
-    flex: 1;
-    min-width: 60px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    border-radius: 16px;
-    padding: 14px 8px;
-    background: #f4f4f7;
-    font-size: 14px;
-    span {
-      font-size: 12px;
-      color: #8a8a8e;
-    }
-  }
-  button[aria-pressed="true"] {
-    background: #090738;
-    color: white;
-  }
-  button[aria-pressed="true"] span {
-    color: #fff9;
-  }
-`;
-export const BookingCard = styled.div`
-  padding: 16px;
-  border-radius: 16px;
-  background: #f5f6f8;
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  font-size: 14px;
-  label {
-    flex: 1;
-    min-width: 0;
-  }
-  strong {
-    font-size: 20px;
-  }
-  small {
-    color: #8a8a8e;
-    display: block;
-    margin-top: 4px;
-  }
-`;
 export const PlaceControls = styled.div`
   display: flex;
   align-items: center;
@@ -502,10 +348,6 @@ export const PlaceControls = styled.div`
   }
 `;
 
-export const NightCanvas = styled.div<{ $nights: number }>`
-  min-width: ${({ $nights }) => Math.max(0, $nights * 44)}px;
-`;
-
 export const CompanionChoices = styled(Chips)`
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -523,43 +365,6 @@ export const CompanionIllustration = styled.img`
   height: 112px;
   object-fit: contain;
 `;
-export const FlightField = styled(BookingCard)<{ $found: boolean }>`
-  align-items: center;
-  border: 1.5px solid ${({ $found }) => ($found ? "#090738" : "#e2e2e8")};
-  background: white;
-  min-height: 56px;
-  padding: 8px 16px;
-  gap: 10px;
-  > img {
-    flex-shrink: 0;
-  }
-  label {
-    display: flex;
-    flex-direction: column;
-  }
-  label p {
-    font-size: 11px;
-    line-height: 15px;
-  }
-  input {
-    padding: 0;
-    border: 0;
-    border-radius: 0;
-    background: transparent;
-    font-size: 15px;
-    line-height: 22px;
-  }
-  :where(input)::placeholder {
-    color: #a8a8ae;
-  }
-  button {
-    flex-shrink: 0;
-    font-size: 12px;
-    white-space: nowrap;
-    padding: 4px 10px;
-  }
-`;
-
 export const ExtraPeople = styled.div`
   position: relative;
   z-index: 1;

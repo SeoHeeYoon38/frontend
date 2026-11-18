@@ -1,14 +1,14 @@
 import type { ReservationResponse } from "./types";
 import type { TripDraft } from "../types/trip";
 
-function reservationFlight(
+export function reservationFlight(
   flight: NonNullable<NonNullable<ReservationResponse["flights"]>["outbound"]>,
   date: string,
 ) {
   return {
     code: flight.number,
     airline: flight.airline ?? flight.number,
-    date,
+    date: flight.departure.time.match(/^\d{4}-\d{2}-\d{2}/)?.[0] ?? date,
     departure: flight.departure.time.slice(11, 16),
     arrival: flight.arrival.time.slice(11, 16),
     from: flight.departure.airport,
