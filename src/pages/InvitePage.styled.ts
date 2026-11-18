@@ -211,15 +211,3 @@ export const DemoNotice = styled(DisabledNotice)`
   font-size: 13px;
   font-weight: 500;
 `;
-
-export const HomeIndicator = styled.div`
-  position: absolute;
-  right: 0;
-  bottom: 8px;
-  left: 0;
-  width: 134px;
-  height: 5px;
-  margin: auto;
-  border-radius: 3px;
-  background: #000000;
-`;

@@ -57,7 +57,6 @@ export function CourseSettingsDetailView({ view, onBack, onInvite, members }: De
             {onInvite && <button type="button" onClick={onInvite}>친구 초대하기</button>}
           </S.EmptyMembers>}
         </S.MemberBody>
-        <S.HomeIndicator />
       </>
     );
   }
@@ -90,7 +89,6 @@ export function CourseSettingsDetailView({ view, onBack, onInvite, members }: De
           );
         })}
       </S.NotificationBody>
-      <S.HomeIndicator />
     </>
   );
 }

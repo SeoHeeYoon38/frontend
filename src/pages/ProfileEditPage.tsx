@@ -193,7 +193,6 @@ function ProfileEditPage() {
         <button type="button" disabled={!canSave} onClick={() => void save()}>
           {loading ? "프로필을 불러오고 있어요" : saving ? "저장하고 있어요" : "저장하기"}
         </button>
-        <S.HomeIndicator />
       </S.Cta>
 
       {showPhotoSheet && (

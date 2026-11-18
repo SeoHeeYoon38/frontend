@@ -8,3 +8,4 @@
 .place-day-picker label span { display: grid; gap: 6px; min-width: 0; }
 .place-day-picker small { color: #64636f; }
 .place-day-picker em { margin-left: auto; color: #7354e8; font-size: 12px; font-style: normal; white-space: nowrap; }
+.community-chat .place-day-picker > button { color: #fff; }

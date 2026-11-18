@@ -266,20 +266,3 @@ export const EmptyIcon = styled.span`
     transform: scale(1.5);
   }
 `;
-
-export const HomeIndicator = styled.div`
-  position: sticky;
-  bottom: 0;
-  display: grid;
-  height: 30px;
-  background: #fff;
-  place-items: center;
-
-  &::after {
-    width: 134px;
-    height: 5px;
-    border-radius: 3px;
-    background: #1a1a1a;
-    content: "";
-  }
-`;

@@ -284,7 +284,6 @@ export default function ServerCourseCommunityChat({ tripId, onBack, onViewCourse
             onChange={(event) => setMessage(event.target.value)} /></label>
         <button type="submit" disabled={!message.trim() || pending || !ready} aria-label="메시지 보내기"><img src={sendIcon} alt="" /></button>
       </form>
-      <span className="community-chat__home-indicator" aria-hidden="true" />
     </footer>
 
     {selectedPoll && <TripSheet title={winner ? `${winner.name}, 언제 넣을까요?` : "투표 결과 확인"}

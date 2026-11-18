@@ -286,7 +286,7 @@ function TravelerCoursePage() {
               }))}
               city={course.city}
               day={activeDay + 1}
-              schematic
+              liveTiles
             /> : <img src={course.routePreview} alt={`${course.city} 여행 경로 지도`} />}
             <span>지도 크게 보기</span>
           </S.MapPreview>

@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, type FormEvent } from "react";
 import { Link, useLocation } from "react-router";
 import backIcon from "../assets/icons/nav-back.svg";
 import addPhotoIcon from "../assets/support/add-photo.svg";
@@ -26,10 +26,6 @@ function Header({ title }: { title: string }) {
   );
 }
 
-function HomeIndicator() {
-  return <S.HomeIndicator aria-hidden="true" />;
-}
-
 function SupportPage() {
   const location = useLocation();
   const [category, setCategory] = useState("전체");
@@ -45,7 +41,6 @@ function SupportPage() {
       <S.Page>
         <Header title="공지사항" />
         <S.SupportNotice>표시할 공지사항이 없어요.</S.SupportNotice>
-        <HomeIndicator />
       </S.Page>
     );
   }
@@ -70,7 +65,6 @@ function SupportPage() {
           ))}
         </S.FaqList>
         <S.Contact><span>찾는 답이 없나요?</span><Link to={routes.feedback}>도틀로에 의견 보내기</Link></S.Contact>
-        <HomeIndicator />
       </S.Page>
     );
   }
@@ -84,10 +78,19 @@ function FeedbackPage() {
   const [message, setMessage] = useState("");
   const [photos, setPhotos] = useState<File[]>([]);
 
+  const canSend = Boolean(feedbackType && message.trim());
+  const sendFeedback = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!canSend) return;
+    const subject = `[도틀로 의견] ${feedbackType}`;
+    const body = `${message.trim()}${photos.length ? "\n\n사진은 메일에 직접 첨부해 주세요." : ""}`;
+    window.location.href = `mailto:contact.dotlo.team@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  };
+
   return (
     <S.Page>
       <Header title="의견 보내기" />
-      <S.FeedbackForm onSubmit={(event) => event.preventDefault()}>
+      <S.FeedbackForm onSubmit={sendFeedback}>
         <fieldset>
           <legend>어떤 이야기를 들려주실래요?</legend>
           <div>
@@ -123,10 +126,9 @@ function FeedbackPage() {
             ))}
           </S.AttachmentList>
         )}
-        <S.SupportNotice id="feedback-availability">현재 의견을 전송할 수 없어요.</S.SupportNotice>
-        <S.Submit type="submit" aria-describedby="feedback-availability" disabled>보내기</S.Submit>
+        {photos.length > 0 && <S.SupportNotice id="feedback-availability">메일 앱이 열리면 사진을 직접 첨부해 주세요.</S.SupportNotice>}
+        <S.Submit type="submit" aria-describedby={photos.length ? "feedback-availability" : undefined} disabled={!canSend}>보내기</S.Submit>
       </S.FeedbackForm>
-      <HomeIndicator />
     </S.Page>
   );
 }

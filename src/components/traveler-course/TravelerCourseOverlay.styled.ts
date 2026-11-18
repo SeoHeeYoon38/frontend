@@ -420,7 +420,3 @@ export const AiSuggestions = styled.div`
   button { flex: 0 0 auto; padding: 8px 14px; border: 0; border-radius: 99px; background: #f3f5fa; color: #5c5c63; font-size: 13px; line-height: 18px; }
 `;
 
-export const HomeIndicator = styled.div`
-  position: absolute; z-index: 5; bottom: 8px; left: 50%; width: 134px; height: 5px; transform: translateX(-50%); border-radius: 3px; background: #1a1a1a;
-`;
-

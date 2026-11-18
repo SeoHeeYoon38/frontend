@@ -111,7 +111,6 @@ function AccountSettingsPage() {
           {signedIn && <><i aria-hidden="true" /><Link to={routes.withdrawal}>회원 탈퇴</Link></>}
         </S.AccountActions>
       </S.Section>
-      <S.HomeIndicator />
 
     </S.Page>
   );

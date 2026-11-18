@@ -3,6 +3,7 @@ import { Navigate, Outlet, ScrollRestoration, useLocation, useMatch } from "reac
 import { getMe, SIGNUP_COMPLETED_EVENT, type UserResponse } from "./api/auth";
 import { apiMode } from "./api/config";
 import { hasAuthSession } from "./api/tokenStorage";
+import brandLogo from "./assets/images/brand-dotlo-logo.png";
 import { routes } from "./config/routes";
 import { GlobalStyle } from "./styles/GlobalStyle";
 import { shouldCompleteSignup } from "./utils/authFlow";
@@ -61,14 +62,18 @@ function App() {
 
   if (hasSession && !signupFlowRoute && !sharedTripRoute) {
     if (signupStatus === "idle" || signupStatus === "checking") {
-      return <main role="status">가입 정보를 확인하고 있어요…</main>;
+      return <><GlobalStyle /><main className="auth-gate" role="status">
+        <img src={brandLogo} alt="Dotlo" />
+        <span className="auth-gate__sr-only">가입 정보를 확인하고 있어요.</span>
+      </main></>;
     }
     if (signupStatus === "error") {
       return (
-        <main>
+        <><GlobalStyle /><main className="auth-gate auth-gate--error">
+          <img src={brandLogo} alt="Dotlo" />
           <p role="alert">가입 정보를 확인하지 못했어요.</p>
           <button type="button" onClick={() => window.location.reload()}>다시 시도</button>
-        </main>
+        </main></>
       );
     }
     if (signupStatus === "incomplete") {

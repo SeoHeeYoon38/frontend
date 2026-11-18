@@ -72,19 +72,6 @@ export const Contact = styled.div`
   a { color: #4840c8; font-weight: 700; }
 `;
 
-export const HomeIndicator = styled.div`
-  position: fixed;
-  z-index: 4;
-  right: 0;
-  bottom: 8px;
-  left: 0;
-  width: 134px;
-  height: 5px;
-  margin: 0 auto;
-  border-radius: 3px;
-  background: #000000;
-`;
-
 export const Missing = styled.section`
   min-height: 420px;
   display: flex;

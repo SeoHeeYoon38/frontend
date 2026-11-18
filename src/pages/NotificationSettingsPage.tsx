@@ -146,7 +146,6 @@ function NotificationSettingsPage() {
           ))}
         </S.Group>
       ))}
-      <S.HomeIndicator />
     </S.Page>
   );
 }

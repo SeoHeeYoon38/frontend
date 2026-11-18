@@ -191,7 +191,6 @@ function InviteDetails({ inviteId }: { inviteId?: string }) {
           {accepting ? "참여하고 있어요" : demo ? "공동 계획 데모 보기" : "초대 수락하기"}
         </button>
         <S.LaterButton type="button" disabled={accepting} onClick={() => navigate(routes.home)}>나중에 볼게요</S.LaterButton>
-        <S.HomeIndicator />
       </S.Actions>
     </S.Page>
   );

@@ -72,7 +72,7 @@ function NotificationsPage() {
   }, [live]);
 
   const openNotification = async (item: NotificationItem) => {
-    if (!live || saving || !item.tripId) return;
+    if (!live || saving) return;
     setSaving(true);
     try {
       if (item.unread) {
@@ -81,7 +81,7 @@ function NotificationsPage() {
           entry.id === item.id ? { ...entry, unread: false } : entry,
         ));
       }
-      navigate(serverTripPlanPath("home", String(item.tripId)));
+      if (item.tripId) navigate(serverTripPlanPath("home", String(item.tripId)));
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "알림을 읽음 처리하지 못했어요.");
     } finally {
@@ -209,7 +209,6 @@ function NotificationsPage() {
           </p>
         </S.EmptyBody>
       )}
-      <S.HomeIndicator aria-hidden="true" />
     </S.Shell>
   );
 }

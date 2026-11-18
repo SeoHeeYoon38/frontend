@@ -73,7 +73,7 @@ function TravelerCourseMap({ course, photoCourseId, activeDay, onBack, onDayChan
       <S.MapCanvas>
         {photoCourseId ? (
           mapPlaces.length ? (
-            <CourseRouteMap places={mapPlaces} city={course.city} day={activeDay === undefined ? undefined : activeDay + 1} schematic onSelect={(pinId) => {
+            <CourseRouteMap places={mapPlaces} city={course.city} day={activeDay === undefined ? undefined : activeDay + 1} liveTiles onSelect={(pinId) => {
               const placeId = placeIdsByPin.get(String(pinId));
               if (placeId) onOpenPlace(placeId);
             }} />

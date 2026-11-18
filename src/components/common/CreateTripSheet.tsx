@@ -81,7 +81,6 @@ function CreateTripSheet({ onClose }: CreateTripSheetProps) {
           </S.Option>
         ))}
       </S.Options>
-      <S.HomeIndicator aria-hidden="true" />
     </S.Sheet>
   );
 }

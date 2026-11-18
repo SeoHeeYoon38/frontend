@@ -43,7 +43,7 @@ function CourseRouteMap({ places, city, day, schematic = false, liveTiles = fals
       <div className="course-map__tiles" aria-hidden="true">
         {layout.tiles.map((tile) => <img key={`${layout.zoom}-${tile.x}-${tile.y}`}
           src={`https://tile.openstreetmap.org/${layout.zoom}/${tile.x}/${tile.y}.png`}
-          style={{ left: tile.left, top: tile.top }} alt="" loading="lazy" decoding="async" />)}
+          style={{ left: tile.left, top: tile.top }} alt="" loading="eager" decoding="async" />)}
       </div>
       <svg className="course-map__route" viewBox={`0 0 ${dimensions.width} ${dimensions.height}`} preserveAspectRatio="none" aria-hidden="true">
         {layout.pins.length > 1 && <polyline points={layout.pins.map((pin) => `${pin.x},${pin.y}`).join(" ")}
@@ -56,7 +56,7 @@ function CourseRouteMap({ places, city, day, schematic = false, liveTiles = fals
           aria-label={`${place.name} 열기`} onClick={() => onSelect(place.id)}>{place.order ?? index + 1}</button>
           : <span key={place.id} className="course-map__pin" style={style} title={place.name}>{place.order ?? index + 1}</span>;
       })}
-      <a className="course-map__attribution" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">© OpenStreetMap</a>
+      <a className="course-map__attribution" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">© OpenStreetMap contributors</a>
     </> : <p className="course-map__unavailable">지도에 표시할 장소 좌표가 없어요.</p>}
     <ol className="course-live-region">{places.map((place) => <li key={place.id}>{place.name}</li>)}</ol>
   </div>;

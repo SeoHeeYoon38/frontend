@@ -45,9 +45,8 @@ function PolicyDetailPage() {
             {section.bullets && <ul>{section.bullets.map((bullet) => <li key={bullet}>{bullet}</li>)}</ul>}
           </S.PolicySection>
         ))}
-        <S.Contact>문의가 필요하신가요?<Link to={routes.feedback}>도틀로에 의견 보내기</Link></S.Contact>
+        <S.Contact>문의가 필요하신가요?<a href="mailto:contact.dotlo.team@gmail.com">contact.dotlo.team@gmail.com</a></S.Contact>
       </S.Document>
-      <S.HomeIndicator />
     </S.Page>
   );
 }

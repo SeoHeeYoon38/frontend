@@ -31,6 +31,9 @@ interface OptionalInfoSheetProps {
   onClose: () => void;
   onSave: (draft: TripDraft) => void;
 }
+
+const lodgingName = /호텔|모텔|호스텔|게스트하우스|여관|리조트|펜션|숙소|스위소텔|hotel|hostel|resort|inn|lodging|stay|suite/i;
+
 function OptionalInfoSheet({
   mode,
   draft,
@@ -58,7 +61,7 @@ function OptionalInfoSheet({
     draft.stays[0]?.id ?? null,
   );
   const [hotelQuery, setHotelQuery] = useState("");
-  const [isSearching, setIsSearching] = useState(false);
+  const [isSearching, setIsSearching] = useState(mode === "stay" && draft.stays.length === 0);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [pendingHotel, setPendingHotel] = useState<{
     placeId?: string;
@@ -116,12 +119,28 @@ function OptionalInfoSheet({
     const timer = window.setTimeout(() => {
       if (mode === "car") setSearchError("");
       void searchPlaces(Number(draft.tripId), query, controller.signal).then(
-        (results) => {
+        async (results) => {
           if (controller.signal.aborted) return;
           if (mode === "stay") {
-            setStaySearch(Array.isArray(results)
-              ? { query, results }
-              : { query, error: "숙소를 검색하지 못했어요. 다시 시도해 주세요." });
+            if (!Array.isArray(results)) {
+              setStaySearch({ query, error: "숙소를 검색하지 못했어요. 다시 시도해 주세요." });
+              return;
+            }
+            let lodgingResults = results;
+            if (query.length <= 6 && !lodgingName.test(query) &&
+              !results.some((place) => lodgingName.test(place.name))) {
+              try {
+                const hotels = await searchPlaces(Number(draft.tripId), `${query} 호텔`, controller.signal);
+                if (controller.signal.aborted) return;
+                if (Array.isArray(hotels) && hotels.length) {
+                  const seen = new Set(hotels.map((place) => place.placeId));
+                  lodgingResults = [...hotels, ...results.filter((place) => !seen.has(place.placeId))];
+                }
+              } catch {
+                if (controller.signal.aborted) return;
+              }
+            }
+            setStaySearch({ query, results: lodgingResults });
           } else {
             setRemotePlaces(results);
           }
@@ -692,7 +711,7 @@ function OptionalInfoSheet({
                 <img src={search} alt="" />
                 <input
                   aria-label="숙소 검색"
-                  placeholder="숙소 검색"
+                  placeholder="숙소 이름 또는 지역 검색"
                   value={hotelQuery}
                   onChange={(event) => {
                     setHotelQuery(event.target.value);

@@ -49,6 +49,7 @@ export const SkipButton = styled.button`
 
 export const MethodSkipButton = styled.button`
   width: 100%; min-height: 54px; margin-top: auto; border-radius: 14px;
+  display: grid; place-items: center; text-align: center;
   color: #8a8a8e; background: #f3f5fa; font-size: 15px; font-weight: 700;
 `;
 
