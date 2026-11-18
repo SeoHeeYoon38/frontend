@@ -14,7 +14,7 @@ export function generateItinerary(tripId: number, signal?: AbortSignal) {
   return apiRequest<GeneratedItineraryResponse>(`/api/trips/${tripId}/itineraries/generate`, {
     method: "POST",
     signal,
-    timeoutMs: 180_000,
+    timeoutMs: 195_000,
   });
 }
 

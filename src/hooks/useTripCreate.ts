@@ -15,7 +15,8 @@ import { createGeneratedTrip, saveMockTrip } from "../data/mocks/mockTripService
 import { serverTripPlanPath, tripPlanPath } from "../utils/navigation";
 import { createRequestLock } from "../utils/requestLock";
 import { isServerTripId, tripDraftToApiInput } from "../api/adapters";
-import { generateItinerary } from "../api/itineraries";
+import { generateItinerary, getLatestItinerary } from "../api/itineraries";
+import { ApiError } from "../api/client";
 import { isApiEnabled } from "../api/config";
 import { hasAuthSession } from "../api/tokenStorage";
 import { confirmTrip, createTrip as createApiTrip, updateTrip as updateApiTrip } from "../api/trips";
@@ -23,6 +24,47 @@ import { saveFlights, saveRental, saveStays } from "../api/reservations";
 import type { ReservationResponse, TripResponse } from "../api/types";
 import { applyReservationsToDraft } from "../api/reservationAdapters";
 import { apiTripToDraft } from "../utils/serverTrip";
+import { isNewGeneratedItinerary } from "../utils/itineraryGeneration";
+
+interface GenerationAttempt {
+  previousVersion: number;
+  startedAt: number;
+}
+
+const generationAttemptKey = (tripId: number) => `dotlo:generation-attempt:${tripId}`;
+
+function readGenerationAttempt(tripId: number): GenerationAttempt | null {
+  try {
+    const stored = sessionStorage.getItem(generationAttemptKey(tripId));
+    if (!stored) return null;
+    const attempt = JSON.parse(stored) as GenerationAttempt;
+    return Number.isInteger(attempt.previousVersion) && Number.isFinite(attempt.startedAt)
+      ? attempt : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveGenerationAttempt(tripId: number, attempt: GenerationAttempt) {
+  try { sessionStorage.setItem(generationAttemptKey(tripId), JSON.stringify(attempt)); } catch { /* 저장소를 사용할 수 없는 브라우저 */ }
+}
+
+function clearGenerationAttempt(tripId: number) {
+  try { sessionStorage.removeItem(generationAttemptKey(tripId)); } catch { /* 저장소를 사용할 수 없는 브라우저 */ }
+}
+
+async function latestItineraryOrNone(tripId: number, signal: AbortSignal) {
+  try {
+    return await getLatestItinerary(tripId, signal);
+  } catch (reason) {
+    if (reason instanceof ApiError && reason.status === 404) return null;
+    throw reason;
+  }
+}
+
+function mayHaveFinishedOnServer(reason: unknown) {
+  return reason instanceof TypeError || reason instanceof ApiError && [408, 502, 503, 504].includes(reason.status);
+}
 
 function initialDraft(
   trip?: TripResponse,
@@ -185,23 +227,62 @@ function useTripCreate(
     try {
       if (isApiEnabled() && hasAuthSession()) {
         if (!isServerTripId(draft.tripId)) throw new Error("여행 정보를 먼저 저장해 주세요.");
-        const result = await generateItinerary(Number(draft.tripId), controller.signal);
-        if (controller.signal.aborted) return;
-        const confirmation = await confirmTrip(Number(draft.tripId), controller.signal).catch(() => null);
-        if (controller.signal.aborted) return;
-        completed = true;
-        try {
-          sessionStorage.removeItem(DRAFT_KEY);
-        } catch {
-          // 저장소를 사용할 수 없어도 생성한 일정으로 이동합니다.
+        const tripId = Number(draft.tripId);
+        const finish = async (excludedPlaceIds?: string[]) => {
+          clearGenerationAttempt(tripId);
+          const confirmation = await confirmTrip(tripId, controller.signal).catch(() => null);
+          if (controller.signal.aborted) return;
+          completed = true;
+          try {
+            sessionStorage.removeItem(DRAFT_KEY);
+          } catch {
+            // 저장소를 사용할 수 없어도 생성한 일정으로 이동합니다.
+          }
+          navigate(serverTripPlanPath("generated", draft.tripId), {
+            replace: true,
+            state: { excludedPlaceIds, confirmation },
+          });
+        };
+
+        const pending = readGenerationAttempt(tripId);
+        if (pending) {
+          const latest = await latestItineraryOrNone(tripId, controller.signal);
+          if (isNewGeneratedItinerary(latest, pending.previousVersion)) {
+            await finish();
+            return;
+          }
+          if (Date.now() - pending.startedAt < 5 * 60_000) {
+            setError("서버에서 일정 생성 결과를 확인 중이에요. 잠시 후 다시 누르면 새 요청 없이 결과를 확인해요.");
+            return;
+          }
+          clearGenerationAttempt(tripId);
         }
-        navigate(serverTripPlanPath("generated", draft.tripId), {
-          replace: true,
-          state: {
-            excludedPlaceIds: result.excludedPlaceIds,
-            confirmation,
-          },
-        });
+
+        const previous = await latestItineraryOrNone(tripId, controller.signal);
+        const attempt: GenerationAttempt = { previousVersion: previous?.version ?? 0, startedAt: Date.now() };
+        saveGenerationAttempt(tripId, attempt);
+        try {
+          const result = await generateItinerary(tripId, controller.signal);
+          if (controller.signal.aborted) return;
+          await finish(result.excludedPlaceIds);
+        } catch (reason) {
+          if (controller.signal.aborted) return;
+          if (mayHaveFinishedOnServer(reason)) {
+            try {
+              const latest = await latestItineraryOrNone(tripId, controller.signal);
+              if (isNewGeneratedItinerary(latest, attempt.previousVersion)) {
+                await finish();
+                return;
+              }
+            } catch {
+              // 결과 조회도 실패하면 다음 확인 때 같은 생성 요청을 보내지 않습니다.
+            }
+            setError("생성 결과를 아직 확인하지 못했어요. 잠시 후 다시 누르면 새 요청 없이 결과를 확인해요.");
+            return;
+          }
+          clearGenerationAttempt(tripId);
+          throw reason;
+        }
         return;
       }
       for (let attempt = 0; attempt < 3; attempt++) {
