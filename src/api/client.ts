@@ -77,7 +77,12 @@ async function refreshTokens(): Promise<AuthTokens> {
   const current = getAuthTokens();
   if (!current) throw new ApiError(401, "LOGIN_REQUIRED", "로그인이 필요합니다.");
 
-  refreshRequest = (async () => {
+  const refreshOnce = async (): Promise<AuthTokens> => {
+    // Refresh tokens are single use. Another tab may have rotated this one already.
+    const latest = getAuthTokens();
+    if (!latest) throw new ApiError(401, "LOGIN_REQUIRED", "로그인이 필요합니다.");
+    if (latest.refreshToken !== current.refreshToken) return latest;
+
     const response = await fetch(`${apiBaseUrl}/api/auth/refresh`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
@@ -85,14 +90,20 @@ async function refreshTokens(): Promise<AuthTokens> {
     });
     const body = await readResponse(response);
     if (!response.ok) {
-      clearAuthTokens();
+      const rotated = getAuthTokens();
+      if (rotated && rotated.refreshToken !== current.refreshToken) return rotated;
+      if ([400, 401, 403].includes(response.status)) clearAuthTokens();
       throw apiError(response, body);
     }
     const tokens = body as AuthTokens;
     saveAuthTokens(tokens);
     console.info("[auth] refresh confirmed by server");
     return tokens;
-  })().finally(() => {
+  };
+
+  refreshRequest = (typeof navigator !== "undefined" && navigator.locks
+    ? navigator.locks.request("dotlo-auth-refresh", refreshOnce)
+    : refreshOnce()).finally(() => {
     refreshRequest = null;
   });
 
@@ -134,7 +145,7 @@ export async function apiRequest<T>(
     const body = await readResponse(response);
 
     if (response.status === 401 && auth && retryAuth && getAuthTokens()) {
-      await refreshTokens();
+      if (getAccessToken() === accessToken) await refreshTokens();
       return apiRequest<T>(path, {
         ...init,
         auth,

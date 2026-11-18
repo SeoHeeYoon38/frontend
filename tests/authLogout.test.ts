@@ -112,3 +112,51 @@ test("진행 중인 토큰 재발급이 끝난 뒤 갱신된 토큰으로 로그
     await server.close();
   }
 });
+
+test("다른 탭이 토큰을 먼저 갱신하면 이전 토큰의 실패가 새 로그인을 지우지 않는다", async () => {
+  const server = await createServer({ envDir: false, define: {
+    "import.meta.env.VITE_API_MODE": JSON.stringify("live"),
+    "import.meta.env.VITE_API_BASE_URL": JSON.stringify("https://example.test"),
+  }, server: { middlewareMode: true, hmr: false }, appType: "custom", logLevel: "error" });
+  const previousWindow = Object.getOwnPropertyDescriptor(globalThis, "window");
+  const previousFetch = globalThis.fetch;
+  const storage = new Map<string, string>();
+  Object.defineProperty(globalThis, "window", { configurable: true, value: {
+    location: { origin: "https://example.test" },
+    localStorage: {
+      getItem: (key: string) => storage.get(key) ?? null,
+      setItem: (key: string, value: string) => storage.set(key, value),
+      removeItem: (key: string) => storage.delete(key),
+    },
+    setTimeout, clearTimeout,
+  } });
+  const sent: string[] = [];
+  try {
+    const client = await server.ssrLoadModule("/src/api/client.ts");
+    const tokens = await server.ssrLoadModule("/src/api/tokenStorage.ts");
+    tokens.saveAuthTokens({ accessToken: "access-old", refreshToken: "refresh-old" });
+    globalThis.fetch = async (input, init) => {
+      const path = String(input);
+      if (path.endsWith("/api/users/me")) {
+        const authorization = init?.headers instanceof Headers ? init.headers.get("Authorization") : null;
+        sent.push(String(authorization));
+        return authorization === "Bearer access-new"
+          ? new Response(JSON.stringify({ id: 7 }), { status: 200, headers: { "Content-Type": "application/json" } })
+          : new Response(JSON.stringify({ code: "INVALID_TOKEN" }), { status: 401, headers: { "Content-Type": "application/json" } });
+      }
+      assert.equal(path, "https://example.test/api/auth/refresh");
+      sent.push(JSON.parse(String(init?.body)).refreshToken);
+      tokens.saveAuthTokens({ accessToken: "access-new", refreshToken: "refresh-new" });
+      return new Response(JSON.stringify({ code: "INVALID_TOKEN" }), { status: 401, headers: { "Content-Type": "application/json" } });
+    };
+
+    assert.deepEqual(await client.apiRequest("/api/users/me"), { id: 7 });
+    assert.deepEqual(sent, ["Bearer access-old", "refresh-old", "Bearer access-new"]);
+    assert.deepEqual(tokens.getAuthTokens(), { accessToken: "access-new", refreshToken: "refresh-new" });
+  } finally {
+    globalThis.fetch = previousFetch;
+    if (previousWindow) Object.defineProperty(globalThis, "window", previousWindow);
+    else Reflect.deleteProperty(globalThis, "window");
+    await server.close();
+  }
+});
