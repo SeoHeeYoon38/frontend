@@ -163,6 +163,9 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
   const days = data?.itinerary?.validation.days ?? [];
   const imported = data?.itinerary?.source === "COURSE_ADD" ||
     data?.history.some((item) => item.source === "COURSE_ADD") || state?.courseImported === true;
+  const firstItinerarySource = data?.history.find((item) => item.version === 1)?.source ??
+    (data?.itinerary?.version === 1 ? data.itinerary.source : undefined);
+  const manuallyCreated = !imported && firstItinerarySource === "MANUAL_EDIT";
   const importedPlaceId = data?.itinerary?.draft.days.flatMap((item) => item.visits)[0]?.placeId;
 
   useEffect(() => {
@@ -389,7 +392,7 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
             <div className="course-hero__scrim" />
             <nav className="course-navigation" aria-label="코스 화면 탐색">
               <Link to={backPath} aria-label="뒤로 가기"><img src={backIcon} alt="" /></Link>
-              <strong>{imported ? "내 여행" : shared ? "함께하는 여행" : "AI 여행 코스"}</strong>
+              <strong>{imported ? "내 여행" : shared ? "함께하는 여행" : manuallyCreated ? "내 일정" : "AI 여행 코스"}</strong>
               {shared && (
                 <Link to={tripCommunityPath(origin, undefined, tripId, activeDay + 1)} aria-label="함께하는 여행 채팅">
                   <img src={chatIcon} alt="" />
@@ -440,7 +443,7 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
           </RegisterBanner>}
           {data && summary && (
             <section className="course-section">
-              {!imported && <section className="ai-summary" aria-label="도틀로 AI 일정 구성 설명">
+              {!imported && !manuallyCreated && <section className="ai-summary" aria-label="도틀로 AI 일정 구성 설명">
                 <img src={aiAvatar} alt="도틀로 AI" />
                 <div className="ai-summary__bubble">
                   <b>도틀로 AI의 일정 구성</b>
@@ -633,7 +636,7 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
             </section>
           )}
         </div>
-        {data?.itinerary && (
+        {data?.itinerary && (!manuallyCreated || shared) && (
           <div className="course-cta">
             {shared ? (
               <Link to={tripCommunityPath(origin, undefined, tripId, activeDay + 1)}>AI 수정 요청</Link>
