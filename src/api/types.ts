@@ -160,6 +160,7 @@ export interface ItineraryVisitInput {
   placeId: string;
   stayMinutes?: number;
   fixedStart?: string;
+  travelMode?: "WALK" | "TRANSIT" | "DRIVE";
 }
 
 export interface ItineraryDayInput {

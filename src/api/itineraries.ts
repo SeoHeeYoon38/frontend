@@ -1,4 +1,4 @@
-import { apiRequest } from "./client";
+import { apiRequest, queryString } from "./client";
 import type {
   GeneratedItineraryResponse,
   ItineraryEditPreview,
@@ -8,7 +8,29 @@ import type {
   ItineraryVersionView,
   ValidationResult,
   PlaceDaySuggestion,
+  TravelLeg,
 } from "./types";
+
+export type TravelOption = Pick<TravelLeg, "mode" | "minutes" | "distanceMeters"> & { estimated: boolean };
+
+export function getTravelOptions(
+  tripId: number,
+  from: { latitude: number; longitude: number },
+  to: { latitude: number; longitude: number },
+  departAt?: string,
+  signal?: AbortSignal,
+) {
+  return apiRequest<TravelOption[]>(
+    `/api/trips/${tripId}/travel-options${queryString({
+      fromLat: from.latitude,
+      fromLng: from.longitude,
+      toLat: to.latitude,
+      toLng: to.longitude,
+      departAt,
+    })}`,
+    { signal },
+  );
+}
 
 export function generateItinerary(tripId: number, signal?: AbortSignal) {
   return apiRequest<GeneratedItineraryResponse>(`/api/trips/${tripId}/itineraries/generate`, {

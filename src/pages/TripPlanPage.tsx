@@ -1,5 +1,6 @@
 import { useEffect } from "react";
-import { useLocation, useNavigate } from "react-router";
+import { useLocation, useNavigate, useOutletContext } from "react-router";
+import type { UserResponse } from "../api/auth";
 import AiEditLoading from "../components/course-completion/AiEditLoading";
 import AiEditSheet from "../components/course-completion/AiEditSheet";
 import CourseHero from "../components/course-completion/CourseHero";
@@ -26,11 +27,12 @@ import {
 
 function TripPlanPage() {
   const location = useLocation();
+  const account = useOutletContext<UserResponse | undefined>();
   const params = new URLSearchParams(location.search);
   const serverTripId = params.get("tripId");
   if (serverTripId !== null) {
     return isServerTripId(serverTripId)
-      ? <ServerTripPlan key={serverTripId} tripId={Number(serverTripId)} />
+      ? <ServerTripPlan key={`${account?.id ?? 0}:${serverTripId}`} tripId={Number(serverTripId)} userId={account?.id ?? 0} />
       : <main className="course-page"><p role="alert">여행 주소를 확인해 주세요.</p></main>;
   }
   const legacyTrip = readPlanOrigin(location.search) === "generated"

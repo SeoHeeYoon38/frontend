@@ -32,6 +32,7 @@ import TripTimeline from "../components/course-completion/TripTimeline";
 import PlaceDetail from "../components/course-completion/PlaceDetail";
 import AddItineraryPlaceSheet from "../components/course-completion/AddItineraryPlaceSheet";
 import TravelModeSheet from "../components/course-completion/TravelModeSheet";
+import AiEditSheet from "../components/course-completion/AiEditSheet";
 import type { TravelLeg } from "../api/types";
 import { travelModeLabels } from "../utils/trip";
 import TripSummary from "../components/course-completion/TripSummary";
@@ -62,6 +63,10 @@ interface TripPlanData {
   interactions?: TripInteractions;
 }
 
+// Keep the last server response while moving between the course and chat screens.
+// A fresh request still runs on every mount, so this never becomes the source of truth.
+const recentPlans = new Map<string, TripPlanData>();
+
 const sourceLabels: Record<ItineraryVersionSummary["source"], string> = {
   AI_GENERATED: "AI 일정 생성",
   AI_EDITED: "AI 수정",
@@ -82,9 +87,17 @@ const categoryLabels: Record<string, string> = {
   OTHER: "장소",
 };
 
-function ServerTripPlan({ tripId }: { tripId: number }) {
+function travelDeparture(arrival: string, minutes: number) {
+  const instant = Date.parse(`${arrival.slice(0, 19)}Z`);
+  return Number.isFinite(instant) && Number.isFinite(minutes)
+    ? new Date(instant - minutes * 60_000).toISOString().slice(0, 19)
+    : undefined;
+}
+
+function ServerTripPlan({ tripId, userId }: { tripId: number; userId: number }) {
   const { search, state } = useLocation();
-  const [data, setData] = useState<TripPlanData>();
+  const cacheKey = `${userId}:${tripId}`;
+  const [data, setData] = useState<TripPlanData | undefined>(() => recentPlans.get(cacheKey));
   const [error, setError] = useState("");
   const [activeDay, setActiveDay] = useState(() => readPlanDay(search) - 1);
   const [mapExpanded, setMapExpanded] = useState(false);
@@ -96,13 +109,18 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
   const [editing, setEditing] = useState(false);
   const [showAddPlace, setShowAddPlace] = useState(false);
   const [showAiEdit, setShowAiEdit] = useState(false);
-  const [travelModes, setTravelModes] = useState<Record<string, TravelLeg["mode"]>>({});
   const [travelSelection, setTravelSelection] = useState<{
-    key: string;
+    date: string;
+    targetItemId: string;
     from: string;
     to: string;
+    fromCoordinate?: { latitude: number; longitude: number };
+    toCoordinate?: { latitude: number; longitude: number };
+    departAt?: string;
     travel: TravelLeg;
   }>();
+  const [travelSaving, setTravelSaving] = useState(false);
+  const [travelError, setTravelError] = useState("");
   const [editMessage, setEditMessage] = useState("");
   const [editPreview, setEditPreview] = useState<ItineraryEditPreview>();
   const [editPending, setEditPending] = useState(false);
@@ -128,15 +146,13 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
 
     async function loadPlan() {
       try {
-        const trip = await getTrip(tripId, signal);
-        if (signal.aborted) return;
-        const itinerary = await getLatestItinerary(tripId, signal).catch((reason: unknown) => {
+        const [trip, itinerary] = await Promise.all([getTrip(tripId, signal), getLatestItinerary(tripId, signal).catch((reason: unknown) => {
           if (reason instanceof ApiError && reason.code === "ITINERARY_NOT_FOUND") return null;
           throw reason;
-        });
+        })]);
         if (signal.aborted) return;
-        const saved = itinerary ? await getSavedPlaces(tripId, signal) : undefined;
-        const [history, members, interactions] = await Promise.all([
+        const [saved, history, members, interactions] = await Promise.all([
+          itinerary ? getSavedPlaces(tripId, signal) : Promise.resolve(undefined),
           itinerary ? getItineraryHistory(tripId, signal).catch(() => []) : Promise.resolve([]),
           getTripMembers(tripId, signal),
           itinerary ? getTripInteractions(tripId, signal).catch(() => {
@@ -151,6 +167,10 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
         }
       } catch (reason) {
         if (signal.aborted) return;
+        if (reason instanceof ApiError && reason.code === "TRIP_NOT_FOUND") {
+          recentPlans.delete(cacheKey);
+          setData(undefined);
+        }
         setError(reason instanceof ApiError && reason.code === "TRIP_NOT_FOUND"
           ? "여행을 찾지 못했어요."
           : "여행 일정을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.");
@@ -159,7 +179,11 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
 
     void loadPlan();
     return () => controller.abort();
-  }, [tripId]);
+  }, [tripId, cacheKey]);
+
+  useEffect(() => {
+    if (data) recentPlans.set(cacheKey, data);
+  }, [data, cacheKey]);
 
   const summary = data && apiTripToSummary(data.trip);
   const days = data?.itinerary?.validation.days ?? [];
@@ -201,7 +225,7 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
   const movementModes = new Set(days.flatMap((item) => item.visits.map((visit) => visit.travel.mode)));
   const movementLabel = movementModes.size === 0
     ? "이동 정보 확인 중"
-    : [...movementModes].map((mode) => travelModeLabels[mode]).join("와 ");
+    : [...movementModes].map((mode) => travelModeLabels[mode]).join("·");
   const shared = (data?.members.length ?? 0) > 1;
   const memberFallbacks = [avatarBlue, avatarPurple, avatarYellow];
 
@@ -222,6 +246,30 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
   const reloadHistory = async () => {
     const history = await getItineraryHistory(tripId);
     setData((current) => current ? { ...current, history } : current);
+  };
+
+  const applyTravelMode = async (mode: TravelLeg["mode"], all: boolean) => {
+    if (!data?.itinerary || !travelSelection || travelSaving) return;
+    setTravelSaving(true);
+    setTravelError("");
+    try {
+      const days = data.itinerary.draft.days.map(({ date, visits }) => ({
+        date,
+        visits: visits.map((visit, index) =>
+          index > 0 && (all || (date === travelSelection.date && visit.itemId === travelSelection.targetItemId))
+            ? { ...visit, travelMode: mode }
+            : visit),
+      }));
+      const itinerary = await saveItinerary(tripId, days, data.itinerary.version);
+      setData((current) => current ? { ...current, itinerary } : current);
+      setTravelSelection(undefined);
+      setNotice("이동 수단을 저장했어요.");
+      void reloadHistory().catch(() => undefined);
+    } catch (reason) {
+      setTravelError(reason instanceof Error ? reason.message : "이동 수단을 저장하지 못했어요.");
+    } finally {
+      setTravelSaving(false);
+    }
   };
 
   const refreshInteractions = async () => {
@@ -282,6 +330,7 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
       setData((current) => current ? { ...current, itinerary } : current);
       setEditPreview(undefined);
       setEditMessage("");
+      setShowAiEdit(false);
       setActiveDay(0);
       setNotice("수정한 일정을 적용했어요.");
       await reloadHistory();
@@ -316,7 +365,6 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
       interactionRequest.current += 1;
       setData((current) => current ? restoredPlan(current, itinerary) : current);
       setEditPreview(undefined);
-      setTravelModes({});
       setTravelSelection(undefined);
       setPhotoPlace(undefined);
       setActiveDay(0);
@@ -440,8 +488,7 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
           </header>
         )}
         <div className="course-content">
-          {!data && <Link to={backPath}>여행 목록으로 돌아가기</Link>}
-          {error && <p role="alert">{error}</p>}
+          {!data && error && <div className="course-plan-error" role="alert"><p>{error}</p><Link to={backPath}>내 여행으로 돌아가기</Link></div>}
           {actionError && <p role="alert">{actionError}</p>}
           {notice && !imported && <p role="status">{notice}</p>}
           {inviteAccepted && summary && (
@@ -451,7 +498,7 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
               <button type="button" onClick={() => setInviteAccepted(false)}>닫기</button>
             </div>
           )}
-          {!data && !error && <p role="status">여행 일정을 불러오고 있어요.</p>}
+          {!data && !error && <p className="course-live-region" role="status">여행 일정을 불러오고 있어요.</p>}
           {data && summary && imported && !registrationComplete && <RegisterBanner>
             <span><img src={calendarIcon} alt="" /></span>
             <strong>여행 날짜와 동행을 알려주세요</strong>
@@ -513,20 +560,20 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
                   </div>
                   {day && (mapPlaces.length ? (
                     <>
-                      <CourseRouteMap places={mapPlaces} city={summary.city} day={activeDay + 1} schematic liveTiles={manuallyCreated} hideCaption={manuallyCreated} />
+                      <CourseRouteMap places={mapPlaces} city={summary.city} day={activeDay + 1} liveTiles />
                       <button type="button" className="course-inline-edit" onClick={() => setMapExpanded(true)}>지도 확대</button>
                     </>
                   ) : <p>이날 지도에 표시할 장소 좌표가 없어요.</p>)}
                   {mapExpanded && mapPlaces.length > 0 && (
                     <TripSheet title={`${activeDay + 1}일차 지도`} onClose={() => setMapExpanded(false)}>
-                      <CourseRouteMap places={mapPlaces} city={summary.city} day={activeDay + 1} schematic liveTiles={manuallyCreated} hideCaption={manuallyCreated} expanded />
+                      <CourseRouteMap places={mapPlaces} city={summary.city} day={activeDay + 1} liveTiles expanded />
                     </TripSheet>
                   )}
                    <TripTimeline day={activeDay + 1} shared={shared} onEdit={() => setEditing(true)} onOpenPlace={(itemId, placeId, name) => setPhotoPlace({ itemId, placeId, name })} visits={(day?.visits ?? []).map((visit, index, visits) => {
                     const place = placesById.get(visit.placeId);
                     const next = visits[index + 1];
-                    const key = next && JSON.stringify([day?.date, visit.itemId, next.itemId]);
-                    const mode = key && next ? travelModes[key] ?? next.travel.mode : undefined;
+                    const mode = next?.travel.mode;
+                    const nextPlace = next && placesById.get(next.placeId);
                     return {
                       id: visit.itemId,
                       name: place?.name,
@@ -535,17 +582,23 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
                       timing: `${timeLabel(visit.start)} – ${timeLabel(visit.end)}`,
                       category: categoryLabels[place?.category ?? "OTHER"],
                       reactions: data.interactions?.items.find((item) => item.itemId === visit.itemId),
-                      connection: next && key && mode && (
+                      connection: next && mode && (
                         <div className="travel-mode-connection">
                           <button type="button" aria-haspopup="dialog" onClick={() => setTravelSelection({
-                            key,
+                            date: day!.date,
+                            targetItemId: next.itemId,
                             from: place?.name ?? "이전 장소",
-                            to: placesById.get(next.placeId)?.name ?? "다음 장소",
+                            to: nextPlace?.name ?? "다음 장소",
+                            fromCoordinate: typeof place?.latitude === "number" && typeof place.longitude === "number"
+                              ? { latitude: place.latitude, longitude: place.longitude } : undefined,
+                            toCoordinate: typeof nextPlace?.latitude === "number" && typeof nextPlace.longitude === "number"
+                              ? { latitude: nextPlace.latitude, longitude: nextPlace.longitude } : undefined,
+                            departAt: travelDeparture(next.arrival, next.travel.minutes),
                             travel: next.travel,
                           })}>
-                            {travelModeLabels[mode]}{mode === next.travel.mode && ` ${next.travel.minutes}분`} <img src={triangleIcon} alt="" />
+                            {travelModeLabels[mode]} {next.travel.minutes}분 <img src={triangleIcon} alt="" />
                           </button>
-                          {mode === next.travel.mode && <small>{(next.travel.distanceMeters / 1000).toFixed(1)}km</small>}
+                          <small>{(next.travel.distanceMeters / 1000).toFixed(1)}km</small>
                         </div>
                       ),
                     };
@@ -553,19 +606,12 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
                   {travelSelection && (
                     <TravelModeSheet
                       {...travelSelection}
-                      current={travelModes[travelSelection.key] ?? travelSelection.travel.mode}
-                      onClose={() => setTravelSelection(undefined)}
-                      onApply={(mode, all) => {
-                        setTravelModes((current) => ({
-                          ...current,
-                          ...(all ? Object.fromEntries(days.flatMap(({ date, visits }) =>
-                            visits.slice(1).map((visit, index) => [
-                              JSON.stringify([date, visits[index].itemId, visit.itemId]), mode,
-                            ]),
-                          )) : { [travelSelection.key]: mode }),
-                        }));
-                        setTravelSelection(undefined);
-                      }}
+                      tripId={tripId}
+                      current={travelSelection.travel.mode}
+                      saving={travelSaving}
+                      error={travelError}
+                      onClose={() => { setTravelSelection(undefined); setTravelError(""); }}
+                      onApply={(mode, all) => void applyTravelMode(mode, all)}
                     />
                   )}
                   <button type="button" className="add-place-button" disabled={!day || editPending} onClick={() => setShowAddPlace(true)}><img src={addIcon} alt="" /> 장소 추가</button>
@@ -591,43 +637,9 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
                       }}
                     />
                   )}
-                  <section id="ai-edit-section" hidden={!showAiEdit} aria-labelledby="ai-edit-title">
-                    <h2 id="ai-edit-title">AI로 일정 수정하기</h2>
-                    <textarea
-                      value={editMessage}
-                      maxLength={500}
-                      onChange={(event) => setEditMessage(event.target.value)}
-                      placeholder="예: 2일차 점심을 빼고 오사카성을 넣어줘"
-                      aria-label="AI 일정 수정 요청"
-                    />
-                    <button
-                      type="button"
-                      disabled={!editMessage.trim() || editPending}
-                      onClick={() => void requestEdit()}
-                    >
-                      {editPending && !editPreview ? "수정안을 만들고 있어요" : "수정안 확인하기"}
-                    </button>
-                    {editPreview && (
-                      <div>
-                        <h3>수정안</h3>
-                        <p>{editPreview.reason}</p>
-                        <p>
-                          변경 {editPreview.diff.changes.length}건
-                          {editPreview.diff.reorderedDays.length > 0 &&
-                            ` · 순서 변경 ${editPreview.diff.reorderedDays.length}일`}
-                        </p>
-                        <button type="button" disabled={editPending} onClick={() => void applyEdit()}>
-                          {editPending ? "적용하고 있어요" : "이 일정 적용하기"}
-                        </button>
-                        <button type="button" disabled={editPending} onClick={() => setEditPreview(undefined)}>
-                          기존 일정 유지
-                        </button>
-                      </div>
-                    )}
-                  </section>
                   {data.history.length > 0 && (
-                    <section aria-labelledby="history-title">
-                      <h2 id="history-title">일정 변경 이력</h2>
+                    <details className="course-history">
+                      <summary>일정 변경 이력</summary>
                       <ul>
                         {data.history.map((item) => (
                           <li key={item.version}>
@@ -640,7 +652,7 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
                           </li>
                         ))}
                       </ul>
-                    </section>
+                    </details>
                   )}
                 </>
               ) : (
@@ -657,10 +669,31 @@ function ServerTripPlan({ tripId }: { tripId: number }) {
             {shared ? (
               <Link to={tripCommunityPath(origin, undefined, tripId, activeDay + 1)}>AI 수정 요청</Link>
             ) : (
-              <button type="button" aria-expanded={showAiEdit} aria-controls="ai-edit-section" onClick={() => setShowAiEdit((open) => !open)}>AI 수정 요청</button>
+              <button type="button" onClick={() => setShowAiEdit(true)}>AI 수정 요청</button>
             )}
           </div>
         )}
+        {showAiEdit && !editPreview && <AiEditSheet
+          value={editMessage}
+          onChange={setEditMessage}
+          onClose={() => setShowAiEdit(false)}
+          onSubmit={() => void requestEdit()}
+          pending={editPending}
+          error={actionError}
+        />}
+        {showAiEdit && editPreview && <TripSheet title="수정안 확인" variant="course" closeDisabled={editPending}
+          onClose={() => { setEditPreview(undefined); setShowAiEdit(false); }}
+          footer={<button className="course-sheet__primary" type="button" disabled={editPending} onClick={() => void applyEdit()}>
+            {editPending ? "일정에 적용하고 있어요" : "이 일정 적용하기"}
+          </button>}>
+          <div className="course-edit-preview">
+            <p>{editPreview.reason}</p>
+            <span>변경 {editPreview.diff.changes.length}건
+              {editPreview.diff.reorderedDays.length > 0 && ` · 순서 변경 ${editPreview.diff.reorderedDays.length}일`}</span>
+            {actionError && <p role="alert">{actionError}</p>}
+            <button type="button" disabled={editPending} onClick={() => { setEditPreview(undefined); setShowAiEdit(false); }}>기존 일정 유지</button>
+          </div>
+        </TripSheet>}
         {registrationOpen && data && <ImportedTripRegistration
           trip={data.trip}
           onClose={() => setRegistrationOpen(false)}
