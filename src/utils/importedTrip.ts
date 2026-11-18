@@ -12,6 +12,16 @@ export interface ImportedTripRegistration {
 export const importedTripRegistrationKey = (courseId: string) =>
   `dotlo:imported-course:${courseId}:registration`;
 
+export function hasRegisteredImportedTrip(tripId: number) {
+  try { return localStorage.getItem(`dotlo:imported-trip-registered:${tripId}`) === "true"; }
+  catch { return false; }
+}
+
+export function markImportedTripRegistered(tripId: number) {
+  try { localStorage.setItem(`dotlo:imported-trip-registered:${tripId}`, "true"); }
+  catch { /* The server retains the saved trip info even if storage is unavailable. */ }
+}
+
 export function addDays(date: string, days: number): string {
   const value = new Date(`${date}T12:00:00`);
   value.setDate(value.getDate() + days);
@@ -32,6 +42,18 @@ export function formatTripDateRange(startDate: string, endDate: string): string 
   if (!startDate || !endDate) return "날짜 미정";
   const start = new Date(`${startDate}T12:00:00`);
   return `${start.getFullYear()}.${formatMonthDay(startDate)} – ${formatMonthDay(endDate)}`;
+}
+
+export function formatTripDetailDateRange(startDate: string, endDate: string): string {
+  if (!validDate(startDate) || !validDate(endDate)) return "날짜 미정";
+  const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
+  const format = (value: string, includeYear: boolean) => {
+    const weekday = weekdays[new Date(value + "T12:00:00").getDay()];
+    return `${(includeYear ? value : value.slice(5)).replaceAll("-", ".")} (${weekday})`;
+  };
+  const start = format(startDate, true);
+  if (startDate === endDate) return start;
+  return `${start} - ${format(endDate, startDate.slice(0, 4) !== endDate.slice(0, 4))}`;
 }
 
 export function courseDateLabels(startDate: string, dayCount: number): string[] {

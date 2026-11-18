@@ -5,6 +5,7 @@ import * as S from "./TravelerCourseOverlay.styled";
 import { PlaceThumbnail } from "../common/PlacePhoto";
 import CourseRouteMap, { type RouteMapPlace } from "../course-completion/CourseRouteMap";
 import { isMapCoordinate } from "../../utils/googleMaps";
+import { dateLabel } from "../../utils/trip";
 
 export interface CourseMapStop extends RouteMapPlace {
   category?: string;
@@ -18,7 +19,7 @@ export interface CourseMapStop extends RouteMapPlace {
 interface CourseMapScreenProps {
   title: string;
   city: string;
-  days: { label: string; places: CourseMapStop[] }[];
+  days: { label: string; date?: string; places: CourseMapStop[] }[];
   tripId?: number;
   photoCourseId?: number;
   sampleMap?: string;
@@ -86,7 +87,12 @@ export default function CourseMapScreen({ title, city, days, tripId, photoCourse
         <div><button type="button" aria-label="코스 상세로 돌아가기" onClick={onBack}><img src={backIcon} alt="" /></button><h1>{title}</h1><span /></div>
         <S.MapTabs aria-label="지도 일차 선택">
           <button type="button" aria-pressed={activeDay === undefined} onClick={() => chooseDay()}>전체</button>
-          {days.map(({ label }, index) => <button key={label} type="button" aria-pressed={activeDay === index} onClick={() => chooseDay(index)}>{label}</button>)}
+          {days.map(({ label, date }, index) => (
+            <button key={label} type="button" aria-pressed={activeDay === index} onClick={() => chooseDay(index)}>
+              <strong>{label}</strong>
+              {date && <small>{dateLabel(date).split(" ")[0]}</small>}
+            </button>
+          ))}
         </S.MapTabs>
       </S.MapHeader>
       <S.MapCanvas $selected={Boolean(selected)}>

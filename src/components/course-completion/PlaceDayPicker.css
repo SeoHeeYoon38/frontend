@@ -9,3 +9,24 @@
 .place-day-picker small { color: #64636f; }
 .place-day-picker em { margin-left: auto; color: #7354e8; font-size: 12px; font-style: normal; white-space: nowrap; }
 .community-chat .place-day-picker > button { color: #fff; }
+.place-day-picker > button[data-pending] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #e9e9ed;
+  color: #5c5c63;
+  opacity: 1;
+}
+.place-day-picker__spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #d3d5e0;
+  border-top-color: #4e95b0;
+  border-radius: 50%;
+  animation: place-day-spin 700ms linear infinite;
+}
+@keyframes place-day-spin { to { transform: rotate(1turn); } }
+@media (prefers-reduced-motion: reduce) {
+  .place-day-picker__spinner { animation: none; }
+}

@@ -40,6 +40,19 @@ export function googleMapsViewUrl(view: MapCoordinate & { zoom: number }) {
   return `https://www.google.com/maps/@?${params}`;
 }
 
+export function googleMapsDirectionsUrl(points: MapCoordinate[]) {
+  // Maps URLs in mobile browsers support up to three intermediate stops.
+  if (points.length < 2 || points.length > 5) return undefined;
+  const coordinates = points.map((point) => `${point.latitude},${point.longitude}`);
+  const params = new URLSearchParams({
+    api: "1",
+    origin: coordinates[0],
+    destination: coordinates[coordinates.length - 1],
+  });
+  if (coordinates.length > 2) params.set("waypoints", coordinates.slice(1, -1).join("|"));
+  return `https://www.google.com/maps/dir/?${params}`;
+}
+
 export function googleMapsEmbedUrl(view: MapCoordinate & { zoom: number }) {
   const params = new URLSearchParams({
     ll: `${view.latitude},${view.longitude}`,

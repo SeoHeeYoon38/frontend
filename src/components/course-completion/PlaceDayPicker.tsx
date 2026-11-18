@@ -48,8 +48,9 @@ export default function PlaceDayPicker({ tripId, placeId, pending, onConfirm }: 
         </label>)}
       </fieldset>
       {suggestion.days.length === 0 && <p>추가할 날짜가 없어요. 여행 일정을 다시 확인해 주세요.</p>}
-      <Primary type="button" disabled={pending || selectedDay === undefined}
+      <Primary type="button" disabled={pending || selectedDay === undefined} data-pending={pending || undefined}
         onClick={() => { if (selectedDay !== undefined) void onConfirm(selectedDay); }}>
+        {pending && <span className="place-day-picker__spinner" aria-hidden="true" />}
         {pending ? "AI가 장소를 넣고 있어요" : selectedDay === undefined ? "날짜를 선택해 주세요" : `${selectedDay}일차에 넣기`}
       </Primary>
     </>}

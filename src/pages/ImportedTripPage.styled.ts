@@ -78,14 +78,15 @@ export const RegisterBanner = styled.div`
   grid-template-columns: 32px 1fr auto;
   gap: 10px;
   align-items: center;
-  padding: 12px;
+  min-height: 60px;
+  padding: 12px 13px;
   border-radius: 16px;
   background: #ddf7ff;
 
   > span { display: grid; width: 32px; height: 32px; place-items: center; border-radius: 50%; background: #fff; }
   img { width: 20px; height: 20px; }
   strong { font-size: 13px; line-height: 18px; }
-  button { padding: 8px 12px; border-radius: 99px; color: #fff; background: #090738; font-size: 13px; font-weight: 700; }
+  button { min-height: 34px; padding: 8px 12px; border: 0; border-radius: 99px; color: #fff; background: #090738; font-size: 13px; line-height: 18px; font-weight: 700; text-align: center; white-space: nowrap; cursor: pointer; }
 `;
 
 export const Section = styled.section`

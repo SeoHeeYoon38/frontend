@@ -7,14 +7,24 @@ import inviteBadgeIcon from "../assets/course-settings-details/member-add.svg";
 import pinIcon from "../assets/course-settings-details/menu-pin.svg";
 import cameraIcon from "../assets/course-settings-details/menu-camera.svg";
 import daysIcon from "../assets/course-settings-details/menu-days.svg";
+import originIcon from "../assets/course-settings-details/menu-origin.svg";
+import copyIcon from "../assets/course-settings-details/menu-copy.svg";
 import deleteIcon from "../assets/course-settings-details/menu-delete.svg";
 import notificationIcon from "../assets/course-settings-details/menu-bell.svg";
 import chevronIcon from "../assets/figma/settings-chevron.svg";
-import { isServerTripId } from "../api/adapters";
+import { courseTitle, isServerTripId } from "../api/adapters";
+import { ApiError } from "../api/client";
+import { getCourses } from "../api/courses";
+import { getLatestItinerary, saveItinerary } from "../api/itineraries";
 import { getTripMembers, leaveTrip } from "../api/members";
-import { deleteTrip, getTrip, updateTrip } from "../api/trips";
-import type { MemberResponse, TripResponse } from "../api/types";
-import { apiTripToSummary } from "../utils/serverTrip";
+import { addSavedPlace, getSavedPlaces } from "../api/places";
+import { createTrip, deleteTrip, getTrip, updateTrip } from "../api/trips";
+import type { CourseSummaryResponse, ItineraryVersionView, MemberResponse, TripResponse } from "../api/types";
+import { apiTripToSummary, companionLabels } from "../utils/serverTrip";
+import { addDays, hasRegisteredImportedTrip, markImportedTripRegistered } from "../utils/importedTrip";
+import { travelModeLabels } from "../utils/trip";
+import { courseImportUncertain } from "../utils/courseImport";
+import TripInformationSheet from "../components/course-completion/TripInformationSheet";
 import CourseSettingsMenu from "../components/course-settings/CourseSettingsMenu";
 import ServerInviteSheet from "../components/course-settings/ServerInviteSheet";
 import CourseSettingsSheet from "../components/course-settings/CourseSettingsSheet";
@@ -22,7 +32,7 @@ import { CourseSettingsConfirmDialog, CourseSettingsDetailView } from "../compon
 import useCourseSettings from "../hooks/useCourseSettings";
 import { useEffect, useRef, useState } from "react";
 import * as S from "../components/course-settings/CourseSettings.styled";
-import { settingsBackPath } from "../utils/navigation";
+import { serverTripPlanPath, settingsBackPath, travelerCoursePath } from "../utils/navigation";
 import { readMockScenario } from "../utils/mockScenario";
 import { routes } from "../config/routes";
 import type { CourseSettingsDialog, CourseSettingsView } from "../types/courseSettings";
@@ -50,11 +60,15 @@ function ServerCourseSettings({ tripId }: { tripId: number }) {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showInvite, setShowInvite] = useState(() => new URLSearchParams(search).get("panel") === "invite");
   const [showShare, setShowShare] = useState(false);
-  const [dialog, setDialog] = useState<"delete" | "leave">();
+  const [dialog, setDialog] = useState<"delete" | "leave" | "clone">();
   const [actionError, setActionError] = useState("");
   const [pending, setPending] = useState(false);
   const [selectedCover, setSelectedCover] = useState(0);
   const [tripDays, setTripDays] = useState(1);
+  const [itinerary, setItinerary] = useState<ItineraryVersionView>();
+  const [originalCourse, setOriginalCourse] = useState<CourseSummaryResponse>();
+  const [registrationComplete, setRegistrationComplete] = useState(() => hasRegisteredImportedTrip(tripId));
+  const [cloneUncertain, setCloneUncertain] = useState(false);
   const actionPending = useRef(false);
 
   useEffect(() => {
@@ -88,6 +102,11 @@ function ServerCourseSettings({ tripId }: { tripId: number }) {
   const currentMember = members?.find((member) => member.me);
   const owner = currentMember?.role === "OWNER";
   const summary = trip && apiTripToSummary(trip);
+  const city = trip?.city;
+  const imported = itinerary?.source === "COURSE_ADD" || Boolean(originalCourse);
+  const needsRegistration = imported && !registrationComplete && trip?.companion === "ALONE";
+  const movement = new Set(itinerary?.validation.days.flatMap((day) => day.visits.map((visit) => visit.travel.mode)));
+  const movementLabel = [...movement].map((value) => travelModeLabels[value]).join(" · ");
   const {
     activeSheet,
     tripName,
@@ -111,6 +130,22 @@ function ServerCourseSettings({ tripId }: { tripId: number }) {
   } = useCourseSettings({ initialTripName: summary?.title ?? "여행" });
 
   useEffect(() => {
+    if (!city) return;
+    const controller = new AbortController();
+    const { signal } = controller;
+    void getLatestItinerary(tripId, signal).then((response) => {
+      if (!signal.aborted) setItinerary(response);
+    }).catch(() => {});
+    void getSavedPlaces(tripId, signal).then(async ({ places }) => {
+      const names = new Set(places.filter((place) => place.source === "POPULAR").flatMap((place) => place.listNames));
+      if (!names.size || signal.aborted) return;
+      const matches = (await getCourses(city, signal)).filter((course) => names.has(course.title));
+      if (!signal.aborted && matches.length === 1) setOriginalCourse(matches[0]);
+    }).catch(() => {});
+    return () => controller.abort();
+  }, [tripId, city]);
+
+  useEffect(() => {
     if (!trip) return;
     const start = new Date(`${trip.startDate}T00:00:00`);
     const end = new Date(`${trip.endDate}T00:00:00`);
@@ -122,7 +157,7 @@ function ServerCourseSettings({ tripId }: { tripId: number }) {
       : "먼저 참여한 멤버에게 방장이 넘어가고, 나는 여행에서 나가요."
     : "나간 뒤에는 여행을 볼 수 없어요. 다시 참여하려면 초대 링크가 필요해요.";
 
-  function openDialog(action: "delete" | "leave") {
+  function openDialog(action: "delete" | "leave" | "clone") {
     setActionError("");
     setDialog(action);
   }
@@ -132,13 +167,48 @@ function ServerCourseSettings({ tripId }: { tripId: number }) {
     actionPending.current = true;
     setPending(true);
     setActionError("");
+    let copyId: number | undefined;
     try {
+      if (dialog === "clone") {
+        if (!trip || !itinerary || cloneUncertain) return;
+        const copy = await createTrip({
+          city: trip.city, startDate: trip.startDate, endDate: trip.endDate,
+          companion: trip.companion, companionCount: trip.companionCount,
+        });
+        if (!Number.isSafeInteger(copy.id) || copy.id <= 0) {
+          throw new ApiError(502, "IMPORT_RESULT_UNKNOWN", "새 여행 주소를 확인하지 못했어요.");
+        }
+        copyId = copy.id;
+        const days = itinerary.draft.days.map(({ date, visits }) => ({
+          date,
+          visits: visits.map(({ placeId, stayMinutes, fixedStart, travelMode }) => ({ placeId, stayMinutes, fixedStart, travelMode })),
+        }));
+        const placeIds = new Set(days.flatMap((day) => day.visits.map((visit) => visit.placeId)));
+        for (const placeId of placeIds) await addSavedPlace(copyId, placeId);
+        await saveItinerary(copyId, days, null);
+        navigate(serverTripPlanPath("my-trips", String(copyId)), { replace: true });
+        return;
+      }
       let tripDeleted = dialog === "delete";
       if (tripDeleted) await deleteTrip(tripId);
       else tripDeleted = (await leaveTrip(tripId)).tripDeleted;
       navigate(`${routes.myTrips}?toast=${tripDeleted ? "trip-deleted" : "trip-left"}`, { replace: true });
     } catch (reason) {
+      if (copyId !== undefined) {
+        try {
+          await deleteTrip(copyId);
+        } catch {
+          setCloneUncertain(true);
+          setActionError("복제한 여행을 정리하지 못했어요. 마이트립에서 확인해 주세요.");
+          return;
+        }
+      } else if (dialog === "clone" && courseImportUncertain(reason)) {
+        setCloneUncertain(true);
+        setActionError("복제 여부를 확인하지 못했어요. 마이트립에서 새 여행을 확인해 주세요.");
+        return;
+      }
       setActionError(reason instanceof Error ? reason.message : "요청을 처리하지 못했어요. 다시 시도해 주세요.");
+    } finally {
       setPending(false);
       actionPending.current = false;
     }
@@ -183,7 +253,7 @@ function ServerCourseSettings({ tripId }: { tripId: number }) {
                       <S.MenuButton type="button" onClick={() => openSheet("trip")}>
                         <img src={pinIcon} alt="" />
                         <span>여행 정보 수정</span>
-                        <S.MenuMeta>{summary.dateLabel}, {trip.companionCount}명</S.MenuMeta>
+                        <S.MenuMeta>{needsRegistration ? "동행 미등록" : `${summary.dateLabel}, ${companionLabels[trip.companion]} ${trip.companionCount}명`}</S.MenuMeta>
                         <S.Chevron src={chevronIcon} alt="" />
                       </S.MenuButton>
                       <S.MenuButton type="button" onClick={() => openSheet("cover")}>
@@ -232,12 +302,31 @@ function ServerCourseSettings({ tripId }: { tripId: number }) {
                   <S.Divider />
                   <S.SettingsSection aria-label="일정 관리">
                     <h2>일정 관리</h2>
-                    <S.MenuButton type="button" onClick={() => openSheet("duration")}>
-                      <img src={daysIcon} alt="" />
-                      <span>여행 기간 변경</span>
-                      <S.MenuMeta>{summary.durationLabel ?? "날짜 미정"}</S.MenuMeta>
-                      <S.Chevron src={chevronIcon} alt="" />
-                    </S.MenuButton>
+                    <S.MenuList>
+                      <S.MenuButton type="button" onClick={() => openSheet("duration")}>
+                        <img src={daysIcon} alt="" />
+                        <span>여행 기간 변경</span>
+                        <S.MenuMeta>{summary.durationLabel ?? "날짜 미정"}</S.MenuMeta>
+                        <S.Chevron src={chevronIcon} alt="" />
+                      </S.MenuButton>
+                      {originalCourse && (
+                        <S.MenuButton type="button" onClick={() => navigate(travelerCoursePath(String(originalCourse.id)), {
+                          state: { courseSettingsSearch: search },
+                        })}>
+                          <img src={originIcon} alt="" />
+                          <span>원본 코스 보기</span>
+                          <S.MenuMeta>{originalCourse.author.name || courseTitle(originalCourse.title)}</S.MenuMeta>
+                          <S.Chevron src={chevronIcon} alt="" />
+                        </S.MenuButton>
+                      )}
+                      {itinerary && currentMember && (
+                        <S.MenuButton type="button" disabled={cloneUncertain} onClick={() => openDialog("clone")}>
+                          <img src={copyIcon} alt="" />
+                          <span>코스 복제</span>
+                          <S.Chevron src={chevronIcon} alt="" />
+                        </S.MenuButton>
+                      )}
+                    </S.MenuList>
                   </S.SettingsSection>
                   {currentMember && <>
                     <S.Divider />
@@ -249,10 +338,10 @@ function ServerCourseSettings({ tripId }: { tripId: number }) {
                           <span>알림 설정</span>
                           <S.Chevron src={chevronIcon} alt="" />
                         </S.MenuButton>
-                        <S.MenuButton type="button" $danger onClick={() => openDialog("leave")}>
+                        {!owner && <S.MenuButton type="button" $danger onClick={() => openDialog("leave")}>
                           <S.LeaveIcon aria-hidden="true" />
                           <span>여행 나가기</span>
-                        </S.MenuButton>
+                        </S.MenuButton>}
                         {owner && <S.MenuButton type="button" $danger onClick={() => openDialog("delete")}>
                           <img src={deleteIcon} alt="" />
                           <span>코스 삭제</span>
@@ -265,7 +354,19 @@ function ServerCourseSettings({ tripId }: { tripId: number }) {
             </S.SettingsContent>
           </>
         )}
-        {activeSheet && trip && summary && (
+        {activeSheet === "trip" && trip && summary && (
+          <TripInformationSheet trip={trip} title={summary.title} mode={needsRegistration ? "register" : "edit"}
+            movementLabel={movementLabel} onClose={closeSheet} onSaved={(updated) => {
+              setTrip(updated);
+              if (imported) {
+                markImportedTripRegistered(tripId);
+                setRegistrationComplete(true);
+              }
+              setNotice("여행 정보를 저장했어요");
+              closeSheet();
+            }} />
+        )}
+        {activeSheet && activeSheet !== "trip" && trip && summary && (
           <CourseSettingsSheet
             activeSheet={activeSheet}
             tripName={tripName}
@@ -295,10 +396,8 @@ function ServerCourseSettings({ tripId }: { tripId: number }) {
             onTripDaysChange={setTripDays}
             onSaveDuration={() => {
               if (pending) return;
-              const endDate = new Date(`${trip.startDate}T00:00:00`);
-              endDate.setDate(endDate.getDate() + tripDays - 1);
               setPending(true);
-              void updateTrip(tripId, { endDate: endDate.toISOString().slice(0, 10) }).then(
+              void updateTrip(tripId, { endDate: addDays(trip.startDate, tripDays - 1) }).then(
                 (response) => {
                   setTrip(response);
                   setNotice(`여행 기간을 ${tripDays - 1}박 ${tripDays}일로 변경했어요.`);
