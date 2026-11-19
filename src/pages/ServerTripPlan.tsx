@@ -9,7 +9,7 @@ import {
   saveItinerary,
 } from "../api/itineraries";
 import { getTripInteractions, type TripInteractions } from "../api/interactions";
-import { addSavedPlace, getSavedPlaces } from "../api/places";
+import { addSavedPlace, getPlaceDetail, getSavedPlaces } from "../api/places";
 import { getTripMembers } from "../api/members";
 import { confirmTrip, getTrip } from "../api/trips";
 import { getPlacePhoto } from "../api/placePhotos";
@@ -24,6 +24,7 @@ import type {
 import { readPlanDay, readPlanOrigin, resumeTripPath, tripCommunityPath, tripPlanBackPath, tripSettingsPath } from "../utils/navigation";
 import { apiTripToDraft, apiTripToSummary, companionLabels } from "../utils/serverTrip";
 import { editItineraryPlace, type ItineraryPlaceEdit } from "../utils/itineraryPlaceEdits";
+import { itineraryPlaceDetails, olderItinerary, type ItineraryPlaceDetails } from "../utils/itineraryPlaceDetails";
 import { dateLabel, distanceLabel, durationLabel, timeLabel } from "../utils/trip";
 import { formatTripDetailDateRange, hasRegisteredImportedTrip, markImportedTripRegistered } from "../utils/importedTrip";
 import DirectTripBuilder from "../components/direct-trip/DirectTripBuilder";
@@ -61,6 +62,7 @@ interface TripPlanData {
   trip: TripResponse;
   itinerary: ItineraryVersionView | null;
   places: SavedPlaceResponse[];
+  placeDetails: ItineraryPlaceDetails[];
   history: ItineraryVersionSummary[];
   members: MemberResponse[];
   interactions?: TripInteractions;
@@ -69,6 +71,10 @@ interface TripPlanData {
 // Keep the last server response while moving between the course and chat screens.
 // A fresh request still runs on every mount, so this never becomes the source of truth.
 const recentPlans = new Map<string, TripPlanData>();
+
+function tripAccessDenied(reason: unknown) {
+  return reason instanceof ApiError && (reason.status === 401 || reason.status === 403 || reason.code === "TRIP_NOT_FOUND");
+}
 
 const categoryLabels: Record<string, string> = {
   FOOD: "맛집",
@@ -94,7 +100,8 @@ function ServerTripPlan({ tripId, userId }: { tripId: number; userId: number }) 
   const cacheKey = `${userId}:${tripId}`;
   const [data, setData] = useState<TripPlanData | undefined>(() => recentPlans.get(cacheKey));
   const [error, setError] = useState("");
-  const [activeDay, setActiveDay] = useState(() => readPlanDay(search) - 1);
+  const [requestedDay, setActiveDay] = useState(() => readPlanDay(search) - 1);
+  const activeDay = Math.min(requestedDay, Math.max(0, (data?.itinerary?.validation.days.length ?? 1) - 1));
   const [mapOpen, setMapOpen] = useState(false);
   const [mapDay, setMapDay] = useState<number>();
   const [photoPlace, setPhotoPlace] = useState<{ itemId: string; placeId: string; name: string }>();
@@ -147,6 +154,7 @@ function ServerTripPlan({ tripId, userId }: { tripId: number; userId: number }) 
   const [registrationComplete, setRegistrationComplete] = useState(() => hasRegisteredImportedTrip(tripId));
   const [importedPhoto, setImportedPhoto] = useState<string | undefined>(state?.importedCoverImageUrl);
   const confirmationPending = useRef(false);
+  const detailReadVersions = useRef(new Map<string, number>());
 
   useEffect(() => {
     const controller = new AbortController();
@@ -160,22 +168,29 @@ function ServerTripPlan({ tripId, userId }: { tripId: number; userId: number }) 
         })]);
         if (signal.aborted) return;
         const [saved, history, members, interactions] = await Promise.all([
-          itinerary ? getSavedPlaces(tripId, signal) : Promise.resolve(undefined),
+          itinerary ? getSavedPlaces(tripId, signal).catch((reason: unknown) => {
+            if (tripAccessDenied(reason)) throw reason;
+            return undefined;
+          }) : Promise.resolve(undefined),
           itinerary ? getItineraryHistory(tripId, signal).catch(() => []) : Promise.resolve([]),
-          getTripMembers(tripId, signal),
+          getTripMembers(tripId, signal).catch((reason: unknown) => {
+            if (tripAccessDenied(reason)) throw reason;
+            return [];
+          }),
           itinerary ? getTripInteractions(tripId, signal).catch(() => {
             if (!signal.aborted) setInteractionError("좋아요와 댓글을 불러오지 못했어요.");
             return undefined;
           }) : Promise.resolve(undefined),
         ]);
         if (!signal.aborted) {
-          const dayCount = itinerary?.validation.days.length ?? 0;
-          setActiveDay((current) => Math.min(current, Math.max(dayCount - 1, 0)));
-          setData({ trip, itinerary, places: saved?.places ?? [], history, members, interactions });
+          setData((current) => current && olderItinerary(itinerary, current.itinerary) ? current : {
+            trip, itinerary, places: saved?.places ?? current?.places ?? [],
+            placeDetails: current?.placeDetails ?? [], history, members, interactions,
+          });
         }
       } catch (reason) {
         if (signal.aborted) return;
-        if (reason instanceof ApiError && reason.code === "TRIP_NOT_FOUND") {
+        if (tripAccessDenied(reason)) {
           recentPlans.delete(cacheKey);
           setData(undefined);
         }
@@ -193,6 +208,39 @@ function ServerTripPlan({ tripId, userId }: { tripId: number; userId: number }) 
     if (data?.itinerary) recentPlans.set(cacheKey, data);
     else if (data) recentPlans.delete(cacheKey);
   }, [data, cacheKey]);
+
+  const itinerary = data?.itinerary;
+  const savedPlaces = data?.places;
+  const placeDetails = data?.placeDetails;
+  useEffect(() => {
+    if (!itinerary || !savedPlaces || !placeDetails) return;
+    const version = itinerary.version;
+    const known = itineraryPlaceDetails(savedPlaces, placeDetails);
+    const missing = new Set(itinerary.validation.days.flatMap((day) =>
+      day.visits.map((visit) => visit.placeId).filter((id) => {
+        const place = known.get(id);
+        return detailReadVersions.current.get(id) !== version && (!place?.name || !isMapCoordinate(place));
+      })));
+    if (!missing.size) return;
+    const controller = new AbortController();
+    async function readDetails() {
+      const fetched: ItineraryPlaceDetails[] = [];
+      const ids = [...missing];
+      for (let i = 0; i < ids.length && !controller.signal.aborted; i += 4) {
+        const results = await Promise.allSettled(ids.slice(i, i + 4).map((id) => getPlaceDetail(tripId, id, controller.signal)));
+        for (const result of results) {
+          if (result.status === "fulfilled" && result.value?.placeId) fetched.push(result.value);
+        }
+      }
+      if (controller.signal.aborted) return;
+      for (const id of ids) detailReadVersions.current.set(id, version);
+      if (!fetched.length) return;
+      setData((current) => current && current.itinerary === itinerary
+        ? { ...current, placeDetails: [...current.placeDetails, ...fetched] } : current);
+    }
+    void readDetails();
+    return () => controller.abort();
+  }, [tripId, itinerary, savedPlaces, placeDetails]);
 
   const summary = data && apiTripToSummary(data.trip);
   const hasNoItinerary = data?.itinerary === null;
@@ -234,7 +282,7 @@ function ServerTripPlan({ tripId, userId }: { tripId: number; userId: number }) 
   const origin = readPlanOrigin(search);
   const invitePath = `${tripSettingsPath(origin, undefined, tripId)}&panel=invite&day=${activeDay + 1}`;
   const backPath = origin === "generated" ? routes.myTrips : tripPlanBackPath(search);
-  const placesById = new Map(data?.places.map((place) => [place.placeId, place]));
+  const placesById = itineraryPlaceDetails(data?.places ?? [], data?.placeDetails ?? []);
   const scheduledDays = new Map<string, number>();
   days.forEach((item, index) => item.visits.forEach(({ placeId }) => {
     if (!scheduledDays.has(placeId)) scheduledDays.set(placeId, index + 1);
@@ -350,7 +398,8 @@ function ServerTripPlan({ tripId, userId }: { tripId: number; userId: number }) 
     } catch (reason) {
       if (reason instanceof ApiError && reason.status === 409) {
         const latest = await getLatestItinerary(tripId).catch(() => undefined);
-        if (latest) setData((current) => current ? { ...current, itinerary: latest } : current);
+        if (latest) setData((current) => current && !olderItinerary(latest, current.itinerary)
+          ? { ...current, itinerary: latest } : current);
         throw new Error("일정이 바뀌었어요. 최신 일정을 확인하고 다시 선택해 주세요.");
       }
       throw reason;
@@ -417,7 +466,7 @@ function ServerTripPlan({ tripId, userId }: { tripId: number; userId: number }) 
         setActionError("일정이 변경되어 수정안을 적용하지 못했어요. 최신 일정을 확인하고 수정안을 다시 만들어 주세요.");
         try {
           const itinerary = await getLatestItinerary(tripId);
-          setData((current) => current ? { ...current, itinerary } : current);
+          setData((current) => current && !olderItinerary(itinerary, current.itinerary) ? { ...current, itinerary } : current);
           setActiveDay(0);
           await reloadHistory();
         } catch {
@@ -455,7 +504,7 @@ function ServerTripPlan({ tripId, userId }: { tripId: number; userId: number }) 
         onClose: () => {
           setEditing(false);
           void getLatestItinerary(tripId).then((itinerary) => {
-            setData((current) => current ? { ...current, itinerary } : current);
+            setData((current) => current && !olderItinerary(itinerary, current.itinerary) ? { ...current, itinerary } : current);
           }).catch(() => setActionError("최신 일정을 불러오지 못했어요. 여행 일정을 다시 열어 주세요."));
           void reloadHistory().catch(() => undefined);
           void refreshInteractions().catch(() => setInteractionError("일행 의견을 불러오지 못했어요."));
@@ -465,7 +514,8 @@ function ServerTripPlan({ tripId, userId }: { tripId: number; userId: number }) 
   }
 
   if (photoPlace && data) {
-    const savedPlace = data.places.find((item) => item.placeId === photoPlace.placeId);
+    const savedPlace = placesById.get(photoPlace.placeId);
+    const savedRecord = data.places.find((item) => item.placeId === photoPlace.placeId);
     const draftDays = data.itinerary?.draft.days ?? [];
     const placeDay = draftDays.findIndex((item) => item.visits.some((visit) => visit.itemId === photoPlace.itemId)) + 1;
     const currentMember = data.members.find((member) => member.me);
@@ -476,10 +526,10 @@ function ServerTripPlan({ tripId, userId }: { tripId: number; userId: number }) 
     return <div className="course-page-shell"><div className="course-page">
       <PlaceDetail
         place={{
-          id: savedPlace?.id ?? 0,
+          id: savedRecord?.id ?? 0,
           name: savedPlace?.name ?? photoPlace.name,
           category: categoryLabels[savedPlace?.category ?? "OTHER"],
-          detail: savedPlace?.note ?? savedPlace?.address ?? "",
+          detail: savedRecord?.note ?? savedPlace?.address ?? "",
           image: "",
           icon: "",
           latitude: savedPlace?.latitude ?? undefined,
@@ -557,7 +607,7 @@ function ServerTripPlan({ tripId, userId }: { tripId: number; userId: number }) 
                 )}
               </p>
             </div>
-            {!shared && (
+            {data.members.length === 1 && (
               <Link className="course-hero__invite" to={invitePath}>
                 <img src={inviteIcon} alt="" />친구 초대
               </Link>
@@ -721,8 +771,12 @@ function ServerTripPlan({ tripId, userId }: { tripId: number; userId: number }) 
                         setShowAddPlace(false);
                         window.scrollTo(0, addPlaceScroll.current);
                       }}
-                      onSaved={(itinerary, addedIds, places, complete) => {
-                        setData((current) => current ? { ...current, itinerary, places: places ?? current.places } : current);
+                      onSaved={(itinerary, added, places, complete) => {
+                        const addedIds = added.map((place) => place.placeId);
+                        setData((current) => current && !olderItinerary(itinerary, current.itinerary) ? {
+                          ...current, itinerary, places: places ?? current.places,
+                          placeDetails: [...current.placeDetails, ...added],
+                        } : current);
                         setAddedPlaceIds((current) => new Set([...current, ...addedIds]));
                         setEditPreview(undefined);
                         setActionError("");
@@ -745,7 +799,7 @@ function ServerTripPlan({ tripId, userId }: { tripId: number; userId: number }) 
             <Link to={resumeTripPath(tripId)}>일정 등록하기</Link>
           </div>
         )}
-        {data?.itinerary && (!manuallyCreated || shared) && (
+        {data?.itinerary && data.members.length > 0 && (!manuallyCreated || shared) && (
           <div className="course-cta">
             {shared ? (
               <Link to={tripCommunityPath(origin, undefined, tripId, activeDay + 1)}>AI 수정 요청</Link>

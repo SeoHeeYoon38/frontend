@@ -14,6 +14,7 @@ import { savedPlacesForTripCity } from "../../utils/tripPlaces";
 import { PlaceThumbnail } from "../common/PlacePhoto";
 import { ErrorText } from "../trip/Trip.styled";
 import { placeDayError } from "../../utils/placeDaySuggestion";
+import type { ItineraryPlaceDetails } from "../../utils/itineraryPlaceDetails";
 import * as S from "./AddItineraryPlaceSheet.styled";
 
 const tabs = [
@@ -33,14 +34,7 @@ const categoryTab: Record<PlaceCategoryCode, Tab> = {
   ACTIVITY: "sightseeing", OTHER: "recommended",
 };
 
-interface PickerPlace {
-  placeId: string;
-  name: string;
-  address: string | null;
-  latitude: number | null;
-  longitude: number | null;
-  category?: PlaceCategoryCode | null;
-}
+type PickerPlace = ItineraryPlaceDetails;
 
 interface PlaceListResult {
   places: PickerPlace[];
@@ -49,15 +43,6 @@ interface PlaceListResult {
 
 function fromCandidate(place: Awaited<ReturnType<typeof searchPlaces>>[number]): PickerPlace {
   return { ...place, latitude: place.lat, longitude: place.lng };
-}
-
-async function loadRecommendations(tripId: number, latitude: number | undefined, longitude: number | undefined, category: PlaceCategoryCode | undefined, signal: AbortSignal) {
-  if (latitude !== undefined && longitude !== undefined) {
-    const nearby = await getNearbyPlaces(tripId, latitude, longitude, category, signal).catch(() => []);
-    if (nearby.length) return nearby.map(fromCandidate);
-  }
-  const popular = await getPopularPlaces(tripId, signal);
-  return category ? popular.filter((place) => place.category === category) : popular;
 }
 
 interface RouteStop { name: string; latitude: number; longitude: number }
@@ -88,7 +73,7 @@ interface AddItineraryPlaceSheetProps {
   replacement?: { category?: PlaceCategoryCode; onSave: (placeId: string) => Promise<void> };
   scheduledDays: ReadonlyMap<string, number>;
   onClose: () => void;
-  onSaved?: (itinerary: ItineraryVersionView, addedIds: string[], places: SavedPlaceResponse[] | undefined, complete: boolean) => void;
+  onSaved?: (itinerary: ItineraryVersionView, added: PickerPlace[], places: SavedPlaceResponse[] | undefined, complete: boolean) => void;
 }
 
 export default function AddItineraryPlaceSheet({
@@ -96,8 +81,10 @@ export default function AddItineraryPlaceSheet({
 }: AddItineraryPlaceSheetProps) {
   const [tab, setTab] = useState<Tab>("recommended");
   const [query, setQuery] = useState("");
-  const [selected, setSelected] = useState<string[]>([]);
-  const [recommended, setRecommended] = useState<PlaceListResult>();
+  const [selected, setSelected] = useState<PickerPlace[]>([]);
+  const selectedIds = new Set(selected.map((place) => place.placeId));
+  const [nearby, setNearby] = useState<PickerPlace[]>();
+  const [popular, setPopular] = useState<PlaceListResult & { tripId: number; attempt: number }>();
   const [saved, setSaved] = useState<PlaceListResult>();
   const [searched, setSearched] = useState<PlaceListResult & { term: string }>();
   const [pending, setPending] = useState(false);
@@ -114,9 +101,12 @@ export default function AddItineraryPlaceSheet({
   useEffect(() => {
     const controller = new AbortController();
     const { signal } = controller;
-    void loadRecommendations(tripId, latitude, longitude, sameCategory, signal).then(
-      (places) => { if (!signal.aborted) setRecommended({ places }); },
-      () => { if (!signal.aborted) setRecommended({ places: [], failed: true }); },
+    const nearbyRequest = latitude === undefined || longitude === undefined
+      ? Promise.resolve([])
+      : getNearbyPlaces(tripId, latitude, longitude, sameCategory, signal);
+    void nearbyRequest.then(
+      (places) => { if (!signal.aborted) setNearby(places.map(fromCandidate)); },
+      () => { if (!signal.aborted) setNearby([]); },
     );
     void Promise.all([getSavedPlaces(tripId, signal), getTripCity(city, signal)]).then(
       ([response, destination]) => {
@@ -144,30 +134,46 @@ export default function AddItineraryPlaceSheet({
     return () => { window.clearTimeout(timer); controller.abort(); };
   }, [tripId, term, attempt]);
 
-  const list = term ? searched?.term === term ? searched : undefined : tab === "saved" ? saved : recommended;
+  function canRecommend(place: PickerPlace) {
+    return !scheduledDays.has(place.placeId) && (!sameCategory || place.category === sameCategory)
+      && (tab === "recommended" || categoryTab[place.category ?? "OTHER"] === tab);
+  }
+  const hasNearby = nearby?.some(canRecommend);
+  const needsPopular = !term && tab !== "saved" && hasNearby === false;
+  const currentPopular = popular?.tripId === tripId && popular.attempt === attempt ? popular : undefined;
+
+  useEffect(() => {
+    if (!needsPopular || currentPopular) return;
+    const controller = new AbortController();
+    void getPopularPlaces(tripId, controller.signal).then(
+      (places) => { if (!controller.signal.aborted) setPopular({ tripId, attempt, places }); },
+      () => { if (!controller.signal.aborted) setPopular({ tripId, attempt, places: [], failed: true }); },
+    );
+    return () => controller.abort();
+  }, [needsPopular, currentPopular, tripId, attempt]);
+
+  const recommended = nearby && hasNearby ? { places: nearby } : currentPopular;
+  const list: PlaceListResult | undefined = term ? searched?.term === term ? searched : undefined : tab === "saved" ? saved : recommended;
   const uniquePlaces = new Map(list?.places.map((place) => [place.placeId, place]));
-  const filtered = [...uniquePlaces.values()].filter((place) => (
-    term || tab === "saved" || (!scheduledDays.has(place.placeId)
-      && (tab === "recommended" || categoryTab[place.category ?? "OTHER"] === tab))
-  ));
+  const filtered = [...uniquePlaces.values()].filter((place) => term || tab === "saved" || canRecommend(place));
   const nearestByPlace = new Map(filtered.map((place) => [place.placeId, nearestStop(place, stops)]));
   if (stops.length && !term && tab !== "saved") {
     filtered.sort((a, b) => (nearestByPlace.get(a.placeId)?.meters ?? Infinity) - (nearestByPlace.get(b.placeId)?.meters ?? Infinity));
   }
-  const idsToSave = selected.filter((placeId) => !scheduledDays.has(placeId));
+  const idsToSave = [...selectedIds].filter((placeId) => !scheduledDays.has(placeId));
   // The reference shows five full cards (three for search). A selected card's
   // outline adds one pixel; an already-scheduled card has no outline.
   const previewRows = filtered.slice(0, term ? 3 : 5);
   const restingHeight = previewRows.reduce((height, place) => {
     if (scheduledDays.has(place.placeId)) return height - 2;
-    return selected.includes(place.placeId) ? height + 1 : height;
+    return selectedIds.has(place.placeId) ? height + 1 : height;
   }, term ? 501 : 716);
 
-  function toggle(placeId: string) {
+  function toggle(place: PickerPlace) {
     setError("");
     setSelected((current) => {
-      if (current.includes(placeId)) return current.filter((id) => id !== placeId);
-      return replacement ? [placeId] : [...current, placeId];
+      if (current.some((item) => item.placeId === place.placeId)) return current.filter((item) => item.placeId !== place.placeId);
+      return replacement ? [place] : [...current, place];
     });
   }
 
@@ -205,8 +211,8 @@ export default function AddItineraryPlaceSheet({
         const { places } = await getSavedPlaces(tripId).catch(() => ({ places: undefined }));
         const completed = addedIds.length === idsToSave.length;
         setAddedCount((count) => count + addedIds.length);
-        setSelected((current) => current.filter((id) => !addedIds.includes(id)));
-        onSaved?.(itinerary, addedIds, places, completed);
+        setSelected((current) => current.filter((place) => !addedIds.includes(place.placeId)));
+        onSaved?.(itinerary, selected.filter((place) => addedIds.includes(place.placeId)), places, completed);
       }
       saving.current = false;
       setPending(false);
@@ -260,7 +266,7 @@ export default function AddItineraryPlaceSheet({
             <button type="button" onClick={() => setAttempt((current) => current + 1)}>다시 불러오기</button>
           </> : !filtered.length ? <p>{term ? "검색 결과가 없어요." : "표시할 장소가 없어요."}</p> : filtered.map((place) => {
             const addedDay = scheduledDays.get(place.placeId);
-            const checked = selected.includes(place.placeId);
+            const checked = selectedIds.has(place.placeId);
             const category = tabs.find(([id]) => id === categoryTab[place.category ?? "OTHER"])?.[1];
             const description = addedDay ? `이미 ${addedDay}일차에 있어요` : rowDescription(place, nearestByPlace.get(place.placeId));
             const content = <>
@@ -276,7 +282,7 @@ export default function AddItineraryPlaceSheet({
             return addedDay
               ? <S.Row key={place.placeId} data-scheduled="true">{content}</S.Row>
               : <S.Row as="button" key={place.placeId} type="button" aria-pressed={checked} disabled={pending}
-                onClick={() => toggle(place.placeId)}>{content}</S.Row>;
+                onClick={() => toggle(place)}>{content}</S.Row>;
           })}
         </S.Results>
       </S.Content>
