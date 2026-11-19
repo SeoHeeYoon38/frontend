@@ -170,6 +170,12 @@ test("백엔드 코스 목록을 홈과 코스 둘러보기 화면 모델로 변
     "도시 산책",
     "미식",
   ]);
+  assert.equal(courseSummaryToTravelCourse(course).image, course.coverImageUrl);
+  for (const coverImageUrl of [null, "", "   "]) {
+    const withoutCover = { ...course, coverImageUrl };
+    assert.equal(courseSummaryToHomeCourse(withoutCover).coverImage, "");
+    assert.equal(courseSummaryToTravelCourse(withoutCover).image, "");
+  }
 });
 
 test("백엔드 예약 응답을 여행 정보 화면에 다시 채운다", () => {

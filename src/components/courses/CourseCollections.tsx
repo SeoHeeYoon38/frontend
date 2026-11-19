@@ -2,6 +2,7 @@ import type { CourseTheme, TravelCourse } from "../../types/course";
 import * as S from "./CourseCollections.styled";
 import { Link, useLocation } from "react-router";
 import { travelerCoursePath } from "../../utils/navigation";
+import CourseCardPhoto from "../common/CourseCardPhoto";
 interface CourseCollectionsProps {
   popularCourses: TravelCourse[];
   themes: CourseTheme[];
@@ -35,7 +36,7 @@ function CourseCollections({
               aria-label={`${course.title.replace("\n", " ")} 일정 보기`}
               key={course.id}
             >
-              {course.image && <S.Cover src={course.image} alt="" />}
+              <CourseCardPhoto id={course.id} coverUrl={course.image} title={course.title} backdrop />
               <S.Scrim />
               <S.PopularText>
                 <S.Meta>
@@ -95,7 +96,7 @@ function CourseCollections({
                   {course.description && <><i /><small>{course.description}</small></>}
                 </S.Author>
               </S.TravelerText>
-              {course.image && <S.Thumbnail src={course.image} alt="" />}
+              <S.Thumbnail><CourseCardPhoto id={course.id} coverUrl={course.image} title={course.title} /></S.Thumbnail>
             </S.TravelerRow>
           ))}
         </S.TravelerList>

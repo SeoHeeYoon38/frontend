@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { Link, useLocation, useSearchParams } from "react-router";
 import backIcon from "../assets/course-settings/back.svg";
 import googleMapsLogo from "../assets/images/brand-google-maps.webp";
@@ -9,11 +9,10 @@ import sortChevron from "../assets/my/sort-chevron.svg";
 import emptyPin from "../assets/direct-trip/empty-pin.svg";
 import { PlaceThumbnail } from "../components/common/PlacePhoto";
 import { isApiEnabled } from "../api/config";
-import { getCourse } from "../api/courses";
+import CourseCardPhoto from "../components/common/CourseCardPhoto";
 import { routes } from "../config/routes";
 import { savedRegions } from "../data/mocks/myData";
 import useSavedItems from "../hooks/useSavedItems";
-import type { SavedCourse } from "../types/my";
 import * as S from "./SavedItemsPage.styled";
 
 type SavedTab = "places" | "courses";
@@ -32,38 +31,6 @@ function BookmarkButton({ active, favorite, label, onClick, disabled }: Bookmark
       <img src={favorite ? favoriteOn : active ? bookmarkOn : bookmarkOff} alt="" />
     </S.BookmarkButton>
   );
-}
-
-function CourseThumbnail({ course }: { course: SavedCourse }) {
-  const preview = useRef<HTMLSpanElement>(null);
-  const [brokenCover, setBrokenCover] = useState(false);
-  const [placeId, setPlaceId] = useState<string>();
-  const courseId = Number(course.id);
-  const hasCover = Boolean(course.image && !brokenCover);
-
-  useEffect(() => {
-    if (hasCover || !Number.isSafeInteger(courseId) || courseId <= 0 || !isApiEnabled()) return;
-    const controller = new AbortController();
-    const load = () => {
-      void getCourse(courseId, controller.signal).then(({ days }) => {
-        if (!controller.signal.aborted) setPlaceId(days.find((day) => day.stops.length)?.stops[0]?.placeId);
-      }).catch(() => {});
-    };
-    const element = preview.current;
-    const observer = element && typeof IntersectionObserver !== "undefined" ? new IntersectionObserver(([entry]) => {
-      if (!entry.isIntersecting) return;
-      observer?.disconnect();
-      load();
-    }) : undefined;
-    if (element && observer) observer.observe(element);
-    else load();
-    return () => { observer?.disconnect(); controller.abort(); };
-  }, [courseId, hasCover]);
-
-  if (hasCover) return <img src={course.image} alt="" loading="lazy" onError={() => setBrokenCover(true)} />;
-  if (placeId) return <PlaceThumbnail placeId={placeId} courseId={courseId} name={course.title}
-    placeholder={<img src={emptyPin} width={22} height={22} alt="" />} />;
-  return <S.ImageFallback ref={preview}><img src={emptyPin} alt="" /></S.ImageFallback>;
 }
 
 function SavedItemsPage() {
@@ -180,7 +147,7 @@ function SavedItemsPage() {
           <S.List aria-label="저장한 코스">
             {filteredCourses.map((course) => (
               <S.CourseRow key={course.id} data-kind="course">
-                <CourseThumbnail key={course.image} course={course} />
+                <CourseCardPhoto id={course.id} coverUrl={course.image} title={course.title} />
                 <S.ItemText>
                   {favorites ? <span><em>{course.city}</em><i /><em>{course.durationLabel} {course.placeCount}곳</em></span> : <em>{course.durationLabel}</em>}
                   <Link to={routes.courseDetail.replace(":courseId", course.id)} state={{ savedItemsSearch: location.search, courseCatalogSearch: catalogSearch }}>

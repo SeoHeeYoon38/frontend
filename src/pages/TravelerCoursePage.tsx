@@ -181,7 +181,7 @@ function TravelerCoursePage() {
       durationLabel: course.duration,
       city: course.city,
       placeCount: course.placeCount,
-      image: course.hero,
+      image: liveCourseId ? serverCoverImageUrl || "" : course.hero,
       author: course.author,
     })) {
       setNotice(isSaved ? "찜한 코스에서 뺐어요" : "찜한 코스에 담았어요");
