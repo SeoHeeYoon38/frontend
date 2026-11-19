@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useOutletContext } from "react-router";
+import { Link, useLocation, useOutletContext } from "react-router";
 import backIcon from "../assets/icons/nav-back.svg";
 import googleMapsLogo from "../assets/figma/course-map-google.png";
 import refreshIcon from "../assets/figma/my-maps-refresh.svg";
@@ -12,6 +12,7 @@ import * as S from "./GoogleMapsSettingsPage.styled";
 
 function GoogleMapsSettingsPage() {
   const account = useOutletContext<UserResponse | undefined>();
+  const fromMyHome = useLocation().state?.fromMyHome === true;
   const imported = useImportedGooglePlaces();
   const [showDisconnect, setShowDisconnect] = useState(false);
   const hasImported = imported.count > 0;
@@ -23,7 +24,7 @@ function GoogleMapsSettingsPage() {
   return (
     <S.Page>
       <S.Header>
-        <Link to={routes.accountSettings} aria-label="계정 관리로 돌아가기">
+        <Link to={fromMyHome ? routes.my : routes.accountSettings} aria-label={fromMyHome ? "마이 화면으로 돌아가기" : "계정 관리로 돌아가기"}>
           <img src={backIcon} alt="" />
         </Link>
         <h1>Google Maps 연동</h1>
@@ -32,7 +33,7 @@ function GoogleMapsSettingsPage() {
       <S.Status>
         <S.Logo><img src={googleMapsLogo} alt="" /></S.Logo>
         <span>
-          <strong>Google Maps {hasImported && <><i aria-hidden="true" /><b>가져옴</b></>}</strong>
+          <strong>Google Maps {hasImported && <><i aria-hidden="true" /><b>연동됨</b></>}</strong>
           {account?.email && <small>{account.email}</small>}
         </span>
       </S.Status>
@@ -61,7 +62,6 @@ function GoogleMapsSettingsPage() {
         {!imported.pending && !imported.lists.length && !imported.error && (
           <p>공개 공유 링크나 Takeout 파일에서 가져온 목록이 여기에 표시돼요.</p>
         )}
-        <S.ImportLink to={routes.createTrip}>장소 가져오기</S.ImportLink>
       </S.ListSection>
 
       <S.Band />
@@ -80,7 +80,7 @@ function GoogleMapsSettingsPage() {
       </S.Disconnect>
       {showDisconnect && (
         <SettingsConfirmDialog
-          title="Google Maps 연동 해제"
+          title="Google Maps 연동을 해제할까요?"
           description={<>{hasImported && <>불러온 장소 {imported.count}곳은 그대로 남아요.<br /></>}해제할 Google Maps 계정 연결이 없어요.</>}
           confirmLabel="해제하기" tone="danger"
           onCancel={() => setShowDisconnect(false)}

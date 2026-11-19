@@ -90,7 +90,7 @@ function AccountSettingsPage() {
           <span>
             <strong>Google Maps</strong>
             <small><i data-linked={imported.count > 0} />
-              {imported.count ? `가져온 장소 ${imported.count}곳` : imported.pending ? "장소 확인 중" : "저장 장소 가져오기"}
+              {imported.count ? `연동됨, 저장 장소 ${imported.count}곳` : imported.pending ? "장소 확인 중" : imported.error ? "저장 장소 확인 필요" : "미연동"}
             </small>
           </span>
           <Link to={routes.googleMapsSettings}>관리</Link>

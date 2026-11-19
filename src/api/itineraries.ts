@@ -32,9 +32,10 @@ export function getTravelOptions(
   );
 }
 
-export function generateItinerary(tripId: number, signal?: AbortSignal) {
+export function generateItinerary(tripId: number, signal?: AbortSignal, savedPlaceIds?: number[]) {
   return apiRequest<GeneratedItineraryResponse>(`/api/trips/${tripId}/itineraries/generate`, {
     method: "POST",
+    json: savedPlaceIds ? { savedPlaceIds } : undefined,
     signal,
     timeoutMs: 195_000,
   });

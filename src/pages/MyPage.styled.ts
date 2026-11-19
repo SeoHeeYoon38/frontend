@@ -165,7 +165,7 @@ export const GoogleLink = styled(Link)`
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background: #00c7df;
+    background: #00e1ff;
   }
 
   > b[data-imported="false"] {

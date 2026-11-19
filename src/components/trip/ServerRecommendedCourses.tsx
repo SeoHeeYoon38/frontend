@@ -1,10 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getCourse, getCourses } from "../../api/courses";
 import { getNearbyPlaces, getPopularPlaces } from "../../api/places";
-import { courseSummaryToTravelCourse, courseTitle } from "../../api/adapters";
+import { courseTitle } from "../../api/adapters";
 import type { CityResponse, CourseDetailResponse, CourseSummaryResponse, PlaceCategoryCode, SavedPlaceResponse } from "../../api/types";
 import { savedPlaceCategoryLabels } from "../../utils/tripPlaces";
-import pinIcon from "../../assets/icons/field-location.svg";
+import pinIcon from "../../assets/figma/recommend-pin.svg";
+import courseCheckOn from "../../assets/figma/recommend-selected.svg";
+import courseCheckOff from "../../assets/figma/recommend-unselected.svg";
+import courseChevron from "../../assets/figma/recommend-chevron.svg";
 import TripSheet from "../common/TripSheet";
 import { PlaceThumbnail } from "../common/PlacePhoto";
 import CourseRouteMap from "../course-completion/CourseRouteMap";
@@ -19,7 +22,7 @@ interface RecommendationProps {
   busy: boolean;
   saveError: string;
   onOpen: () => void;
-  onAdd: (ids: string[]) => Promise<boolean>;
+  onAdd: (ids: string[], deselected?: string[]) => Promise<boolean>;
   onToggle: (id: string) => void;
 }
 
@@ -40,7 +43,7 @@ export default function ServerRecommendedCourses({ city, tripId, view, selectedP
   const { name: cityName, lat, lng } = city;
   const [courses, setCourses] = useState<CourseSummaryResponse[]>();
   const [popular, setPopular] = useState<SuggestedPlace[]>();
-  const [selectedCourse, setSelectedCourse] = useState<CourseSummaryResponse>();
+  const [selectedCourse, setSelectedCourse] = useState<{ summary: CourseSummaryResponse; detail?: CourseDetailResponse }>();
   const [attempt, setAttempt] = useState(0);
   const [activeSlide, setActiveSlide] = useState(0);
   const [coursesFailed, setCoursesFailed] = useState(false);
@@ -83,19 +86,8 @@ export default function ServerRecommendedCourses({ city, tripId, view, selectedP
                 const distance = scrollWidth - clientWidth;
                 if (distance > 0) setActiveSlide(Math.round((scrollLeft / distance) * (courses.length - 1)));
               }}>
-                {courses.map((course) => {
-                  const { title, image } = courseSummaryToTravelCourse(course);
-                  return (
-                    <P.SuggestedCourse key={course.id} type="button" aria-haspopup="dialog" disabled={busy}
-                      onClick={() => { onOpen(); setSelectedCourse(course); }}>
-                      {image && <img className="suggested-cover" src={image} alt="" loading="lazy" />}
-                      <span className="suggested-course-copy">
-                        <strong>{title}</strong>
-                        <span><img src={pinIcon} alt="" />{course.stopCount}곳</span>
-                      </span>
-                    </P.SuggestedCourse>
-                  );
-                })}
+                {courses.map(course => <RecommendedCourseCard key={course.id} course={course} busy={busy}
+                  selectedIds={selectedIds} onOpen={detail => { onOpen(); setSelectedCourse({ summary: course, detail }); }} />)}
               </P.SuggestedCarousel>
               {courses.length > 1 && <P.SuggestedDots aria-hidden="true">
                 {courses.map((course, index) => <span key={course.id} data-active={index === activeSlide} />)}
@@ -134,7 +126,9 @@ export default function ServerRecommendedCourses({ city, tripId, view, selectedP
       )}
       {selectedCourse && (
         <ServerCourseDetail
-          course={selectedCourse}
+          course={selectedCourse.summary}
+          initialDetail={selectedCourse.detail}
+          initialSelection={[...selectedIds].filter((id): id is string => Boolean(id))}
           busy={busy}
           saveError={saveError}
           onClose={() => setSelectedCourse(undefined)}
@@ -145,27 +139,83 @@ export default function ServerRecommendedCourses({ city, tripId, view, selectedP
   );
 }
 
-function ServerCourseDetail({ course, busy, saveError, onClose, onAdd }: {
+function RecommendedCourseCard({ course, busy, selectedIds, onOpen }: {
   course: CourseSummaryResponse;
+  busy: boolean;
+  selectedIds: ReadonlySet<string | null>;
+  onOpen: (detail?: CourseDetailResponse) => void;
+}) {
+  const ref = useRef<HTMLButtonElement>(null);
+  const [detail, setDetail] = useState<CourseDetailResponse>();
+  useEffect(() => {
+    const controller = new AbortController();
+    const load = () => {
+      void getCourse(course.id, controller.signal).then(item => {
+        if (!controller.signal.aborted) setDetail(item);
+      }, () => { /* The summary still opens the detail sheet, which supports retry. */ });
+    };
+    let observer: IntersectionObserver | undefined;
+    if (ref.current && typeof IntersectionObserver !== "undefined") {
+      observer = new IntersectionObserver(([entry]) => {
+        if (!entry.isIntersecting) return;
+        observer?.disconnect();
+        load();
+      });
+      observer.observe(ref.current);
+    } else load();
+    return () => { observer?.disconnect(); controller.abort(); };
+  }, [course.id]);
+  const stops = detail?.days.flatMap(day => day.stops) ?? [];
+  const photos = stops.slice(0, 3);
+  const selected = stops.some(stop => selectedIds.has(stop.placeId));
+  return <P.SuggestedCourse ref={ref} type="button" aria-haspopup="dialog" disabled={busy} data-selected={selected}
+    aria-label={`${courseTitle(course.title)}${selected ? ", 장소 선택됨" : ""}, 상세 보기`} onClick={() => onOpen(detail)}>
+    <span className="suggested-cover" data-count={photos.length}>
+      {photos.length ? photos.map(stop => <PlaceThumbnail key={stop.id} courseId={course.id} placeId={stop.placeId} name={stop.name} />)
+        : course.coverImageUrl && <img alt="" src={course.coverImageUrl} loading="lazy" />}
+    </span>
+    <img className="suggested-check" alt="" src={selected ? courseCheckOn : courseCheckOff} />
+    <span className="suggested-course-copy">
+      <strong>{courseTitle(course.title)}</strong>
+      {stops.length > 0 && <span className="suggested-route">
+        <span>{stops[0].name}</span>
+        {stops[1] && <><img src={courseChevron} alt="" /><span>{stops[1].name}</span></>}
+        {stops.length > 2 && <small>외 {stops.length - 2}곳</small>}
+      </span>}
+      <span><img src={pinIcon} alt="" />{course.stopCount}곳</span>
+    </span>
+  </P.SuggestedCourse>;
+}
+
+function ServerCourseDetail({ course, initialDetail, initialSelection, busy, saveError, onClose, onAdd }: {
+  course: CourseSummaryResponse;
+  initialDetail?: CourseDetailResponse;
+  initialSelection: string[];
   busy: boolean;
   saveError: string;
   onClose: () => void;
   onAdd: RecommendationProps["onAdd"];
 }) {
-  const [detail, setDetail] = useState<CourseDetailResponse>();
-  const [ids, setIds] = useState<string[]>([]);
+  const [detail, setDetail] = useState(initialDetail);
+  const [ids, setIds] = useState(initialSelection);
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
   useEffect(() => {
+    if (initialDetail) return;
     const controller = new AbortController();
     void getCourse(course.id, controller.signal).then(
       (item) => { if (!controller.signal.aborted) setDetail(item); },
       () => { if (!controller.signal.aborted) setFailed(true); },
     );
     return () => controller.abort();
-  }, [course.id, attempt]);
+  }, [course.id, initialDetail, attempt]);
 
-  const stops = detail?.days.flatMap((day) => day.stops) ?? [];
+  const stops = detail?.days.flatMap(day => day.stops.map((stop, index) => ({
+    ...stop, group: String(day.dayNumber), hasNext: index < day.stops.length - 1,
+  }))) ?? [];
+  const courseIds = [...new Set(stops.map(stop => stop.placeId))];
+  const added = courseIds.filter(id => ids.includes(id));
+  const removed = courseIds.filter(id => initialSelection.includes(id) && !ids.includes(id));
   return (
     <TripSheet
       variant="course"
@@ -173,10 +223,10 @@ function ServerCourseDetail({ course, busy, saveError, onClose, onAdd }: {
       onClose={onClose}
       closeDisabled={busy}
       footer={detail && (
-        <S.Primary type="button" disabled={busy || !ids.length} onClick={async () => {
-          if (await onAdd(ids)) onClose();
+        <S.Primary type="button" disabled={busy || !(added.length || removed.length)} onClick={async () => {
+          if (await onAdd(added, removed)) onClose();
         }}>
-          {busy ? "장소를 담고 있어요" : ids.length ? `선택한 장소 ${ids.length}곳 담기` : "장소를 선택해 주세요"}
+          {busy ? "장소를 담고 있어요" : added.length || removed.length ? `선택한 장소 ${added.length}곳 담기` : "장소를 선택해 주세요"}
         </S.Primary>
       )}
     >
@@ -192,24 +242,21 @@ function ServerCourseDetail({ course, busy, saveError, onClose, onAdd }: {
       ) : !detail ? <p role="status">코스 장소를 불러오고 있어요.</p> : (
         <>
           {stops.length > 0 && (
-            <P.CourseMap>
+            <P.RecommendedMap>
               <CourseRouteMap places={stops} city={course.city} live />
-            </P.CourseMap>
+            </P.RecommendedMap>
           )}
-          <P.PlaceList>
+          <P.SuggestedStops>
             {stops.map((stop, index) => (
               <P.CourseStop key={stop.id}>
                 <P.StopRail aria-hidden="true"><span>{index + 1}</span></P.StopRail>
                 <P.StopContent>
-                  <P.StopCard>
-                    {stop.imageUrl ? <img src={stop.imageUrl} alt="" loading="lazy" /> : (
-                      <PlaceThumbnail courseId={course.id} placeId={stop.placeId} name={stop.name} />
-                    )}
-                    <label>
-                      <div>
+                  <P.SuggestedStopCard>
+                    <PlaceThumbnail courseId={course.id} placeId={stop.placeId} name={stop.name} />
+                      <span>
                         <strong>{stop.name}</strong>
-                        <p>{[stop.visitTime?.slice(0, 5), savedPlaceCategoryLabels[stop.category]].filter(Boolean).join(" | ")}</p>
-                      </div>
+                        <small>{stop.visitTime && <><b>{stop.visitTime.slice(0, 5)}</b><i aria-hidden="true" /></>}{savedPlaceCategoryLabels[stop.category]}</small>
+                      </span>
                       <P.Checkbox
                         type="checkbox"
                         aria-label={`${stop.name} 선택`}
@@ -222,12 +269,12 @@ function ServerCourseDetail({ course, busy, saveError, onClose, onAdd }: {
                             : current.filter((id) => id !== stop.placeId));
                         }}
                       />
-                    </label>
-                  </P.StopCard>
+                  </P.SuggestedStopCard>
+                  {stop.hasNext && <P.SuggestedStopMove aria-hidden="true" />}
                 </P.StopContent>
               </P.CourseStop>
             ))}
-          </P.PlaceList>
+          </P.SuggestedStops>
           {stops.length === 0 && <p>이 코스에 표시할 장소가 없어요.</p>}
         </>
       )}

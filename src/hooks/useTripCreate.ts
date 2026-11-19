@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router";
+import { useLocation, useNavigate, useNavigationType, useSearchParams } from "react-router";
 import type { TripDraft, TripPlace } from "../types/trip";
 import {
   DRAFT_KEY,
@@ -71,10 +71,11 @@ function initialDraft(
   trip?: TripResponse,
   places?: TripPlace[],
   reservations?: ReservationResponse,
+  startNew = false,
 ): TripDraft {
   let saved: string | null = null;
   try {
-    saved = sessionStorage.getItem(DRAFT_KEY);
+    if (!startNew) saved = sessionStorage.getItem(DRAFT_KEY);
   } catch {
   }
   const draft = readDraft(saved);
@@ -117,9 +118,13 @@ function useTripCreate(
   reservations?: ReservationResponse,
 ) {
   const navigate = useNavigate();
+  const location = useLocation();
+  const navigationType = useNavigationType();
   const [params, setParams] = useSearchParams();
-  const [draft, setDraft] = useState(() => initialDraft(trip, places, reservations));
-  const prepareServerTrip = useServerTripDraft(setDraft);
+  const [draft, setDraft] = useState(() => initialDraft(
+    trip, places, reservations, !trip && navigationType === "PUSH" && location.state?.newAiTrip === true,
+  ));
+  const prepareServerTrip = useServerTripDraft(setDraft, !trip);
   const [isGenerating, setGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState("");
@@ -198,7 +203,6 @@ function useTripCreate(
           draft.rental.placeId,
         );
       }
-      update({ ...draft, tripId: String(serverTripId) });
       move(2);
     } catch (reason) {
       setError(
@@ -229,7 +233,13 @@ function useTripCreate(
       if (isApiEnabled() && hasAuthSession()) {
         if (!isServerTripId(tripDraft.tripId)) throw new Error("여행 정보를 먼저 저장해 주세요.");
         const tripId = Number(tripDraft.tripId);
+        const savedPlaceIds = selectedPlaces(tripDraft).map((place) => place.serverId ?? Number(place.id));
+        if (savedPlaceIds.some((id) => !Number.isSafeInteger(id) || id < 1)) {
+          throw new Error("저장 장소를 다시 선택해 주세요.");
+        }
+        setProgress(1);
         const finish = async (excludedPlaceIds?: string[]) => {
+          setProgress(3);
           clearGenerationAttempt(tripId);
           const confirmation = await confirmTrip(tripId, controller.signal).catch(() => null);
           if (controller.signal.aborted) return;
@@ -263,7 +273,8 @@ function useTripCreate(
         const attempt: GenerationAttempt = { previousVersion: previous?.version ?? 0, startedAt: Date.now() };
         saveGenerationAttempt(tripId, attempt);
         try {
-          const result = await generateItinerary(tripId, controller.signal);
+          setProgress(2);
+          const result = await generateItinerary(tripId, controller.signal, savedPlaceIds);
           if (controller.signal.aborted) return;
           await finish(result.excludedPlaceIds);
         } catch (reason) {

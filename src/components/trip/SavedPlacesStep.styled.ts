@@ -634,6 +634,7 @@ export const SuggestedCarousel = styled.div`
 `;
 
 export const SuggestedCourse = styled.button`
+  position: relative;
   width: min(232px, 72%);
   flex: none;
   overflow: hidden;
@@ -642,23 +643,72 @@ export const SuggestedCourse = styled.button`
   background: #fff;
   text-align: left;
   scroll-snap-align: start;
+  padding: 0;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+
+  &[data-selected="true"] { border-color: #090738; box-shadow: inset 0 0 0 .5px #090738; }
 
   > .suggested-cover {
-    display: block;
+    display: grid;
+    gap: 3px;
     width: 100%;
     height: 168px;
-    object-fit: cover;
+    overflow: hidden;
+    background: #f3f5fa;
   }
+  .suggested-cover[data-count="2"], .suggested-cover[data-count="3"] { grid-template-columns: 148fr 81fr; }
+  .suggested-cover[data-count="3"] { grid-template-rows: 1fr 1fr; }
+  .suggested-cover[data-count="3"] > :first-child { grid-row: span 2; }
+  .suggested-cover > * { width: 100%; height: 100%; min-height: 0; min-width: 0; border-radius: 0; object-fit: cover; }
+  .suggested-check { position: absolute; top: 12px; right: 12px; width: 26px; height: 26px; }
 
   > .suggested-course-copy {
     display: grid;
     gap: 8px;
-    padding: 14px;
+    width: 100%;
+    min-height: 123px;
+    align-content: start;
+    padding: 12px 14px 14px;
   }
 
-  strong { font-size: 15px; line-height: 21px; }
-  .suggested-course-copy > span { display: flex; align-items: center; gap: 4px; color: #5c5c63; font-size: 12px; }
-  .suggested-course-copy img { width: 14px; height: 14px; }
+  strong { font-size: 15px; line-height: 22px; color: #1a1a1a; }
+  .suggested-course-copy > span { display: flex; align-items: center; min-width: 0; gap: 4px; color: #5c5c63; font-size: 12px; line-height: 17px; }
+  .suggested-route > span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .suggested-route > small { flex: none; font-size: inherit; color: #8a8a8e; }
+  .suggested-course-copy img { flex: none; }
+`;
+
+export const RecommendedMap = styled(CourseMap)`
+  height: 176px;
+  & > .course-map { height: 100%; }
+`;
+
+export const SuggestedStops = styled.div`
+  margin-top: 8px;
+`;
+
+export const SuggestedStopCard = styled.label`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 82px;
+  border: 1px solid #e4e6ec;
+  border-radius: 16px;
+  padding: 12px;
+  cursor: pointer;
+  .place-photo { flex: none; width: 56px; height: 56px; overflow: hidden; border-radius: 12px; }
+  > span:nth-child(2) { min-width: 0; flex: 1; }
+  strong { display: block; font-size: 15px; line-height: 22px; color: #1a1a1a; }
+  small { display: flex; align-items: center; gap: 6px; margin-top: 4px; font-size: 12px; line-height: 17px; color: #8a8a8e; }
+  small > b { color: #5c5c63; }
+  small > i { width: 1px; height: 10px; background: #d1d1d6; }
+`;
+
+export const SuggestedStopMove = styled.div`
+ height: 37px;
 `;
 
 export const SuggestedDots = styled.div`

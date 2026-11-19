@@ -1,11 +1,11 @@
 import styled from "styled-components";
-import { Link } from "react-router";
 
 export const Page = styled.div`
   width: 100%; max-width: 402px; min-height: 100dvh; margin: 0 auto; padding-bottom: 34px;
   color: #1a1a1a; background: #ffffff; font-family: "Pretendard", "Apple SD Gothic Neo", system-ui, sans-serif;
   a { color: inherit; text-decoration: none; }
   button { padding: 0; border: 0; color: inherit; background: transparent; font: inherit; cursor: pointer; }
+  dialog[role="alertdialog"] h2 { font-size: 17px; line-height: 24px; letter-spacing: -0.085px; }
 `;
 export const Header = styled.header`
   height: 48px; display: flex; align-items: center; gap: 14px; padding: 0 20px;
@@ -17,27 +17,27 @@ export const Status = styled.section`
   display: flex; align-items: center; gap: 14px; padding: 28px 20px 24px;
   > span:nth-child(2) { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
   strong { display: flex; align-items: center; gap: 6px; font-size: 17px; line-height: 24px; }
-  strong i { width: 6px; height: 6px; border-radius: 50%; background: #00c7df; }
-  strong b { color: #0079c2; font-size: 12px; font-weight: 500; }
+  strong i { width: 6px; height: 6px; border-radius: 50%; background: #00e1ff; }
+  strong b { color: #0079c2; font-size: 12px; line-height: 17px; font-weight: 500; }
   small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #8a8a8e; font-size: 13px; line-height: 18px; }
 `;
 export const Logo = styled.span`
   width: 48px; height: 48px; flex: none; display: grid; place-items: center; border: 1px solid #e4e6ec; border-radius: 14px;
-  img { width: 31px; height: 29px; object-fit: contain; }
+  img { width: 29px; height: 29px; object-fit: contain; }
 `;
 export const Imported = styled.section`
   display: flex; align-items: center; gap: 10px; padding: 0 20px 20px;
   > span { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 2px; }
   strong { font-size: 15px; line-height: 22px; font-weight: 500; }
   strong b { color: #0079c2; }
-  small { overflow: hidden; color: #8a8a8e; font-size: 12px; white-space: nowrap; text-overflow: ellipsis; }
-  button { display: inline-flex; align-items: center; gap: 4px; flex: 0 0 auto; padding: 7px 14px 7px 12px; border: 1px solid #e4e6ec; border-radius: 16px; font-size: 13px; font-weight: 700; }
+  small { overflow: hidden; color: #8a8a8e; font-size: 12px; line-height: 17px; white-space: nowrap; text-overflow: ellipsis; }
+  button { display: inline-flex; align-items: center; gap: 4px; flex: 0 0 auto; padding: 7px 14px 7px 12px; border: 1px solid #e4e6ec; border-radius: 16px; font-size: 13px; line-height: 18px; font-weight: 700; }
   button:disabled { color: #8a8a8e; cursor: default; }
 `;
 export const Band = styled.div`height: 8px; background: #f3f5fa;`;
 export const ListSection = styled.section`
-  padding: 20px 20px 4px;
-  h2 { margin: 0; color: #8a8a8e; font-size: 13px; line-height: 18px; }
+  padding: 20px 20px 0;
+  h2 { margin: 0 0 4px; color: #8a8a8e; font-size: 13px; line-height: 18px; }
   > p { margin: 2px 0 8px; color: #8a8a8e; font-size: 12px; line-height: 17px; }
 `;
 export const CheckRow = styled.div`
@@ -45,14 +45,6 @@ export const CheckRow = styled.div`
   img { flex: none; }
   strong { min-width: 0; flex: 1; overflow-wrap: anywhere; font-size: 15px; line-height: 22px; font-weight: 500; }
   span { color: #8a8a8e; font-size: 13px; }
-`;
-export const ImportLink = styled(Link)`
-  display: inline-flex;
-  align-items: center;
-  min-height: 40px;
-  color: #0079c2 !important;
-  font-size: 13px;
-  font-weight: 700;
 `;
 export const AutoImport = styled.section`
   display: flex; align-items: center; gap: 12px; padding: 18px 20px;

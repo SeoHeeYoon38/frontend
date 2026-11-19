@@ -4,7 +4,6 @@ import kiyomizu from "../../assets/traveler-course/place-kiyomizu.png";
 import sannenzaka from "../../assets/traveler-course/place-sannenzaka.png";
 import yasaka from "../../assets/traveler-course/place-yasaka.png";
 import gion from "../../assets/traveler-course/place-gion.webp";
-import routePreview from "../../assets/traveler-course/route-preview.png";
 import mapFull from "../../assets/traveler-course/map-full.png";
 import sannenzakaHero from "../../assets/traveler-course/sannenzaka-hero.png";
 import sannenzakaMap from "../../assets/traveler-course/sannenzaka-map.png";
@@ -30,7 +29,6 @@ export const travelerCourse: TravelerCourseView = {
   transport: "도보와 버스",
   hero,
   authorImage: author,
-  routePreview,
   mapFull,
   days: [
     {

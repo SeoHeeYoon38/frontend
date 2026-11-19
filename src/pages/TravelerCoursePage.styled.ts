@@ -200,23 +200,29 @@ export const SectionHeading = styled.div`
     margin: 0;
     font-size: 18px;
     line-height: 25px;
+    letter-spacing: -0.09px;
   }
 
   span {
     color: #8a8a8e;
     font-size: 12px;
+    line-height: 17px;
+    font-weight: 500;
   }
 `;
 
 export const DayTabs = styled.div`
   display: flex;
   gap: 22px;
+  align-items: flex-start;
+  overflow-x: auto;
   border-bottom: 1px solid #e4e6ec;
 
   button {
     border: 0;
     padding: 6px 0 10px;
-    border-bottom: 2px solid transparent;
+    flex: none;
+    line-height: 22px;
     color: #8a8a8e;
     background: transparent;
     font-size: 15px;
@@ -225,13 +231,13 @@ export const DayTabs = styled.div`
   }
 
   button[aria-selected="true"] {
-    border-color: #1a1a1a;
+    border-bottom: 2px solid #1a1a1a;
     color: #1a1a1a;
     font-weight: 700;
   }
 `;
 
-export const MapPreview = styled.button`
+export const MapPreview = styled.div`
   position: relative;
   width: 100%;
   height: 300px;
@@ -240,34 +246,44 @@ export const MapPreview = styled.button`
   border: 0;
   border-radius: 16px;
   background: #eef2f5;
-  cursor: pointer;
-
   .course-map {
     width: 100%;
     height: 100%;
     border-radius: inherit;
+    pointer-events: none;
   }
-
-  .course-map__caption {
-    display: none;
+  .course-map__caption { display: none; }
+  > .preview-open { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: transparent; cursor: pointer; }
+  > .preview-open:focus-visible { outline-offset: -3px; }
+  .course-map__number-pin, .course-map__pin { pointer-events: auto; }
+  > .sample-preview { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  .sample-pin {
+    pointer-events: auto;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    margin: 6px;
+    padding: 0;
+    border: 2.5px solid #fff;
+    border-radius: 50%;
+    background: #00e1ff;
+    color: #fff;
+    box-shadow: 0 2px 6px rgb(0 140 178 / 25%);
+    font: 700 13px/1 Pretendard, sans-serif;
   }
-
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
 `;
 
 export const PlaceList = styled.div`
   display: flex;
   flex-direction: column;
+  gap: 14px;
 `;
 
 export const PlaceRow = styled.div`
   display: grid;
-  grid-template-columns: 26px 1fr;
+  grid-template-columns: 26px minmax(0, 1fr);
   gap: 12px;
 `;
 
@@ -310,14 +326,18 @@ export const PlaceCard = styled.button`
   border-radius: 16px;
   background: #fff;
   text-align: left;
+  color: #1a1a1a;
   cursor: pointer;
 
-  img {
+  > img, > .place-photo {
+    flex: none;
     width: 56px;
     height: 56px;
     border-radius: 12px;
     object-fit: cover;
+    overflow: hidden;
   }
+  > .place-copy { flex: 1; min-width: 0; }
 
   strong,
   small {
@@ -327,25 +347,32 @@ export const PlaceCard = styled.button`
   strong {
     font-size: 15px;
     line-height: 22px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   small {
     margin-top: 4px;
     color: #8a8a8e;
     font-size: 12px;
+    line-height: 17px;
+    font-weight: 500;
   }
 `;
 
 export const Move = styled.p`
   margin: 0;
+  min-height: 37px;
   padding: 10px 4px;
   color: #5c5c63;
   font-size: 12px;
+  line-height: 17px;
   font-weight: 700;
 
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
 
   > img {
     width: 14px;
@@ -353,12 +380,10 @@ export const Move = styled.p`
   }
 
   span {
-    margin-left: 1px;
-    padding-left: 7px;
-    border-left: 1px solid #d1d1d6;
     color: #8a8a8e;
     font-weight: 500;
   }
+  i { display: block; width: 1px; height: 10px; background: #d1d1d6; }
 `;
 
 export const Cta = styled.div`

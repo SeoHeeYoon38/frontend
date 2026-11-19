@@ -1,12 +1,15 @@
 import { useCallback, useRef, type Dispatch, type SetStateAction } from "react";
 import { isServerTripId, tripDraftToApiInput } from "../api/adapters";
-import { createTrip, updateTrip } from "../api/trips";
+import { createTrip, saveNewTripDraft, updateTrip } from "../api/trips";
 import type { TripDraft } from "../types/trip";
 import { basicError } from "../utils/trip";
 
 export type PrepareServerTrip = (draft: TripDraft) => Promise<number>;
 
-export default function useServerTripDraft(setDraft: Dispatch<SetStateAction<TripDraft>>): PrepareServerTrip {
+export default function useServerTripDraft(
+  setDraft: Dispatch<SetStateAction<TripDraft>>,
+  newAiTrip = false,
+): PrepareServerTrip {
   const saved = useRef<{ localId: string; id: number; inputKey: string } | undefined>(undefined);
   const pending = useRef<Promise<void>>(Promise.resolve());
 
@@ -19,20 +22,25 @@ export default function useServerTripDraft(setDraft: Dispatch<SetStateAction<Tri
     // Search and Continue may both need the same server draft.
     const request = pending.current.then(async () => {
       const previous = saved.current;
-      const id = isServerTripId(draft.tripId)
-        ? Number(draft.tripId)
-        : previous?.localId === draft.tripId ? previous.id : undefined;
-      if (previous && previous.id === id && previous.inputKey === inputKey) return previous.id;
+      const id = previous?.localId === draft.tripId ? previous.id
+        : isServerTripId(draft.tripId) ? Number(draft.tripId) : undefined;
+      if (!newAiTrip && previous && previous.id === id && previous.inputKey === inputKey) return previous.id;
 
-      const trip = id === undefined ? await createTrip(input) : await updateTrip(id, input);
-      saved.current = { localId: draft.tripId, id: trip.id, inputKey };
+      const trip = newAiTrip ? await saveNewTripDraft(id, input)
+        : id === undefined ? await createTrip(input) : await updateTrip(id, input);
+      const localId = previous && previous.id === trip.id ? previous.localId : draft.tripId;
+      saved.current = { localId, id: trip.id, inputKey };
       const tripId = String(trip.id);
-      setDraft((current) => current.tripId === draft.tripId && draft.tripId !== tripId
-        ? { ...current, tripId }
-        : current);
+      setDraft((current) => {
+        if (current.tripId !== draft.tripId || current.tripId === tripId) return current;
+        if (isServerTripId(current.tripId)) {
+          return { ...current, tripId, places: [], selectedPlaceIds: [], source: "none" };
+        }
+        return { ...current, tripId };
+      });
       return trip.id;
     });
     pending.current = request.then(() => undefined, () => undefined);
     return request;
-  }, [setDraft]);
+  }, [setDraft, newAiTrip]);
 }

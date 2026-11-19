@@ -30,6 +30,8 @@ function MyPage() {
   const location = useLocation();
   const liveProfile = isApiEnabled() && hasAuthSession();
   const imported = useImportedGooglePlaces();
+  const hasImported = imported.count > 0;
+  const statusUnknown = !imported.checkedAt && (imported.pending || Boolean(imported.error));
   const [profile, setProfile] = useState(() => liveProfile ? null : readProfileSettings(window.localStorage));
   const [stats, setStats] = useState(() => liveProfile ? null : {
     savedPlaceCount: myProfile.savedPlaceCount,
@@ -117,18 +119,20 @@ function MyPage() {
         </S.StatLink>
       </S.Stats>
 
-      <S.GoogleLink to={routes.googleMapsSettings}>
+      <S.GoogleLink to={routes.googleMapsSettings} state={{ fromMyHome: true }}>
         <S.GoogleLogo>
-          <img src={googleMapsLogo} alt="Google Maps" />
+          <img src={googleMapsLogo} alt="" />
         </S.GoogleLogo>
         <span>
-          <strong>{imported.count ? "Google Maps 저장 장소" : "Google Maps 장소 가져오기"}</strong>
-          <small>{imported.count ? "저장 장소 " + imported.count + "곳을 불러왔어요" : "공개 목록 링크 또는 Takeout 파일"}</small>
+          <strong>{hasImported ? "Google Maps 연동 중" : statusUnknown ? "Google Maps" : "Google Maps 연결하기"}</strong>
+          <small>{hasImported ? `저장 장소 ${imported.count}곳을 불러왔어요` : statusUnknown
+            ? (imported.pending ? "저장 장소를 확인하고 있어요" : "저장 장소를 확인하지 못했어요")
+            : "저장해 둔 장소를 불러와 일정에 바로 담아요"}</small>
         </span>
-        <b data-imported={imported.count > 0}>
-          {imported.count > 0 && <i aria-hidden="true" />}
-          {imported.count ? "관리" : "가져오기"}
-        </b>
+        {!statusUnknown && <b data-imported={hasImported}>
+          {hasImported && <i aria-hidden="true" />}
+          {hasImported ? "연동됨" : "연결"}
+        </b>}
       </S.GoogleLink>
 
       <S.Band />

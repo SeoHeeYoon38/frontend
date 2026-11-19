@@ -3,9 +3,7 @@ import backIcon from "../../assets/figma/map-back.svg";
 import walkIcon from "../../assets/figma/traveler-walk.svg";
 import locateIcon from "../../assets/figma/course-map-locate.svg";
 import googleIcon from "../../assets/images/brand-google-maps.webp";
-import sampleLeg1 from "../../assets/traveler-course/route-leg-1.svg";
-import sampleLeg2 from "../../assets/traveler-course/route-leg-2.svg";
-import sampleLeg3 from "../../assets/traveler-course/route-leg-3.svg";
+import { kyotoMapStops } from "./kyotoMapStops";
 import * as S from "./TravelerCourseOverlay.styled";
 import { PlaceThumbnail } from "../common/PlacePhoto";
 import SheetHandle from "../common/SheetHandle";
@@ -36,14 +34,6 @@ interface CourseMapScreenProps {
   onOpenPlace: (place: CourseMapStop, selectedPin?: string) => void;
 }
 
-// Coordinates on the original 402 × 874 Kyoto map illustration.
-const sampleStops = [
-  { id: "kiyomizu", x: 321, y: 540, leg: sampleLeg1, detail: "이른 아침 사람 없는 본당 전망" },
-  { id: "sannenzaka", x: 233, y: 498, leg: sampleLeg2, detail: "기념품 가게와 찻집이 이어진 돌길" },
-  { id: "yasaka", x: 188, y: 436, leg: sampleLeg3, detail: "해 질 무렵 골목 끝에 보이는 오층탑" },
-  { id: "gion", x: 89, y: 290, detail: "저녁 등불이 켜진 전통 거리 산책" },
-];
-
 export default function CourseMapScreen({ title, city, days, tripId, photoCourseId, sampleMap, activeDay, initialSelectedId, onBack, onDayChange, onOpenPlace }: CourseMapScreenProps) {
   const [selectedId, setSelectedId] = useState(initialSelectedId);
   const [listHidden, setListHidden] = useState(false);
@@ -66,7 +56,7 @@ export default function CourseMapScreen({ title, city, days, tripId, photoCourse
   const selected = rows.find((row) => row.key === selectedId);
   const showList = !selected && !listHidden;
   const pins = sampleMap ? rows.flatMap(row => {
-    const point = sampleStops.find(stop => stop.id === row.place.id);
+    const point = kyotoMapStops.find(stop => stop.id === row.place.id);
     return point ? [{ ...point, y: point.y - (showList ? 120 : 0), row }] : [];
   }) : [];
   const selectedSample = pins.find(pin => pin.row.key === selectedId);
@@ -107,7 +97,7 @@ export default function CourseMapScreen({ title, city, days, tripId, photoCourse
         </S.MapTabs>
       </S.MapHeader>
       <S.MapCanvas $selected={Boolean(selected)} $showCourseList={showList}>
-        {sampleMap ? <>
+        {sampleMap && (activeDay === undefined || activeDay === 0) ? <>
           <S.SampleMapLayer>
             <img src={sampleMap} alt={`${city} 샘플 지도`} />
             <svg viewBox="0 0 402 874" preserveAspectRatio="none" aria-hidden="true">
@@ -137,7 +127,7 @@ export default function CourseMapScreen({ title, city, days, tripId, photoCourse
             }}><img src={locateIcon} alt="" /></button>}
           </S.SampleMapControls>
         </> : <CourseRouteMap places={places} city={city} day={activeDay === undefined ? undefined : activeDay + 1}
-          live interactive selectedId={selectedId} onSelect={(id) => setSelectedId((current) => current === id ? undefined : String(id))} />}
+          live={!sampleMap} schematic={Boolean(sampleMap)} interactive selectedId={selectedId} onSelect={(id) => setSelectedId((current) => current === id ? undefined : String(id))} />}
       </S.MapCanvas>
       {selected ? <S.MapSelection aria-label="지도에서 선택한 장소" data-public-course={!tripId || undefined}>
         <div>
