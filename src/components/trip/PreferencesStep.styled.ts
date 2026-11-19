@@ -22,41 +22,42 @@ export const AnalysisStatus = styled.span`
 `;
 export const Prompt = styled.div<{ $active: boolean; $exceeded: boolean }>`
   position: relative;
-  margin-top: 6px;
-  min-height: ${({ $exceeded }) => ($exceeded ? "236px" : "132px")};
-  border: 1.5px solid ${({ $active, $exceeded }) => ($exceeded ? "#ef4444" : $active ? "#090738" : "#e8eaf0")};
+  margin-top: 4px;
+  height: ${({ $exceeded }) => ($exceeded ? "236px" : "132px")};
+  border: ${({ $active, $exceeded }) => ($exceeded || $active ? "1.5px" : "1px")} solid ${({ $active, $exceeded }) => ($exceeded ? "#e5484d" : $active ? "#090738" : "#ecedf4")};
   border-radius: 20px;
   background: white;
-  box-shadow: 0 8px 20px rgb(9 7 56 / 5%);
-  padding: 14.5px 16.5px 38px;
+  box-shadow: 0 8px 24px rgb(64 64 153 / 8%);
+  padding: 15px 17px 38px;
   textarea {
+    display: block;
     font: inherit;
     font-size: 15px;
-    line-height: 1.55;
+    line-height: 22px;
     background: none;
     border: 0;
     outline: 0;
     width: 100%;
-    height: ${({ $exceeded }) => ($exceeded ? "178px" : "76px")};
+    height: 100%;
     resize: none;
-    min-height: 76px;
   }
   textarea::placeholder {
-    color: #a8a8ae;
+    color: #a8aab4;
   }
 
   textarea:focus-visible { outline: none; }
 
   &:focus-within {
-    border-color: ${({ $exceeded }) => $exceeded ? "#ef4444" : "#090738"};
+    border-color: ${({ $exceeded }) => $exceeded ? "#e5484d" : "#090738"};
   }
   span {
     position: absolute;
-    bottom: 14px;
-    right: 18px;
+    bottom: ${({ $exceeded }) => $exceeded ? "13px" : "9px"};
+    right: ${({ $exceeded }) => $exceeded ? "6px" : "13px"};
     font-size: 11px;
-    color: #b5b5bd;
-    b { font-weight: 500; color: ${({ $exceeded }) => ($exceeded ? "#ef4444" : "inherit")}; }
+    line-height: 15px;
+    color: #b4b5bd;
+    b { font-weight: 500; color: ${({ $exceeded }) => ($exceeded ? "#e5484d" : "inherit")}; }
   }
 `;
 
@@ -64,7 +65,7 @@ export const PromptError = styled.p`
   display: flex;
   align-items: flex-start;
   gap: 6px;
-  margin: -6px 4px 0;
+  margin: -10px 4px 0;
   color: #e5484d;
   font-size: 13px;
   line-height: 18px;
@@ -72,30 +73,34 @@ export const PromptError = styled.p`
 `;
 
 export const AiBadge = styled.span`
-  display: inline-flex;
+  display: flex;
+  width: fit-content;
   align-items: center;
   gap: 4px;
-  padding: 5px 9px;
-  margin-bottom: 8px;
+  padding: 4px 10px 4px 8px;
+  margin-bottom: 7px;
   border-radius: 20px;
   color: #090738;
   background: #fff;
-  font-size: 11px;
+  font-size: 12px;
+  line-height: 17px;
   font-weight: 700;
 `;
 export const Analysis = styled.div`
   border: 1px solid #e4e6ec;
   border-radius: 20px;
   background: #fff;
-  box-shadow: 0 8px 20px rgb(9 7 56 / 5%);
+  box-shadow: 0 8px 12px rgb(64 64 153 / 6%);
   padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
   header {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
+    height: 20px;
+    line-height: 22px;
     color: #090738;
     font-size: 15px;
     font-weight: 700;
@@ -105,6 +110,8 @@ export const Analysis = styled.div`
     gap: 12px;
     align-items: center;
   }
+  section:first-of-type { margin-block: -1px -3px; }
+  section > div { align-items: center; gap: 6px; }
   section > span {
     font-size: 13px;
     color: #5c5c63;
@@ -113,6 +120,7 @@ export const Analysis = styled.div`
   }
 `;
 export const Preferences = styled(Step)`
+  margin-top: -5px;
   gap: 20px;
   header {
     min-width: 0;
@@ -121,11 +129,16 @@ export const Preferences = styled(Step)`
     line-height: 20px;
     margin-top: 4px;
   }
+  > div:first-child h1 {
+    line-height: 32px;
+    letter-spacing: -0.24px;
+  }
 `;
 export const ExampleTitle = styled.h2`
   color: #5c5c63;
   font-size: 14px;
-  margin: 14px 0 12px;
+  margin: 10px 0;
+  line-height: 20px;
 `;
 
 export const Examples = styled.div`
@@ -146,6 +159,8 @@ export const Example = styled.button`
   text-align: left;
   color: #1a1a1a;
   font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
 
   span { display: grid; height: 32px; place-items: center; border-radius: 10px; background: #f1f2f8; }
 `;
@@ -169,7 +184,7 @@ export const AnalysisChip = styled.span`
   background: #f3f5fa;
   color: #090738;
   font-size: 13px;
-  line-height: 1.25;
+  line-height: 18px;
   font-weight: 700;
 
   button {
@@ -191,6 +206,7 @@ export const ChipChoice = styled.label`
   border-radius: 14px;
   color: #5c5c63;
   font-size: 13px;
+  line-height: 18px;
   font-weight: 500;
 
   img { transform: rotate(-45deg); }

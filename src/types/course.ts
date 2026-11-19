@@ -58,7 +58,6 @@ export interface TravelerCourseView {
   transport: string;
   hero: string;
   authorImage: string;
-  routePreview: string;
   mapFull: string;
   days: TravelerCourseDay[];
 }

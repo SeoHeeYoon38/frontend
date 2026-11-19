@@ -86,7 +86,7 @@ export const ServiceRow = styled.div`
   > span strong { font-size: 15px; line-height: 22px; }
   > span small { display: flex; align-items: center; gap: 5px; color: #8a8a8e; font-size: 12px; line-height: 17px; }
   > span small i { width: 6px; height: 6px; border-radius: 50%; background: #e4e6ec; }
-  > span small i[data-linked="true"] { background: #00c7df; }
+  > span small i[data-linked="true"] { background: #00e1ff; }
   > a, > button { padding: 6px 12px; border: 1px solid #e4e6ec; border-radius: 14px; font-size: 13px; line-height: 18px; font-weight: 700; }
 `;
 

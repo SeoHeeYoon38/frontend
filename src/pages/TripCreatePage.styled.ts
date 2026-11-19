@@ -30,7 +30,7 @@ export const Generation = styled.div`
   flex-direction: column;
   align-items: center;
   text-align: center;
-  padding: 70px 0 48px;
+  padding: 76px 0 48px;
   @media (max-height: 600px) {
     padding-top: 24px;
   }
@@ -59,7 +59,7 @@ export const GenerationSteps = styled.ol`
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 0;
+  gap: 22px;
   list-style: none;
   padding: 0;
   margin: 32px 0 0;
@@ -70,8 +70,8 @@ export const GenerationSteps = styled.ol`
     position: relative;
     display: flex;
     align-items: center;
-    min-height: 46px;
-    gap: 18px;
+    min-height: 24px;
+    gap: 12px;
     color: #090738;
     font-size: 14px;
     line-height: 20px;
@@ -92,15 +92,15 @@ export const GenerationSteps = styled.ol`
     position: absolute;
     z-index: -1;
     left: 10px;
-    top: 27px;
+    top: 12px;
     width: 2px;
-    height: 38px;
+    height: calc(100% + 22px);
     background: #00e1ff;
   }
 
   li[data-status="current"]::after,
   li[data-status="waiting"]::after {
-    left: 9px;
+    left: 10px;
     width: 0;
     border-left: 2px dashed #c9ccd6;
     background: transparent;
@@ -139,7 +139,7 @@ export const GenerationGlow = styled.img`
   z-index: -1;
   pointer-events: none;
   left: calc(50% - 130px);
-  top: 50px;
+  top: 26px;
   width: 260px;
   height: 260px;
 `;

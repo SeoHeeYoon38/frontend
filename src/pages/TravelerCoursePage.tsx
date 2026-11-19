@@ -12,6 +12,7 @@ import { routes } from "../config/routes";
 import { travelerCourse } from "../data/mocks/travelerCourseData";
 import { mockTripCities } from "../data/mocks/tripData";
 import CourseMapScreen from "../components/traveler-course/CourseMapScreen";
+import KyotoCoursePreview from "../components/traveler-course/KyotoCoursePreview";
 import TravelerPlaceDetail from "../components/traveler-course/TravelerPlaceDetail";
 import TravelerAiChat from "../components/traveler-course/TravelerAiChat";
 import CourseLoginSheet from "../components/traveler-course/CourseLoginSheet";
@@ -65,11 +66,10 @@ function courseView(course: CourseDetailResponse): TravelerCourseView {
     transport: course.transportSummary ?? "미정",
     hero,
     authorImage: course.author.imageUrl ?? "",
-    routePreview: travelerCourse.routePreview,
     mapFull: travelerCourse.mapFull,
     days: course.days.map((day) => ({
       label: `${day.dayNumber}일차`,
-      places: day.stops.map((stop) => ({
+      places: day.stops.map(stop => ({
         id: stop.placeId,
         name: stop.name,
         category: categoryLabels[stop.category],
@@ -157,6 +157,14 @@ function TravelerCoursePage() {
   }
 
   const day = course.days[activeDay];
+  // The Kyoto design preview lists three stops and the legs leading to the fourth map pin.
+  const previewPlaces = !liveCourseId && activeDay === 0 ? day?.places.slice(0, 3) : day?.places;
+  const openDayMap = (index?: number) => {
+    detailScroll.current = window.scrollY;
+    setMapDay(activeDay);
+    setReturnPin(index === undefined ? undefined : `${activeDay}-${index}`);
+    setScreen("map");
+  };
   const selectedPlace = course.days
     .flatMap((item) => item.places)
     .find((place) => place.id === selectedPlaceId);
@@ -240,7 +248,10 @@ function TravelerCoursePage() {
         sampleMap={liveCourseId ? undefined : course.mapFull}
         activeDay={mapDay}
         initialSelectedId={returnPin}
-        onBack={() => setScreen("course")}
+        onBack={() => {
+          if (mapDay !== undefined) setActiveDay(mapDay);
+          setScreen("course");
+        }}
         onDayChange={setMapDay}
         onOpenPlace={(place, pin) => {
           setReturnPin(pin);
@@ -312,15 +323,14 @@ function TravelerCoursePage() {
               </button>
             ))}
           </S.DayTabs>
-          {day && <S.MapPreview type="button" aria-label={`${day.label} 지도 보기`} onClick={() => {
-            detailScroll.current = window.scrollY;
-            setMapDay(activeDay);
-            setReturnPin(undefined);
-            setScreen("map");
-          }}>
-            {liveCourseId ? <CourseRouteMap
+          {day && <S.MapPreview>
+            <button className="preview-open" type="button" aria-label={`${day.label} 지도 보기`} onClick={() => openDayMap()} />
+            {!liveCourseId && activeDay === 0 ? <KyotoCoursePreview map={course.mapFull} openStop={(id) => {
+              const index = day.places.findIndex(place => place.id === id);
+              openDayMap(index < 0 ? undefined : index);
+            }} /> : <CourseRouteMap
               places={day.places.map((place, index) => ({
-                id: place.id,
+                id: index,
                 name: place.name,
                 latitude: place.latitude,
                 longitude: place.longitude,
@@ -328,12 +338,13 @@ function TravelerCoursePage() {
               }))}
               city={course.city}
               day={activeDay + 1}
-              live
-            /> : <img src={course.routePreview} alt={`${course.city} 여행 경로 지도`} />}
+              live={Boolean(liveCourseId)} schematic={!liveCourseId} hideCaption
+              onSelect={id => openDayMap(Number(id))}
+            />}
           </S.MapPreview>}
           <S.PlaceList>
-            {day?.places.map((place, index) => (
-              <S.PlaceRow key={place.id}>
+            {previewPlaces?.map((place, index) => (
+              <S.PlaceRow key={`${place.id}-${index}`}>
                 <S.Rail><b>{index + 1}</b>{index < day.places.length - 1 && <i />}</S.Rail>
                 <S.PlaceContent>
                   <S.PlaceCard type="button" onClick={() => {
@@ -343,9 +354,14 @@ function TravelerCoursePage() {
                     setScreen("place");
                   }}>
                     {liveCourseId ? <PlaceThumbnail courseId={liveCourseId} placeId={place.id} name={place.name} /> : <img src={place.image} alt="" />}
-                    <span><strong>{place.name}</strong><small>{place.category}</small></span>
+                    <span className="place-copy"><strong>{place.name}</strong><small>{place.category}</small></span>
                   </S.PlaceCard>
-                  {place.travelTime && <S.Move><img src={walkIcon} alt="" />{place.travelTime}<span>{place.distance}</span></S.Move>}
+                  {index < day.places.length - 1 && <S.Move aria-hidden={!place.travelTime && !place.distance || undefined}>
+                    {place.travelTime?.startsWith("도보") && <img src={walkIcon} alt="" />}
+                    {place.travelTime && <strong>{place.travelTime}</strong>}
+                    {place.travelTime && place.distance && <i aria-hidden="true" />}
+                    {place.distance && <span>{place.distance}</span>}
+                  </S.Move>}
                 </S.PlaceContent>
               </S.PlaceRow>
             ))}

@@ -70,7 +70,7 @@ function CreateTripSheet({ onClose }: CreateTripSheetProps) {
       <h2 id={titleId}>어떻게 여행을 만들까요?</h2>
       <S.Options>
         {options.map(({ variant, to, icon, title, description }) => (
-          <S.Option key={variant} to={to}>
+          <S.Option key={variant} to={to} state={variant === "ai" ? { newAiTrip: true } : undefined}>
             <S.Thumbnail $variant={variant}>
               <img src={icon} alt="" />
             </S.Thumbnail>

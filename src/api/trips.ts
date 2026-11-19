@@ -83,6 +83,24 @@ export function updateTrip(
   });
 }
 
+/** A locally restored new-trip form can outlive its server draft. */
+export async function saveNewTripDraft(id: number | undefined, input: TripInput) {
+  if (id !== undefined) {
+    try {
+      const current = await getTrip(id);
+      if (current.status === "DRAFT") {
+        if (current.city === input.city && current.startDate === input.startDate &&
+          current.endDate === input.endDate && current.companion === input.companion &&
+          current.companionCount === input.companionCount) return current;
+        return await updateTrip(id, input);
+      }
+    } catch (reason) {
+      if (!(reason instanceof ApiError && reason.status === 404 && reason.code === "TRIP_NOT_FOUND")) throw reason;
+    }
+  }
+  return createTrip(input);
+}
+
 export async function updateTripDates(tripId: number, input: TripUpdateInput & { startDate: string; endDate: string }) {
   // Changing trip dates does not move the server's itinerary versions or reservations.
   const itinerary = await getLatestItinerary(tripId).catch((reason: unknown) => {

@@ -21,7 +21,7 @@ import { isServerTripId, savedPlaceToTripPlace } from "../api/adapters";
 import { getSavedPlaces } from "../api/places";
 import { getTrip, getTripCity } from "../api/trips";
 import { getReservations } from "../api/reservations";
-import type { ReservationResponse, TripResponse } from "../api/types";
+import type { ReservationResponse, SavedPlaceResponse, TripResponse } from "../api/types";
 import { routes } from "../config/routes";
 import type { TripPlace } from "../types/trip";
 import { isApiEnabled } from "../api/config";
@@ -128,6 +128,11 @@ function AiTripCreatePage({
     generate,
   } = useTripCreate(trip, places, reservations);
 
+  function rememberPlaces(saved: SavedPlaceResponse[]) {
+    const places = saved.map((place) => savedPlaceToTripPlace(place, draft.city));
+    update({ ...draft, places, selectedPlaceIds: places.map((place) => place.id), source: "manual" });
+  }
+
   let content = (
     <TripInfoStep
       draft={draft}
@@ -144,18 +149,14 @@ function AiTripCreatePage({
         key={draft.tripId}
         tripId={Number(draft.tripId)}
         recommendationCity={draft.city}
+        initialSelectedIds={draft.selectedPlaceIds}
+        onSelectionChange={rememberPlaces}
         importView={importView}
         onImportViewChange={setImportView}
         onLoadingChange={setImporting}
         onContinue={(saved) => {
           setImportView("method");
-          const places = saved.map((place) => savedPlaceToTripPlace(place, draft.city));
-          update({
-            ...draft,
-            places,
-            source: "manual",
-            selectedPlaceIds: places.filter((place) => place.placeId && !place.closed && !place.needsMatch).map((place) => place.id),
-          });
+          rememberPlaces(saved);
           move(3);
         }}
       />

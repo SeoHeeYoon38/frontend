@@ -27,7 +27,7 @@ function HomeIntro({ name, trip, tripPath = (id) => tripPlanPath("home", id) }: 
       </S.Greeting>
       <S.Create>
         <S.Actions>
-          <S.Action as={Link} to={routes.createTrip} $variant="ai">
+          <S.Action as={Link} to={routes.createTrip} state={{ newAiTrip: true }} $variant="ai">
             <strong>
               AI 맞춤
               <br />

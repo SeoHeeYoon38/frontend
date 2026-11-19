@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
 import {
   addSavedPlace,
   deleteSavedPlace,
@@ -48,6 +48,8 @@ async function loadSavedPlaces(tripId: number, cityName: string | undefined, sig
 interface ServerSavedPlacesProps {
   tripId: number;
   recommendationCity?: string;
+  initialSelectedIds?: string[];
+  onSelectionChange?: (places: SavedPlaceResponse[]) => void;
   onContinue?: (places: SavedPlaceResponse[]) => void;
   onPick?: (place: SavedPlaceResponse) => void;
   onPickMany?: (places: SavedPlaceResponse[]) => void;
@@ -61,13 +63,13 @@ interface ServerSavedPlacesProps {
 }
 
 function ServerSavedPlaces({
-  tripId, recommendationCity, onContinue, onPick, onPickMany, pickDay, pickedPlaceIds,
+  tripId, recommendationCity, initialSelectedIds, onSelectionChange, onContinue, onPick, onPickMany, pickDay, pickedPlaceIds,
   pickLabel = "일정에 담기", pickedLabel = "이날 일정에 담았어요", importView, onImportViewChange, onLoadingChange,
 }: ServerSavedPlacesProps) {
   const isTripCreation = Boolean(onContinue);
   const [places, setPlaces] = useState<SavedPlaceResponse[]>();
   const [city, setCity] = useState<CityResponse>();
-  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [selectedIds, setSelectedIds] = useState<number[]>(() => initialSelectedIds?.map(Number) ?? []);
   const [tab, setTab] = useState<"saved" | "popular" | "recommended">("saved");
   const [showPopularTab, setShowPopularTab] = useState(false);
   const [category, setCategory] = useState<CategoryFilter>("ALL");
@@ -180,6 +182,13 @@ function ServerSavedPlaces({
   const emptySavedList = tab === "saved" && cityPlaces?.length === 0;
   const allSelected = selectablePlaces.length > 0 && selectablePlaces.every((place) => selectedIds.includes(place.id));
 
+  const rememberSelection = useEffectEvent(() => {
+    if (cityPlaces) onSelectionChange?.(selection);
+  });
+  useEffect(() => {
+    rememberSelection();
+  }, [selectedIds, places, city]);
+
   function openRecommended() {
     setError("");
     if (isTripCreation && cityPlaces?.length === 0) setShowPopularTab(true);
@@ -190,7 +199,7 @@ function ServerSavedPlaces({
     setSelectedIds(checked ? selectablePlaces.map((place) => place.id) : []);
   }
 
-  function addRecommended(ids: string[]) {
+  function addRecommended(ids: string[], deselected: string[] = []) {
     if (!places) return Promise.resolve(false);
     return run(async (signal) => {
       let latest = places;
@@ -209,6 +218,10 @@ function ServerSavedPlaces({
       const currentPlaces = city ? savedPlacesForTripCity(latest, city) : latest;
       if (ids.some((id) => !currentPlaces.some((place) => place.placeId === id && place.matchStatus === "MATCHED"))) {
         throw new Error("일부 장소를 일정에 담을 수 없어요. 저장 장소에서 장소 상태를 확인해 주세요.");
+      }
+      if (deselected.length) {
+        const removed = new Set(latest.filter(place => place.placeId && deselected.includes(place.placeId)).map(place => place.id));
+        setSelectedIds(current => current.filter(id => !removed.has(id)));
       }
     });
   }
