@@ -88,6 +88,7 @@ export default function AddItineraryPlaceSheet({
   const [saved, setSaved] = useState<PlaceListResult>();
   const [searched, setSearched] = useState<PlaceListResult & { term: string }>();
   const [pending, setPending] = useState(false);
+  const [addProgress, setAddProgress] = useState<{ current: number; total: number }>();
   const [error, setError] = useState("");
   const [attempt, setAttempt] = useState(0);
   const [addedCount, setAddedCount] = useState(0);
@@ -195,10 +196,12 @@ export default function AddItineraryPlaceSheet({
       }
       for (const placeId of idsToSave) {
         signal.throwIfAborted();
+        setAddProgress({ current: addedIds.length + 1, total: idsToSave.length });
         itinerary = await addPlaceOnDate(tripId, placeId, day, date, signal);
         addedIds.push(placeId);
       }
     } catch (reason) {
+      if (!signal.aborted) setAddProgress(undefined);
       if (!signal.aborted) {
         try {
           const latest = replacement ? undefined : await reloadAfterPlaceAddError(tripId, reason, signal);
@@ -220,7 +223,10 @@ export default function AddItineraryPlaceSheet({
         }
       }
       if (saving.current === controller) saving.current = null;
-      if (!signal.aborted) setPending(false);
+      if (!signal.aborted) {
+        setAddProgress(undefined);
+        setPending(false);
+      }
     }
   }
 
@@ -239,6 +245,13 @@ export default function AddItineraryPlaceSheet({
       onClose={onClose}
       closeDisabled={pending}
       footer={<>
+        {addProgress && (
+          <S.Caption role="status">
+            {addProgress.total > 1
+              ? `${addProgress.total}곳 중 ${addProgress.current}번째 장소를 추가하고 있어요.`
+              : "선택한 날짜의 일정을 확인하고 장소를 추가하고 있어요."}
+          </S.Caption>
+        )}
         {error && <ErrorText role="alert">
           {addedCount > 0 && <span>{addedCount}곳을 추가했어요. </span>}<span>{error}</span>
         </ErrorText>}
