@@ -8,7 +8,7 @@ import pinIcon from "../../assets/figma/recommend-pin.svg";
 import courseCheckOn from "../../assets/figma/recommend-selected.svg";
 import courseCheckOff from "../../assets/figma/recommend-unselected.svg";
 import courseChevron from "../../assets/figma/recommend-chevron.svg";
-import TripSheet from "../common/TripSheet";
+import sheetClose from "../../assets/figma/recommend-close.svg";
 import { PlaceThumbnail } from "../common/PlacePhoto";
 import CourseRouteMap from "../course-completion/CourseRouteMap";
 import * as P from "./SavedPlacesStep.styled";
@@ -32,6 +32,11 @@ type SuggestedPlace = {
   address: string | null;
   category?: PlaceCategoryCode | null;
 };
+
+function RecommendedStopPhoto({ courseId, stop }: { courseId: number; stop: CourseDetailResponse["days"][number]["stops"][number] }) {
+  return <PlaceThumbnail courseId={courseId} placeId={stop.placeId} name={stop.name}
+    placeholder={stop.imageUrl && <img className="suggested-photo-fallback" src={stop.imageUrl} alt="" loading="lazy" />} />;
+}
 
 async function getSuggestedPlaces(tripId: number, lat: number, lng: number, signal: AbortSignal): Promise<SuggestedPlace[]> {
   const popular = await getPopularPlaces(tripId, signal);
@@ -171,7 +176,7 @@ function RecommendedCourseCard({ course, busy, selectedIds, onOpen }: {
   return <P.SuggestedCourse ref={ref} type="button" aria-haspopup="dialog" disabled={busy} data-selected={selected}
     aria-label={`${courseTitle(course.title)}${selected ? ", 장소 선택됨" : ""}, 상세 보기`} onClick={() => onOpen(detail)}>
     <span className="suggested-cover" data-count={photos.length}>
-      {photos.length ? photos.map(stop => <PlaceThumbnail key={stop.id} courseId={course.id} placeId={stop.placeId} name={stop.name} />)
+      {photos.length ? photos.map(stop => <RecommendedStopPhoto key={stop.id} courseId={course.id} stop={stop} />)
         : course.coverImageUrl && <img alt="" src={course.coverImageUrl} loading="lazy" />}
     </span>
     <img className="suggested-check" alt="" src={selected ? courseCheckOn : courseCheckOff} />
@@ -217,8 +222,10 @@ function ServerCourseDetail({ course, initialDetail, initialSelection, busy, sav
   const added = courseIds.filter(id => ids.includes(id));
   const removed = courseIds.filter(id => initialSelection.includes(id) && !ids.includes(id));
   return (
-    <TripSheet
+    <P.RecommendedDetailSheet
       variant="course"
+      contentGap={13}
+      closeIcon={sheetClose}
       title={courseTitle(course.title)}
       onClose={onClose}
       closeDisabled={busy}
@@ -230,7 +237,7 @@ function ServerCourseDetail({ course, initialDetail, initialSelection, busy, sav
         </S.Primary>
       )}
     >
-      <S.Help>장소 {course.stopCount}곳</S.Help>
+      <S.Help className="recommended-detail-meta">장소 {course.stopCount}곳</S.Help>
       {saveError && <S.ErrorText role="alert">{saveError}</S.ErrorText>}
       {failed ? (
         <div>
@@ -252,7 +259,7 @@ function ServerCourseDetail({ course, initialDetail, initialSelection, busy, sav
                 <P.StopRail aria-hidden="true"><span>{index + 1}</span></P.StopRail>
                 <P.StopContent>
                   <P.SuggestedStopCard>
-                    <PlaceThumbnail courseId={course.id} placeId={stop.placeId} name={stop.name} />
+                    <RecommendedStopPhoto courseId={course.id} stop={stop} />
                       <span>
                         <strong>{stop.name}</strong>
                         <small>{stop.visitTime && <><b>{stop.visitTime.slice(0, 5)}</b><i aria-hidden="true" /></>}{savedPlaceCategoryLabels[stop.category]}</small>
@@ -278,6 +285,6 @@ function ServerCourseDetail({ course, initialDetail, initialSelection, busy, sav
           {stops.length === 0 && <p>이 코스에 표시할 장소가 없어요.</p>}
         </>
       )}
-    </TripSheet>
+    </P.RecommendedDetailSheet>
   );
 }
