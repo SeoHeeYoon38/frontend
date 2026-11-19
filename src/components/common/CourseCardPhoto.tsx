@@ -4,6 +4,7 @@ import { firstCoursePlaceId } from "../../api/adapters";
 import { getCourse } from "../../api/courses";
 import emptyPin from "../../assets/direct-trip/empty-pin.svg";
 import { PlaceThumbnail } from "./PlacePhoto";
+import CoursePhotoViewer from "./CoursePhotoViewer";
 import "./CourseCardPhoto.css";
 
 interface CourseCardPhotoProps {
@@ -12,9 +13,10 @@ interface CourseCardPhotoProps {
   title: string;
   firstPlaceId?: string | null;
   backdrop?: boolean;
+  expandable?: boolean;
 }
 
-function CardPhoto({ id, coverUrl, title, backdrop, firstPlaceId }: CourseCardPhotoProps) {
+function CardPhoto({ id, coverUrl, title, backdrop, firstPlaceId, expandable }: CourseCardPhotoProps) {
   const preview = useRef<HTMLSpanElement>(null);
   const [brokenCover, setBrokenCover] = useState(false);
   const [fetchedPlaceId, setFetchedPlaceId] = useState<string | null>(null);
@@ -40,8 +42,10 @@ function CardPhoto({ id, coverUrl, title, backdrop, firstPlaceId }: CourseCardPh
 
   const placeholder = <img className="course-card-photo__pin" src={emptyPin} alt="" />;
   return <span ref={preview} className={backdrop ? "course-card-photo course-card-photo--backdrop" : "course-card-photo"}>
-    {hasCover ? <img className="course-card-photo__cover" src={coverUrl} alt="" loading="lazy" decoding="async" onError={() => setBrokenCover(true)} />
-      : placeId ? <PlaceThumbnail courseId={courseId} placeId={placeId} name={title} placeholder={placeholder} />
+    {hasCover ? <>
+      <img className="course-card-photo__cover" src={coverUrl} alt="" loading="lazy" decoding="async" onError={() => setBrokenCover(true)} />
+      {expandable && <CoursePhotoViewer src={coverUrl} title={title} />}
+    </> : placeId ? <PlaceThumbnail courseId={courseId} placeId={placeId} name={title} placeholder={placeholder} coursePreview={expandable ? "detail" : "card"} />
       : placeholder}
   </span>;
 }

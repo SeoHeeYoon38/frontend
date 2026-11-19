@@ -28,13 +28,3 @@
   position: absolute;
   inset: 0;
 }
-
-.course-card-photo--backdrop .place-photo__credit {
-  z-index: 1;
-  inset: 0 auto auto 0;
-  max-width: 45%;
-  padding: 3px 7px;
-  border-bottom-right-radius: 6px;
-  font-size: 11px;
-  line-height: 1.3;
-}
