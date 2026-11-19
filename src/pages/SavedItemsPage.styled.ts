@@ -223,6 +223,7 @@ export const CourseRow = styled(ItemRow)`
   > img, > span {
     width: 72px;
     height: 72px;
+    border-radius: 14px;
   }
 
   a {

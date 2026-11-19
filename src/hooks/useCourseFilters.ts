@@ -77,7 +77,10 @@ function useCourseFilters() {
   const regions = new Map(destinations.map((city) => [`${city.country}:${city.name}`, city]));
   for (const course of courseCatalog) {
     const key = `${course.country}:${course.city}`;
-    if (!regions.has(key)) regions.set(key, { name: course.city, country: course.country, image: course.image });
+    if (!regions.has(key)) {
+      const image = course.image || mockDestinations.find((city) => city.name === course.city && city.country === course.country)?.image;
+      regions.set(key, { name: course.city, country: course.country, image });
+    }
   }
   const allDestinations = [...regions.values()];
   const requestedCountry = params.get("country") || "일본";

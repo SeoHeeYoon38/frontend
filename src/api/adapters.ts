@@ -145,20 +145,6 @@ function courseInterest(tags: string[]): CourseInterest[] {
   return values.size ? [...values] : ["전체"];
 }
 
-function courseCover(course: CourseSummaryResponse) {
-  if (course.coverImageUrl) return course.coverImageUrl;
-  return cityCoverImages[course.city] ?? "";
-}
-
-const cityCoverImages: Record<string, string> = {
-  오사카: new URL("../assets/images/city-osaka.webp", import.meta.url).href,
-  교토: new URL("../assets/images/city-kyoto.webp", import.meta.url).href,
-  도쿄: new URL("../assets/images/city-tokyo.webp", import.meta.url).href,
-  후쿠오카: new URL("../assets/images/city-fukuoka.webp", import.meta.url).href,
-  방콕: new URL("../assets/images/city-bangkok.webp", import.meta.url).href,
-  다낭: new URL("../assets/images/city-danang.webp", import.meta.url).href,
-};
-
 export function courseTitle(title: string) {
   return title.replace(/^\[테스트용\]\s*/, "");
 }
@@ -173,7 +159,7 @@ export function courseSummaryToTravelCourse(
     country: course.country,
     duration: `${course.nightCount}박 ${course.dayCount}일`,
     author: course.author.name ?? "",
-    image: courseCover(course),
+    image: course.coverImageUrl?.trim() ?? "",
     avatar: course.author.imageUrl || undefined,
     description: course.transportSummary || undefined,
     interests: courseInterest(course.tags),
@@ -189,7 +175,7 @@ export function courseSummaryToHomeCourse(
     description: course.transportSummary ?? "",
     category: course.tags[0] ?? course.city,
     courseCount: course.stopCount,
-    coverImage: courseCover(course),
+    coverImage: course.coverImageUrl?.trim() ?? "",
   };
 }
 

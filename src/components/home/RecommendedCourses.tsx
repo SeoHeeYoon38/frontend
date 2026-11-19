@@ -6,6 +6,7 @@ import * as C from "./common.styled";
 import { Link, useNavigate } from "react-router";
 import { routes } from "../../config/routes";
 import { travelerCoursePath } from "../../utils/navigation";
+import CourseCardPhoto from "../common/CourseCardPhoto";
 
 interface RecommendedCoursesProps {
   courses: CourseSummary[];
@@ -40,12 +41,7 @@ function RecommendedCourses({ courses }: RecommendedCoursesProps) {
                 aria-label={`${course.title.replace("\n", " ")} 코스 둘러보기`}
                 key={course.id}
               >
-                {course.coverImage && <C.Cover
-                  loading="lazy"
-                  decoding="async"
-                  src={course.coverImage}
-                  alt=""
-                />}
+                <CourseCardPhoto id={course.id} coverUrl={course.coverImage} title={course.title} backdrop />
                 <C.Scrim />
                 <S.Badges>
                   <span>{course.category}</span>

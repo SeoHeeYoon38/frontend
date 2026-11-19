@@ -35,13 +35,6 @@ export const Carousel = styled.div`
   margin-right: -20px;
   padding-right: 20px;
 `;
-export const Cover = styled.img`
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-`;
 export const Scrim = styled.div`
   position: absolute;
   inset: 0;
@@ -201,10 +194,9 @@ export const Author = styled.div`
     color: #8a8a8e;
   }
 `;
-export const Thumbnail = styled.img`
+export const Thumbnail = styled.span`
   width: 96px;
   height: 96px;
-  object-fit: cover;
   border-radius: 14px;
   flex-shrink: 0;
 `;
