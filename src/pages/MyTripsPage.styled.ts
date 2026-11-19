@@ -63,6 +63,25 @@ export const Toast = styled.div`
   }
 `;
 
+export const SavedToast = styled.div`
+  position: fixed;
+  z-index: 30;
+  bottom: max(105px, calc(env(safe-area-inset-bottom) + 75px));
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(calc(100% - 40px), 362px);
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: rgb(23 23 26 / 94%);
+  color: white;
+  font: 500 14px/20px "Pretendard", sans-serif;
+  img { width: 18px; height: 18px; }
+`;
+
 export const SearchBar = styled.div`
   display: flex;
   align-items: center;

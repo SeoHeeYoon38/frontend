@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { MemberResponse } from "../../api/types";
 import avatar from "../../assets/course-settings-details/member-avatar.png";
 import { profileCharacter } from "../../config/profileCharacters";
 import backIcon from "../../assets/icons/nav-back.svg";
 import addBadge from "../../assets/course-settings-details/member-add.svg";
 import memberIcon from "../../assets/course-settings-details/menu-invite.svg";
+import addedCheck from "../../assets/direct-trip/added-check.svg";
 import toggleOff from "../../assets/course-settings-details/toggle-off.svg";
 import toggleOn from "../../assets/course-settings-details/toggle-on.svg";
 import type { CourseSettingsDialog, CourseSettingsView } from "../../types/courseSettings";
@@ -15,6 +16,7 @@ interface DetailViewProps {
   onBack: () => void;
   onInvite?: () => void;
   members?: MemberResponse[];
+  membersFetchedAt?: number;
 }
 
 const notificationItems = [
@@ -25,10 +27,25 @@ const notificationItems = [
   ["코스 추천", "이 여행지의 새 코스와 장소를 알려드려요"],
 ] as const;
 
-export function CourseSettingsDetailView({ view, onBack, onInvite, members }: DetailViewProps) {
+function MemberJoinedNotice({ name }: { name: string }) {
+  const [visible, setVisible] = useState(true);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setVisible(false), 3000);
+    return () => window.clearTimeout(timer);
+  }, []);
+  return visible ? <S.SettingsToast role="status" style={{ bottom: 56 }}>
+    <img src={addedCheck} alt="" />{name}님이 여행에 참여했어요
+  </S.SettingsToast> : null;
+}
+
+export function CourseSettingsDetailView({ view, onBack, onInvite, members, membersFetchedAt = 0 }: DetailViewProps) {
   const [toggles, setToggles] = useState([true, true, true, true, false]);
 
   if (view === "members") {
+    const latestGuest = members?.filter((member) => member.role !== "OWNER" && !member.me)
+      .sort((a, b) => Date.parse(b.joinedAt) - Date.parse(a.joinedAt))[0];
+    const age = latestGuest ? membersFetchedAt - Date.parse(latestGuest.joinedAt) : Infinity;
+    const joined = age >= 0 && age < 60_000 ? latestGuest : undefined;
     return (
       <>
         <S.DetailNavigation>
@@ -42,9 +59,9 @@ export function CourseSettingsDetailView({ view, onBack, onInvite, members }: De
               <img src={profileCharacter(member.characterId).image} alt="" />
               <div>
                 <strong>{member.name} {member.me && <span>(나)</span>}</strong>
-                <small>{member.role === "OWNER" ? "여행 생성자" : "참여자"}</small>
+                <small>{member.role === "OWNER" ? "여행 생성자" : member.userId === joined?.userId ? "방금 참여했어요" : "참여자"}</small>
               </div>
-              <em>편집 가능</em>
+              {members.length === 1 && <em>편집 가능</em>}
             </S.MemberCard>
           )) : <S.MemberCard>
             <img src={avatar} alt="" />
@@ -58,6 +75,7 @@ export function CourseSettingsDetailView({ view, onBack, onInvite, members }: De
             {onInvite && <button type="button" onClick={onInvite}>친구 초대하기</button>}
           </S.EmptyMembers>}
         </S.MemberBody>
+        {joined && <MemberJoinedNotice key={joined.userId + joined.joinedAt} name={joined.name} />}
       </>
     );
   }

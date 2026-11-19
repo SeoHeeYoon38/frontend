@@ -21,7 +21,7 @@ export const Page = styled.div`
 `;
 
 export const Header = styled.header`
-  height: 54px;
+  height: 48px;
   display: flex;
   align-items: center;
   gap: 14px;
@@ -35,8 +35,8 @@ export const Header = styled.header`
   }
 
   img {
-    width: 10px;
-    height: 18px;
+    width: 8.11667px;
+    height: 14.5333px;
   }
 
   h1 {
@@ -51,7 +51,7 @@ export const MasterSection = styled.section`
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 23px 20px 27px;
+  padding: 27px 20px 27px;
   border-bottom: 8px solid #f3f5fa;
 `;
 
@@ -79,7 +79,7 @@ export const SettingText = styled.span`
 `;
 
 export const Group = styled.section<{ $disabled: boolean }>`
-  padding: 16px 20px 4px;
+  padding: 20px 20px 0;
   border-bottom: 8px solid #f3f5fa;
 
   h2 {
@@ -96,7 +96,7 @@ export const Group = styled.section<{ $disabled: boolean }>`
 `;
 
 export const SettingRow = styled.div`
-  min-height: 69px;
+  min-height: 71px;
   display: flex;
   align-items: center;
   gap: 10px;

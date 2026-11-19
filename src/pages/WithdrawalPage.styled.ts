@@ -6,12 +6,12 @@ export const Page = styled.div`
   :where(&) :where(button) { padding: 0; border: 0; color: inherit; background: transparent; cursor: pointer; }
 `;
 export const Header = styled.header`
-  height: 54px; display: flex; align-items: center; gap: 14px; padding: 0 20px;
+  height: 48px; display: flex; align-items: center; gap: 14px; padding: 0 20px;
   button { width: 22px; height: 40px; display: grid; place-items: center; }
-  img { width: 10px; height: 18px; }
+  img { width: 8.11667px; height: 14.5333px; }
   h1 { margin: 0; font-size: 17px; line-height: 24px; }
 `;
-const bodyBase = `padding: 26px 20px 152px; h2 { margin: 0; font-size: 24px; line-height: 32px; letter-spacing: -0.24px; } > p { margin: 8px 0 0; color: #5c5c63; font-size: 14px; line-height: 20px; }`;
+const bodyBase = `padding: 24px 20px 152px; h2 { margin: 0; font-size: 24px; line-height: 32px; letter-spacing: -0.24px; } > p { margin: 8px 0 0; color: #5c5c63; font-size: 14px; line-height: 20px; }`;
 export const NoticeBody = styled.main`${bodyBase}`;
 export const ReasonBody = styled.main`${bodyBase}`;
 export const Retry = styled.button`
@@ -61,7 +61,7 @@ export const Textarea = styled.div`
   span { color: #8a8a8e; font-size: 12px; line-height: 17px; text-align: right; }
 `;
 export const Cta = styled.footer`
-  position: fixed; z-index: 3; right: 0; bottom: 0; left: 0; width: min(100%, 402px); margin: auto; padding: 12px 20px max(20px, env(safe-area-inset-bottom)); background: #ffffff;
+  position: fixed; z-index: 3; right: 0; bottom: 0; left: 0; width: min(100%, 402px); margin: auto; padding: 12px 20px max(31px, env(safe-area-inset-bottom)); background: #ffffff;
   > button { width: 100%; min-height: 56px; border-radius: 14px; color: #ffffff; background: #090738; text-align: center; font-size: 16px; font-weight: 700; }
   > button:disabled { background: #e4e6ec; cursor: default; }
 `;

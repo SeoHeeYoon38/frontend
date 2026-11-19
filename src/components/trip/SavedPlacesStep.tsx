@@ -75,6 +75,7 @@ function SavedPlacesStep({
   const [matchBusy, setMatchBusy] = useState(false);
   const [matchSearchError, setMatchSearchError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [showImport, setShowImport] = useState(false);
   useEffect(() => {
     onLoadingChange(false);
     return () => onLoadingChange(false);
@@ -175,6 +176,7 @@ function SavedPlacesStep({
       }
       if (!controller.signal.aborted) {
         onImportViewChange?.("method");
+        setShowImport(false);
         onChange({
           ...draft,
           source,
@@ -293,7 +295,7 @@ function SavedPlacesStep({
     courses.find((item) => item.id === course?.id)?.places ?? [];
   return (
     <>
-      {!ready ? (
+      {!ready || showImport ? (
         <P.ConnectStep>
           <PlaceImportForm
             onImport={importSamplePlaces}
@@ -303,10 +305,8 @@ function SavedPlacesStep({
             onViewChange={onImportViewChange}
             onSkip={() => {
               onImportViewChange?.("method");
-              onChange({
-                ...draft,
-                source: "manual",
-              });
+              if (!ready) onChange({ ...draft, source: "manual" });
+              setShowImport(false);
               setTab("saved");
             }}
           />
@@ -315,7 +315,12 @@ function SavedPlacesStep({
         <P.PlacesStep $empty={emptySaved}>
           <P.PlacesLead>
             <h1>여행에 담을 장소를 골라주세요</h1>
-            <p><img src={googleMapsLogo} alt="" />Google Maps에 저장한 장소를 불러왔어요</p>
+            <P.PlacesSummary>
+              {tab === "saved" ? <p><img src={googleMapsLogo} alt="" />Google Maps에 저장한 장소를 불러왔어요</p>
+                : <p>코스에 포함된 장소를 확인하고 선택해 보세요</p>}
+              <P.PlaceSearchButton type="button" aria-label="Google Maps에서 장소 가져오기"
+                onClick={() => { setError(""); onImportViewChange?.("method"); setShowImport(true); }}>가져오기</P.PlaceSearchButton>
+            </P.PlacesSummary>
           </P.PlacesLead>
           <P.PlaceTabs>
             <button

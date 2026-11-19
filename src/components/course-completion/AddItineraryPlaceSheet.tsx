@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { addPlaceToItinerary, getLatestItinerary } from "../../api/itineraries";
+import { addPlaceOnDate, getLatestItinerary } from "../../api/itineraries";
 import { getNearbyPlaces, getPopularPlaces, getSavedPlaces, searchPlaces } from "../../api/places";
 import { getTripCity } from "../../api/trips";
 import type { ItineraryVersionView, PlaceCategoryCode, SavedPlaceResponse } from "../../api/types";
@@ -9,7 +9,7 @@ import clearIcon from "../../assets/course-completion/picker-clear.svg";
 import selectedIcon from "../../assets/course-completion/picker-selected.svg";
 import unselectedIcon from "../../assets/course-completion/picker-unselected.svg";
 import googleMapsLogo from "../../assets/images/brand-google-maps.webp";
-import { isMapCoordinate, straightLineMeters } from "../../utils/googleMaps";
+import { straightLineMeters } from "../../utils/googleMaps";
 import { savedPlacesForTripCity } from "../../utils/tripPlaces";
 import { PlaceThumbnail } from "../common/PlacePhoto";
 import { ErrorText } from "../trip/Trip.styled";
@@ -60,19 +60,31 @@ async function loadRecommendations(tripId: number, latitude: number | undefined,
   return category ? popular.filter((place) => place.category === category) : popular;
 }
 
-function rowDescription(place: PickerPlace, anchor: AddItineraryPlaceSheetProps["anchor"]) {
-  if (!anchor || !isMapCoordinate(place)) return place.address;
-  const meters = straightLineMeters(anchor, place);
-  if (meters === undefined) return place.address;
+interface RouteStop { name: string; latitude: number; longitude: number }
+
+function nearestStop(place: PickerPlace, stops: RouteStop[]) {
+  let nearest: { name: string; meters: number } | undefined;
+  for (const stop of stops) {
+    const meters = straightLineMeters(stop, place);
+    if (meters !== undefined && (!nearest || meters < nearest.meters)) nearest = { name: stop.name, meters };
+  }
+  return nearest;
+}
+
+function rowDescription(place: PickerPlace, nearest: ReturnType<typeof nearestStop>) {
+  if (!nearest) return place.address;
+  const { name, meters } = nearest;
   const distance = meters < 1000 ? `${Math.round(meters)}m` : `${(meters / 1000).toFixed(1)}km`;
-  return `${anchor.name}에서 ${distance}`;
+  return `${name}에서 ${distance}`;
 }
 
 interface AddItineraryPlaceSheetProps {
   tripId: number;
   city: string;
   day: number;
-  anchor?: { name: string; latitude: number; longitude: number };
+  date: string;
+  anchor?: RouteStop;
+  stops?: RouteStop[];
   replacement?: { category?: PlaceCategoryCode; onSave: (placeId: string) => Promise<void> };
   scheduledDays: ReadonlyMap<string, number>;
   onClose: () => void;
@@ -80,7 +92,7 @@ interface AddItineraryPlaceSheetProps {
 }
 
 export default function AddItineraryPlaceSheet({
-  tripId, city, day, anchor, replacement, scheduledDays, onClose, onSaved,
+  tripId, city, day, date, anchor, stops = anchor ? [anchor] : [], replacement, scheduledDays, onClose, onSaved,
 }: AddItineraryPlaceSheetProps) {
   const [tab, setTab] = useState<Tab>("recommended");
   const [query, setQuery] = useState("");
@@ -138,8 +150,9 @@ export default function AddItineraryPlaceSheet({
     term || tab === "saved" || (!scheduledDays.has(place.placeId)
       && (tab === "recommended" || categoryTab[place.category ?? "OTHER"] === tab))
   ));
-  if (anchor && !term && tab !== "saved") {
-    filtered.sort((a, b) => (straightLineMeters(anchor, a) ?? Infinity) - (straightLineMeters(anchor, b) ?? Infinity));
+  const nearestByPlace = new Map(filtered.map((place) => [place.placeId, nearestStop(place, stops)]));
+  if (stops.length && !term && tab !== "saved") {
+    filtered.sort((a, b) => (nearestByPlace.get(a.placeId)?.meters ?? Infinity) - (nearestByPlace.get(b.placeId)?.meters ?? Infinity));
   }
   const idsToSave = selected.filter((placeId) => !scheduledDays.has(placeId));
 
@@ -165,18 +178,23 @@ export default function AddItineraryPlaceSheet({
       }
       for (const placeId of idsToSave) {
         try {
-          itinerary = (await addPlaceToItinerary(tripId, placeId, day)).itinerary;
+          itinerary = await addPlaceOnDate(tripId, placeId, day, date);
         } catch (reason) {
           const latest = await getLatestItinerary(tripId).catch(() => undefined);
-          if (!latest?.draft.days[day - 1]?.visits.some((visit) => visit.placeId === placeId)) throw reason;
+          if (!latest) throw reason;
           itinerary = latest;
+          const alreadyIn = latest.draft.days.find((item) => item.visits.some((visit) => visit.placeId === placeId));
+          if (alreadyIn && alreadyIn.date !== date) {
+            throw new Error("다른 일차에 이미 추가된 장소예요. 최신 일정으로 갱신했어요.");
+          }
+          if (!alreadyIn) throw reason;
         }
         addedIds.push(placeId);
       }
     } catch (reason) {
       setError(placeDayError(reason));
     } finally {
-      if (itinerary && addedIds.length) {
+      if (itinerary) {
         const { places } = await getSavedPlaces(tripId).catch(() => ({ places: undefined }));
         const completed = addedIds.length === idsToSave.length;
         setAddedCount((count) => count + addedIds.length);
@@ -236,7 +254,7 @@ export default function AddItineraryPlaceSheet({
             const addedDay = scheduledDays.get(place.placeId);
             const checked = selected.includes(place.placeId);
             const category = tabs.find(([id]) => id === categoryTab[place.category ?? "OTHER"])?.[1];
-            const description = addedDay ? `이미 ${addedDay}일차에 있어요` : rowDescription(place, anchor);
+            const description = addedDay ? `이미 ${addedDay}일차에 있어요` : rowDescription(place, nearestByPlace.get(place.placeId));
             const content = <>
               <span className="picker-photo">
                 <PlaceThumbnail placeId={place.placeId} name={place.name} />

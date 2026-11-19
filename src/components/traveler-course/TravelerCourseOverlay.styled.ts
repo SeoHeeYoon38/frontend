@@ -34,6 +34,16 @@ export const MapHeader = styled.header`
     font-size: 17px;
   }
 
+  &[data-public-course] {
+    position: relative;
+    z-index: 1;
+    padding-top: 0;
+    box-shadow: 0 2px 8px rgb(0 0 0 / 6%);
+    > div:first-child { min-height: 44px; }
+    > div:first-child > button { width: 44px; height: 44px; margin-left: -14px; }
+    h1 { line-height: 24px; letter-spacing: -.085px; }
+  }
+
   button {
     display: grid;
     place-items: center;
@@ -51,7 +61,7 @@ export const MapHeader = styled.header`
   }
 `;
 
-export const MapTabs = styled.div`
+export const MapTabs = styled.div<{ $publicCourse: boolean }>`
   display: flex;
   gap: 20px;
   border-bottom: 1px solid #e4e6ec;
@@ -80,6 +90,16 @@ export const MapTabs = styled.div`
     font-weight: 700;
   }
   button small { color: #8a8a8e; font-size: 12px; font-weight: 400; }
+  ${({ $publicCourse }) => $publicCourse && `
+    gap: 8px;
+    border-bottom: 0;
+    align-items: flex-start;
+    padding-top: 10px;
+    min-height: 56px;
+    button { min-height: 34px; padding: 7px 14px; border: 1px solid #e4e6ec; border-radius: 16px; color: #5c5c63; font-size: 13px; line-height: 18px; font-weight: 500; }
+    button strong { font-weight: inherit; }
+    button[aria-pressed="true"] { min-height: 32px; border: 0; background: #090738; color: #fff; font-weight: 700; }
+  `}
 `;
 
 export const MapCanvas = styled.div<{ $selected: boolean; $showCourseList: boolean }>`
@@ -110,21 +130,70 @@ export const MapCanvas = styled.div<{ $selected: boolean; $showCourseList: boole
   }
 `;
 
-export const MapPin = styled.button<{ $x: number; $y: number }>`
+export const SampleMapLayer = styled.div`
+  position: absolute;
+  top: -100px;
+  left: 0;
+  width: 100%;
+  aspect-ratio: 402 / 874;
+  max-height: 100dvh;
+  > img, > svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+`;
+
+export const SampleMapControls = styled.div<{ $selected: boolean; $showList: boolean }>`
+  position: absolute;
+  inset: auto 16px ${({ $selected, $showList }) => $selected ? "220px" : $showList ? "14px" : "24px"};
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  pointer-events: none;
+  > a, > button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border: 0;
+    border-radius: 999px;
+    background: #fff;
+    color: #1a1a1a;
+    box-shadow: 0 2px 10px rgb(9 7 56 / 16%);
+    font-size: 13px;
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
+    pointer-events: auto;
+  }
+  > a {
+    min-height: ${({ $selected }) => $selected ? 40 : 36}px;
+    padding: ${({ $selected }) => $selected ? "0 14px 0 12px" : "0 12px 0 10px"};
+    font-size: ${({ $selected }) => $selected ? 13 : 12}px;
+    transform: translateY(${({ $showList }) => $showList ? 4 : 0}px);
+  }
+  > a img { width: ${({ $selected }) => $selected ? 16 : 14}px; height: auto; object-fit: contain; }
+  > button { width: 40px; height: 40px; padding: 10px; }
+  > button img { width: 20px; height: 20px; }
+`;
+
+export const MapPin = styled.button<{ $x: number; $y: number; $overview: boolean }>`
   position: absolute;
   left: ${({ $x }) => $x}%;
   top: ${({ $y }) => $y}%;
   transform: translate(-50%, -50%);
-  width: 32px;
-  height: 32px;
-  border: 3px solid #fff;
+  display: grid;
+  place-content: center;
+  width: ${({ $overview }) => $overview ? 24 : 26}px;
+  height: ${({ $overview }) => $overview ? 24 : 26}px;
+  padding: 0;
+  border: 2.5px solid #fff;
   border-radius: 50%;
-  background: #00d7f2;
-  color: #fff;
-  box-shadow: 0 2px 8px rgba(0, 140, 178, 0.28);
-  font-size: 13px;
+  background: #00e1ff;
+  color: ${({ $overview }) => $overview ? "#fff" : "#090738"};
+  box-shadow: 0 2px 6px ${({ $overview }) => $overview ? "rgb(0 140 178 / 25%)" : "rgb(9 7 56 / 22%)"};
+  font-size: ${({ $overview }) => $overview ? 13 : 12}px;
   font-weight: 700;
+  line-height: 1;
   cursor: pointer;
+  &[aria-pressed="true"] { width: 34px; height: 34px; background: #090738; color: #fff; font-size: 14px; }
 `;
 
 export const DaySheet = styled.section`
@@ -157,6 +226,29 @@ export const DaySheet = styled.section`
     color: #8a8a8e;
     font-size: 12px;
   }
+  > p span::before { content: " · "; }
+  &[data-public-course] {
+    height: min(341px, 44dvh);
+    padding-bottom: 40px;
+    box-shadow: 0 -6px 24px rgb(9 7 56 / 14%);
+    --sheet-handle-width: 36px;
+    --sheet-handle-color: #d9dae2;
+    h2 { font-size: 18px; line-height: 25px; letter-spacing: -.09px; }
+    > p { display: flex; align-items: center; gap: 8px; color: #5c5c63; font-weight: 500; line-height: 17px; }
+    > p span { display: inline-flex; align-items: center; gap: 8px; }
+    > p span::before { content: ""; width: 1px; height: 10px; background: #d1d1d6; }
+    > section > div { position: relative; }
+    > section > div:not(:last-child)::after {
+      content: "";
+      position: absolute;
+      left: 12px;
+      top: 46px;
+      bottom: 0;
+      width: 2px;
+      background: #d1d1d6;
+      pointer-events: none;
+    }
+  }
 `;
 
 export const MapTravel = styled.p`
@@ -167,6 +259,16 @@ export const MapTravel = styled.p`
   color: #5c5c63;
   font-size: 12px;
   img { width: 14px; height: 14px; }
+  strong { font-weight: inherit; }
+  strong + span::before { content: "· "; }
+  [data-public-course] & {
+    margin: 0 0 0 38px;
+    padding: 10px 0 10px 4px;
+    line-height: 17px;
+    strong { font-weight: 700; }
+    span { display: inline-flex; align-items: center; gap: 6px; color: #8a8a8e; font-weight: 500; }
+    strong + span::before { content: ""; width: 1px; height: 10px; background: #d1d1d6; }
+  }
 `;
 
 export const MapPlaceRow = styled.button`
@@ -224,6 +326,16 @@ export const MapPlaceRow = styled.button`
     color: #8a8a8e;
     font-size: 12px;
   }
+  [data-public-course] & {
+    align-items: start;
+    gap: 12px;
+    margin-bottom: 0;
+    > b { margin-top: 20px; }
+    .map-place-card { padding: 12px; }
+    img, .place-photo--thumbnail { width: 56px; height: 56px; }
+    strong { line-height: 22px; }
+    small { margin-top: 4px; line-height: 17px; font-weight: 500; }
+  }
 `;
 
 export const MapSelection = styled.section`
@@ -238,6 +350,7 @@ export const MapSelection = styled.section`
   box-shadow: 0 6px 24px rgb(16 16 40 / 18%);
 
   > div { display: flex; align-items: center; gap: 12px; }
+  strong b { display: inline-grid; width: 18px; height: 18px; margin-right: 2px; place-items: center; border-radius: 50%; background: #00d7f2; color: #090738; font-size: 12px; }
   img { width: 64px; height: 64px; object-fit: cover; border-radius: 14px; }
   small { display: block; margin-top: 4px; color: #8a8a8e; }
   button {
@@ -248,6 +361,17 @@ export const MapSelection = styled.section`
     color: #fff;
     font-weight: 700;
     cursor: pointer;
+  }
+  &[data-public-course] {
+    bottom: max(34px, env(safe-area-inset-bottom));
+    box-shadow: 0 6px 24px rgb(9 7 56 / 14%);
+    .map-selection-info { display: grid; gap: 4px; }
+    strong { display: flex; align-items: center; gap: 6px; font-size: 16px; line-height: 22px; }
+    strong b { margin: 0; flex-shrink: 0; background: #090738; color: #fff; font-size: 10px; line-height: 14px; }
+    small { margin: 0; font-size: 13px; line-height: 18px; }
+    .map-selection-travel { color: #5c5c63; font-size: 12px; line-height: 17px; font-weight: 500; }
+    img, .place-photo--thumbnail { width: 64px; height: 64px; border-radius: 12px; }
+    button { font-size: 15px; line-height: 22px; }
   }
 `;
 
@@ -260,6 +384,14 @@ export const PlaceHero = styled.header`
   position: relative;
   height: 362px;
   color: #fff;
+  .place-gallery__count { top: auto; bottom: 16px; }
+  .place-gallery__navigation { opacity: 0; }
+  .place-gallery__navigation button { pointer-events: none; }
+  .place-gallery__navigation:focus-within { opacity: 1; }
+  @media (hover: hover) {
+    &:hover .place-gallery__navigation { opacity: 1; }
+    &:hover .place-gallery__navigation button { pointer-events: auto; }
+  }
 
   > img {
     width: 100%;
@@ -268,6 +400,7 @@ export const PlaceHero = styled.header`
   }
 
   &::after {
+    pointer-events: none;
     content: "";
     position: absolute;
     inset: 0 0 auto;
@@ -299,18 +432,6 @@ export const PlaceNavigation = styled.div`
     }
   }
 
-`;
-
-export const GalleryIndicator = styled.div`
-  position: absolute;
-  z-index: 2;
-  right: 18px;
-  bottom: 14px;
-  padding: 5px 9px;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.6);
-  color: #fff;
-  font-size: 12px;
 `;
 
 export const PlaceBody = styled.div`
@@ -376,7 +497,12 @@ export const InfoRows = styled.div`
     padding: 14px 0;
     border-bottom: 1px solid #e4e6ec;
     font-size: 13px;
+    align-items: start;
   }
+  strong { font-weight: 500; line-height: 20px; }
+  strong b, strong small { display: block; margin-top: 6px; }
+  strong small { font-size: 12px; color: #8a8a8e; }
+  a, button { padding: 0; border: 0; color: #5c5c63; background: none; font: inherit; text-decoration: none; cursor: pointer; }
 
   span {
     color: #8a8a8e;
@@ -388,26 +514,90 @@ export const InfoRows = styled.div`
   }
 `;
 
+export const LocationPreview = styled.div`
+  position: relative;
+  > a {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 10px;
+    border-radius: 18px;
+    background: #fff;
+    color: #19191b;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 17px;
+    text-decoration: none;
+  }
+  > img + a, > iframe + a {
+    position: absolute;
+    right: 8px;
+    bottom: 9px;
+  }
+  > iframe + a { bottom: 24px; }
+`;
 export const LocationMap = styled.img`
+  display: block;
   width: 100%;
-  height: 210px;
+  height: 168px;
   object-fit: cover;
   border-radius: 16px;
+`;
+export const EmbeddedMap = styled.iframe`
+  display: block;
+  width: 100%;
+  height: 168px;
+  border: 0;
+  border-radius: 16px;
+`;
+export const MapLink = styled.a`
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  color: #090738;
+  font-size: 14px;
+  font-weight: 600;
+`;
+export const NearbyPlaces = styled.ul`
+  display: flex;
+  gap: 10px;
+  overflow: auto;
+  margin: 0 -20px 0 0;
+  padding: 0 20px 0 0;
+  list-style: none;
+  li { flex: 0 0 140px; }
+  img { display: block; width: 140px; height: 100px; border-radius: 12px; object-fit: cover; }
+  strong { display: block; margin: 8px 0 4px; font-size: 15px; line-height: 20px; }
+  small { font-size: 12px; color: #8a8a8e; }
+`;
+export const Reviews = styled.section`
+  display: grid;
+  gap: 14px;
+  header { display: flex; align-items: center; gap: 8px; }
+  header h2 { margin: 0; }
+  small { color: #8a8a8e; font-size: 12px; }
+  aside, article { padding: 16px; border-radius: 16px; }
+  aside { background: #f3f5fa; }
+  aside strong, article strong { font-size: 14px; }
+  aside ul { margin: 8px 0 0; padding-left: 18px; font-size: 13px; line-height: 21px; }
+  article { border: 1px solid #e4e6ec; }
+  article small { display: block; margin: 3px 0 8px; }
+  > a { justify-content: center; height: 48px; border: 1px solid #e4e6ec; border-radius: 12px; }
 `;
 
 export const AiButton = styled.button`
   position: fixed;
   z-index: 4;
   right: max(20px, calc((100vw - 402px) / 2 + 20px));
-  bottom: 24px;
-  height: 52px;
-  padding: 0 22px;
+  bottom: max(34px, env(safe-area-inset-bottom));
+  height: 44px;
+  padding: 0 16px;
   border: 0;
   border-radius: 26px;
   background: #00e1ff;
   color: #090738;
   box-shadow: 0 8px 24px rgba(0, 139, 176, 0.28);
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
   cursor: pointer;
 
@@ -439,7 +629,7 @@ export const AiMessage = styled.article`
   > img { width: 32px; height: 32px; flex: 0 0 auto; object-fit: contain; }
   > div { min-width: 0; flex: 1; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
   small { color: #8a8a8e; font-size: 12px; line-height: 17px; }
-  p { width: 100%; margin: 0; padding: 12px 14px; border-radius: 4px 16px 16px; background: #fff; box-shadow: 0 2px 12px rgba(89, 82, 178, 0.06); font-size: 14px; line-height: 20px; font-weight: 400; }
+  p { width: 100%; margin: 0; padding: 12px 14px; border-radius: 4px 16px 16px; background: #fff; box-shadow: 0 2px 12px rgba(89, 82, 178, 0.06); font-size: 14px; line-height: 20px; font-weight: 400; white-space: pre-line; }
   button { padding: 5px 10px; border: 1px solid #e4e6ec; border-radius: 99px; background: #fff; color: #5c5c63; font-size: 11px; line-height: 15px; }
 `;
 

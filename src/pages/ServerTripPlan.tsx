@@ -136,6 +136,7 @@ function ServerTripPlan({ tripId, userId }: { tripId: number; userId: number }) 
   const [placeAddNotice, setPlaceAddNotice] = useState("");
   const [addedPlaceIds, setAddedPlaceIds] = useState<ReadonlySet<string>>(() => new Set());
   const addPlaceButton = useRef<HTMLButtonElement>(null);
+  const addPlaceScroll = useRef(0);
   const [inviteAccepted, setInviteAccepted] = useState(state?.inviteAccepted === true);
   const [confirmation, setConfirmation] = useState<Awaited<ReturnType<typeof confirmTrip>> | null | undefined>(
     state?.confirmation,
@@ -220,7 +221,8 @@ function ServerTripPlan({ tripId, userId }: { tripId: number; userId: number }) 
 
   useEffect(() => {
     if (!placeAddNotice) return;
-    addPlaceButton.current?.scrollIntoView({ block: "end" });
+    const footer = addPlaceButton.current?.closest("main")?.querySelector(".course-cta");
+    (footer ?? addPlaceButton.current)?.scrollIntoView({ block: "end" });
     const timeout = window.setTimeout(() => setPlaceAddNotice(""), 4_000);
     return () => window.clearTimeout(timeout);
   }, [placeAddNotice]);
@@ -234,12 +236,12 @@ function ServerTripPlan({ tripId, userId }: { tripId: number; userId: number }) 
     if (!scheduledDays.has(placeId)) scheduledDays.set(placeId, index + 1);
   }));
   const placeCount = scheduledDays.size;
-  const anchor = day?.visits.flatMap(({ placeId }) => {
+  const dayStops = day?.visits.flatMap(({ placeId }) => {
     const place = placesById.get(placeId);
     return place && isMapCoordinate(place) ? [{
       name: place.name, latitude: place.latitude, longitude: place.longitude,
     }] : [];
-  }).at(-1);
+  }) ?? [];
   const courseMapDays = (mapOpen ? days : day ? [day] : []).map((item) => ({
     date: item.date,
     label: `${days.indexOf(item) + 1}일차`,
@@ -428,6 +430,7 @@ function ServerTripPlan({ tripId, userId }: { tripId: number; userId: number }) 
       <DirectTripBuilder existing={{
         draft: apiTripToDraft(data.trip),
         days: data.itinerary.draft.days,
+        validation: data.itinerary.validation,
         places: data.places,
         version: data.itinerary.version,
         initialDay: activeDay + 1,
@@ -496,7 +499,7 @@ function ServerTripPlan({ tripId, userId }: { tripId: number; userId: number }) 
         pending={photoPending} error={photoError} onMove={(day) => void changeSelectedPlace({ kind: "move", day })}
         onClose={() => setPhotoAction(undefined)} />}
       {photoAction === "replace" && <AddItineraryPlaceSheet
-        tripId={tripId} city={data.trip.city} day={placeDay}
+        tripId={tripId} city={data.trip.city} day={placeDay} date={draftDays[placeDay - 1].date}
         anchor={savedPlace && isMapCoordinate(savedPlace) ? {
           name: savedPlace.name, latitude: savedPlace.latitude, longitude: savedPlace.longitude,
         } : undefined}
@@ -686,15 +689,24 @@ function ServerTripPlan({ tripId, userId }: { tripId: number; userId: number }) 
                       onApply={(mode, all) => void applyTravelMode(mode, all)}
                     />
                   )}
-                  <button ref={addPlaceButton} type="button" className="add-place-button" disabled={!day || editPending} onClick={() => setShowAddPlace(true)}><img src={addIcon} alt="" /> 장소 추가</button>
+                  <button ref={addPlaceButton} type="button" className="add-place-button" disabled={!day || editPending} onClick={() => {
+                    addPlaceScroll.current = window.scrollY;
+                    window.scrollTo(0, 0);
+                    setShowAddPlace(true);
+                  }}><img src={addIcon} alt="" /> 장소 추가</button>
                   {showAddPlace && (
                     <AddItineraryPlaceSheet
                       tripId={tripId}
                       city={summary.city}
                       day={activeDay + 1}
-                      anchor={anchor}
+                      date={day.date}
+                      anchor={dayStops.at(-1)}
+                      stops={dayStops}
                       scheduledDays={scheduledDays}
-                      onClose={() => setShowAddPlace(false)}
+                      onClose={() => {
+                        setShowAddPlace(false);
+                        window.scrollTo(0, addPlaceScroll.current);
+                      }}
                       onSaved={(itinerary, addedIds, places, complete) => {
                         setData((current) => current ? { ...current, itinerary, places: places ?? current.places } : current);
                         setAddedPlaceIds((current) => new Set([...current, ...addedIds]));
@@ -751,16 +763,18 @@ function ServerTripPlan({ tripId, userId }: { tripId: number; userId: number }) 
         </TripSheet>}
         {registrationOpen && data && <TripInformationSheet
           trip={data.trip}
+          imported={imported}
+          canChangeDates={hasNoItinerary}
           title={summary?.title ?? data.trip.city}
           movementLabel={movementLabel}
           mode={needsRegistration ? "register" : "edit"}
           onClose={() => setRegistrationOpen(false)}
-          onSaved={(trip) => {
+          onSaved={(trip, registered) => {
             setData((current) => current ? { ...current, trip } : current);
-            setRegistrationComplete(true);
+            setRegistrationComplete(registered);
             setRegistrationOpen(false);
             setNotice("여행 정보를 저장했어요");
-            if (imported) markImportedTripRegistered(tripId);
+            if (imported && registered) markImportedTripRegistered(tripId);
           }}
         />}
         {placeAddNotice ? <div className="course-toast" role="status"><img src={addedCheckIcon} alt="" /><p>{placeAddNotice}</p></div>

@@ -2,10 +2,10 @@ import { useId, useState } from "react";
 import styled from "styled-components";
 import type { Companion, TripDraft } from "../../types/trip";
 import { changeDates, companions, validDate } from "../../utils/trip";
-import solo from "../../assets/images/companion-solo.png";
-import friends from "../../assets/images/companion-friends.png";
-import couple from "../../assets/images/companion-couple.png";
-import family from "../../assets/images/companion-family.png";
+import solo from "../../assets/figma/companion-picker-solo.png";
+import friends from "../../assets/figma/companion-picker-friends.png";
+import couple from "../../assets/figma/companion-picker-couple.png";
+import family from "../../assets/figma/companion-picker-family.png";
 import infoIcon from "../../assets/place-import/method-info.svg";
 import TripSheet from "../common/TripSheet";
 import DateRangePicker from "./DateRangePicker";
@@ -121,13 +121,13 @@ function BasicInfoSheet({ mode, draft, onClose, onSave }: BasicInfoSheetProps) {
               </S.Chip>
             ))}
           </S.CompanionChoices>
-          <S.PeopleBox>
+          <S.CompanionCard>
             <S.CompanionIllustration src={guide.image} alt="" />
             <strong>{guide.title}</strong>
             {companion !== "혼자" && (
               <S.Help>코스를 만든 뒤 함께 갈 사람을 초대할 수 있어요</S.Help>
             )}
-          </S.PeopleBox>
+          </S.CompanionCard>
         </>
       )}
     </TripSheet>

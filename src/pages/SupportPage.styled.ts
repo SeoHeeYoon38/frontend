@@ -16,7 +16,7 @@ export const Page = styled.main`
 `;
 
 export const Header = styled.header`
-  height: 52px;
+  height: 48px;
   display: flex;
   align-items: center;
   gap: 14px;
@@ -25,6 +25,18 @@ export const Header = styled.header`
   a { width: 22px; height: 40px; display: grid; place-items: center; }
   img { width: 8.11667px; height: 14.5333px; }
   h1 { margin: 0; font-size: 17px; line-height: 24px; letter-spacing: -0.085px; }
+`;
+
+export const NoticeList = styled.ul`
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+  li { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 18px 20px; border-bottom: 1px solid #e4e6ec; }
+  span, small { color: #8a8a8e; font-size: 12px; line-height: 17px; }
+  span { display: flex; align-items: center; gap: 6px; font-weight: 700; }
+  span[data-new="true"] { color: #0079c2; }
+  span img { width: 5px; height: 5px; }
+  strong { font-size: 15px; font-weight: 500; line-height: 22px; }
 `;
 
 export const Categories = styled.nav`

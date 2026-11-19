@@ -13,6 +13,7 @@ function useCourseCommunity() {
   const [selectedDay, setSelectedDay] = useState(2);
   const [message, setMessage] = useState("");
   const [sentMessages, setSentMessages] = useState<string[]>([]);
+  const [answeredMessageIndex, setAnsweredMessageIndex] = useState(-1);
   const [pendingAi, setPendingAi] = useState<ChatAction>();
   const timer = useRef<number | undefined>(undefined);
 
@@ -38,6 +39,7 @@ function useCourseCommunity() {
     if (action) {
       setPendingAi(action);
       timer.current = window.setTimeout(() => {
+        setAnsweredMessageIndex(sentMessages.length);
         setStage(actionStages[action]);
         setPendingAi(undefined);
         timer.current = undefined;
@@ -53,6 +55,7 @@ function useCourseCommunity() {
     selectedDay,
     selectedPollId,
     sentMessages,
+    answeredMessageIndex,
     pendingAi,
     stage,
     openDayPicker,

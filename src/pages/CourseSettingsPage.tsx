@@ -18,11 +18,11 @@ import { getCourses } from "../api/courses";
 import { getLatestItinerary, saveItinerary } from "../api/itineraries";
 import { getTripMembers, leaveTrip } from "../api/members";
 import { addSavedPlace, getSavedPlaces } from "../api/places";
-import { createTrip, deleteTrip, getTrip, updateTrip } from "../api/trips";
+import { createTrip, deleteTrip, getTrip, updateTripDates } from "../api/trips";
 import type { CourseSummaryResponse, ItineraryVersionView, MemberResponse, TripResponse } from "../api/types";
 import { apiTripToSummary, companionLabels } from "../utils/serverTrip";
 import { addDays, hasRegisteredImportedTrip, markImportedTripRegistered } from "../utils/importedTrip";
-import { travelModeLabels } from "../utils/trip";
+import { dayCount, travelModeLabels } from "../utils/trip";
 import { courseImportUncertain } from "../utils/courseImport";
 import TripInformationSheet from "../components/course-completion/TripInformationSheet";
 import CourseSettingsMenu from "../components/course-settings/CourseSettingsMenu";
@@ -52,6 +52,7 @@ function ServerCourseSettings({ tripId }: { tripId: number }) {
   const { search } = useLocation();
   const [trip, setTrip] = useState<TripResponse>();
   const [members, setMembers] = useState<MemberResponse[]>();
+  const [membersFetchedAt, setMembersFetchedAt] = useState(0);
   const [loadError, setLoadError] = useState("");
   const [memberError, setMemberError] = useState(false);
   const [attempt, setAttempt] = useState(0);
@@ -65,7 +66,7 @@ function ServerCourseSettings({ tripId }: { tripId: number }) {
   const [pending, setPending] = useState(false);
   const [selectedCover, setSelectedCover] = useState(0);
   const [tripDays, setTripDays] = useState(1);
-  const [itinerary, setItinerary] = useState<ItineraryVersionView>();
+  const [itinerary, setItinerary] = useState<ItineraryVersionView | null>();
   const [originalCourse, setOriginalCourse] = useState<CourseSummaryResponse>();
   const [registrationComplete, setRegistrationComplete] = useState(() => hasRegisteredImportedTrip(tripId));
   const [cloneUncertain, setCloneUncertain] = useState(false);
@@ -88,16 +89,24 @@ function ServerCourseSettings({ tripId }: { tripId: number }) {
   useEffect(() => {
     const controller = new AbortController();
     const { signal } = controller;
-    void getTripMembers(tripId, signal).then(
-      (response) => {
-        if (!signal.aborted) setMembers(response);
-      },
-      () => {
+    let timer: number | undefined;
+    async function refreshMembers() {
+      try {
+        const response = await getTripMembers(tripId, signal);
+        if (!signal.aborted) {
+          setMembers(response); setMembersFetchedAt(Date.now()); setMemberError(false);
+        }
+      } catch {
         if (!signal.aborted) setMemberError(true);
-      },
-    );
-    return () => controller.abort();
-  }, [tripId, memberAttempt]);
+      } finally {
+        if (showMembers && !signal.aborted) {
+          timer = window.setTimeout(() => { if (!signal.aborted) void refreshMembers(); }, 15000);
+        }
+      }
+    }
+    void refreshMembers();
+    return () => { controller.abort(); window.clearTimeout(timer); };
+  }, [tripId, memberAttempt, showMembers]);
 
   const currentMember = members?.find((member) => member.me);
   const owner = currentMember?.role === "OWNER";
@@ -135,7 +144,9 @@ function ServerCourseSettings({ tripId }: { tripId: number }) {
     const { signal } = controller;
     void getLatestItinerary(tripId, signal).then((response) => {
       if (!signal.aborted) setItinerary(response);
-    }).catch(() => {});
+    }).catch((reason: unknown) => {
+      if (!signal.aborted && reason instanceof ApiError && reason.code === "ITINERARY_NOT_FOUND") setItinerary(null);
+    });
     void getSavedPlaces(tripId, signal).then(async ({ places }) => {
       const names = new Set(places.filter((place) => place.source === "POPULAR").flatMap((place) => place.listNames));
       if (!names.size || signal.aborted) return;
@@ -145,12 +156,25 @@ function ServerCourseSettings({ tripId }: { tripId: number }) {
     return () => controller.abort();
   }, [tripId, city]);
 
-  useEffect(() => {
-    if (!trip) return;
-    const start = new Date(`${trip.startDate}T00:00:00`);
-    const end = new Date(`${trip.endDate}T00:00:00`);
-    setTripDays(Math.max(1, Math.round((end.getTime() - start.getTime()) / 86_400_000) + 1));
-  }, [trip]);
+  async function saveDuration() {
+    if (!trip || actionPending.current) return;
+    const endDate = addDays(trip.startDate, tripDays - 1);
+    if (trip.endDate === endDate) { closeSheet(); return; }
+    actionPending.current = true;
+    setPending(true);
+    setActionError("");
+    try {
+      const updated = await updateTripDates(tripId, { startDate: trip.startDate, endDate });
+      setTrip(updated);
+      setNotice(`여행 기간을 ${tripDays - 1}박 ${tripDays}일로 변경했어요.`);
+      closeSheet();
+    } catch (reason) {
+      setActionError(reason instanceof Error ? reason.message : "여행 기간을 변경하지 못했어요. 다시 시도해 주세요.");
+    } finally {
+      actionPending.current = false;
+      setPending(false);
+    }
+  }
   const leaveMessage = owner
     ? members?.length === 1
       ? "혼자 참여한 여행이라 나가면 여행이 삭제돼요."
@@ -221,6 +245,7 @@ function ServerCourseSettings({ tripId }: { tripId: number }) {
           <CourseSettingsDetailView
             view={showNotifications ? "notifications" : "members"}
             members={members}
+            membersFetchedAt={membersFetchedAt}
             onBack={() => {
               setShowMembers(false);
               setShowNotifications(false);
@@ -303,7 +328,9 @@ function ServerCourseSettings({ tripId }: { tripId: number }) {
                   <S.SettingsSection aria-label="일정 관리">
                     <h2>일정 관리</h2>
                     <S.MenuList>
-                      <S.MenuButton type="button" onClick={() => openSheet("duration")}>
+                      <S.MenuButton type="button" onClick={() => {
+                        setTripDays(dayCount(trip.startDate, trip.endDate)); setActionError(""); openSheet("duration");
+                      }}>
                         <img src={daysIcon} alt="" />
                         <span>여행 기간 변경</span>
                         <S.MenuMeta>{summary.durationLabel ?? "날짜 미정"}</S.MenuMeta>
@@ -355,10 +382,10 @@ function ServerCourseSettings({ tripId }: { tripId: number }) {
           </>
         )}
         {activeSheet === "trip" && trip && summary && (
-          <TripInformationSheet trip={trip} title={summary.title} mode={needsRegistration ? "register" : "edit"}
-            movementLabel={movementLabel} onClose={closeSheet} onSaved={(updated) => {
+          <TripInformationSheet trip={trip} title={summary.title} mode={needsRegistration ? "register" : "edit"} imported={imported} inlineEditors
+            canChangeDates={!itinerary} movementLabel={movementLabel} onClose={closeSheet} onSaved={(updated, registered) => {
               setTrip(updated);
-              if (imported) {
+              if (imported && registered) {
                 markImportedTripRegistered(tripId);
                 setRegistrationComplete(true);
               }
@@ -384,39 +411,21 @@ function ServerCourseSettings({ tripId }: { tripId: number }) {
             onDiscardAndClose={closeSheet}
             onCancelNameEdit={cancelNameEdit}
             onCopyInviteLink={copyInviteLink}
-            onNotice={setNotice}
             onClose={closeSheet}
             selectedCover={selectedCover}
             tripDays={tripDays}
             onCoverChange={setSelectedCover}
-            onSaveCover={() => {
-              setNotice("대표 이미지를 변경했어요.");
-              closeSheet();
-            }}
-            onTripDaysChange={setTripDays}
-            onSaveDuration={() => {
-              if (pending) return;
-              setPending(true);
-              void updateTrip(tripId, { endDate: addDays(trip.startDate, tripDays - 1) }).then(
-                (response) => {
-                  setTrip(response);
-                  setNotice(`여행 기간을 ${tripDays - 1}박 ${tripDays}일로 변경했어요.`);
-                  closeSheet();
-                  setPending(false);
-                },
-                () => {
-                  setNotice("여행 기간을 변경하지 못했어요. 다시 시도해 주세요.");
-                  setPending(false);
-                },
-              );
-            }}
+            onTripDaysChange={(value) => { setTripDays(value); setActionError(""); }}
+            durationPending={pending}
+            durationError={actionError}
+            onSaveDuration={() => void saveDuration()}
             tripCity={summary.city}
             tripDateLabel={`${summary.dateLabel} · ${summary.durationLabel ?? "날짜 미정"}`}
             tripCompanionLabel={`${trip.companionCount}명`}
           />
         )}
         <S.LiveRegion aria-live="polite">{notice}</S.LiveRegion>
-        {showInvite && <ServerInviteSheet tripId={tripId} onClose={() => setShowInvite(false)} />}
+        {showInvite && <ServerInviteSheet tripId={tripId} trip={trip} onClose={() => setShowInvite(false)} />}
         {showShare && <ServerInviteSheet tripId={tripId} onClose={() => setShowShare(false)} publicShare />}
         {dialog && <CourseSettingsConfirmDialog
           dialog={dialog}
@@ -541,16 +550,11 @@ function DemoCourseSettings() {
             onDiscardAndClose={closeSheet}
             onCancelNameEdit={cancelNameEdit}
             onCopyInviteLink={copyInviteLink}
-            onNotice={setNotice}
             onClose={closeSheet}
             initialCloseConfirm={showUnsavedMock}
             selectedCover={selectedCover}
             tripDays={tripDays}
             onCoverChange={setSelectedCover}
-            onSaveCover={() => {
-              setNotice("대표 이미지를 변경했어요.");
-              closeSheet();
-            }}
             onTripDaysChange={setTripDays}
             onSaveDuration={() => {
               setNotice(`여행 기간을 ${tripDays - 1}박 ${tripDays}일로 변경했어요.`);

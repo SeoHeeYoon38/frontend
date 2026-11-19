@@ -112,7 +112,7 @@ function Logo() {
 function LoginBackdrop({ withTagline = false }: { withTagline?: boolean }) {
   return (
     <S.LoginScreen>
-      <S.LoginHero $withTagline={withTagline}>
+      <S.LoginHero>
         <Logo />
         {withTagline && (
           <>

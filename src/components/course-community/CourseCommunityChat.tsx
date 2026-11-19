@@ -30,6 +30,7 @@ function CourseCommunityChat({ onBack, onViewCourse, onApplyToCourse }: CourseCo
     selectedDay,
     selectedPollId,
     sentMessages,
+    answeredMessageIndex,
     pendingAi,
     stage,
     openDayPicker,
@@ -46,6 +47,12 @@ function CourseCommunityChat({ onBack, onViewCourse, onApplyToCourse }: CourseCo
   const showConversation = stage !== "welcome";
   const showSummaryCard = stage === "summary";
   const showPollCard = ["poll", "day-picker"].includes(stage);
+  const responseIndex = showSummaryCard || showPollCard ? answeredMessageIndex : -1;
+  const myMessage = (value: string, index: number) => (
+    <p className="community-chat__my-message" key={index}>
+      {value.startsWith("@도틀로 ") ? <><b>@도틀로</b> {value.slice(5)}</> : value}
+    </p>
+  );
   const selectedPlace = pollOptions.find((option) => option.id === selectedPollId);
   const applyToCourse = () => {
     if (selectedPlace) onApplyToCourse?.(selectedDay, selectedPlace);
@@ -109,7 +116,7 @@ function CourseCommunityChat({ onBack, onViewCourse, onApplyToCourse }: CourseCo
                   <img src={communityMembers[2].avatar} alt="" />
                   <div><strong>이지우</strong><p>입장료가 좀 부담돼서 다른 곳도 보고 싶어</p></div>
                 </div>
-                <p className="community-chat__my-message"><b>@도틀로</b> 의견 조율해줘</p>
+                {sentMessages.slice(0, responseIndex + 1).map(myMessage)}
                 <article className="community-chat__ai-message">
                   <AiAvatar />
                   <div>
@@ -134,7 +141,7 @@ function CourseCommunityChat({ onBack, onViewCourse, onApplyToCourse }: CourseCo
 
             {showPollCard && (
               <>
-                <p className="community-chat__my-message">비용이 적은 대체 장소 찾기</p>
+                {sentMessages.slice(0, responseIndex + 1).map(myMessage)}
                 <article className="community-chat__ai-message">
                   <AiAvatar />
                   <div>
@@ -215,9 +222,7 @@ function CourseCommunityChat({ onBack, onViewCourse, onApplyToCourse }: CourseCo
 
           </>
         )}
-        {sentMessages.map((sentMessage, index) => (
-          <p className="community-chat__my-message" key={`${sentMessage}-${index}`}>{sentMessage}</p>
-        ))}
+        {sentMessages.slice(responseIndex + 1).map((value, index) => myMessage(value, responseIndex + 1 + index))}
         {stage === "recommendation" && <article className="community-chat__ai-message">
           <AiAvatar />
           <div><strong>도틀로 AI</strong><div className="community-chat__ai-bubble">

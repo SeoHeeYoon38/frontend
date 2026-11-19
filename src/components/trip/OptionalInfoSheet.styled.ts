@@ -1,5 +1,15 @@
 import styled from "styled-components";
+import TripSheet from "../common/TripSheet";
+import { SheetHeader } from "../common/TripSheet.styled";
 import { FlightLine as BaseFlightLine, FlightResult as BaseFlightResult, Results, Tabs as BaseTabs } from "./Trip.styled";
+
+export const StaySheet = styled(TripSheet)`
+  ${SheetHeader} {
+    padding: 44px 0 17px;
+    h2 { letter-spacing: -0.24px; line-height: 32px; }
+    > button { margin-right: -6px; }
+  }
+`;
 
 export const Field = styled.label`
   display: grid;
@@ -12,14 +22,14 @@ export const Field = styled.label`
 export const Search = styled.span<{ $selected: boolean }>`
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   min-height: 52px;
   padding: 0 14px;
-  border: 1.5px solid ${({ $selected }) => $selected ? "#090738" : "transparent"};
+  box-shadow: ${({ $selected }) => $selected ? "inset 0 0 0 1.5px #090738" : "none"};
   border-radius: 14px;
   background: #f3f5fa;
 
-  &:focus-within { border-color: #090738; }
+  &:focus-within { box-shadow: inset 0 0 0 1.5px #090738; }
   img { flex: none; }
   input {
     min-width: 0;
@@ -76,16 +86,16 @@ export const WeekDay = styled.button<{ $connectedBefore: boolean; $connectedAfte
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
   border-radius: 12px;
   min-width: 0;
-  min-height: 59px;
+  min-height: 62px;
   color: #1a1a1a;
   font-size: 14px;
   font-weight: 500;
 
-  > span { color: #8a8a8e; font-size: 12px; line-height: 18px; }
-  &:nth-child(7n+1) > span { color: #ff4f5e; }
+  > span { color: #8a8a8e; font-size: 12px; line-height: 14px; }
+  &:nth-child(7n+1) > span { color: #e5484d; }
   > strong {
     position: relative;
     isolation: isolate;
@@ -102,7 +112,7 @@ export const WeekDay = styled.button<{ $connectedBefore: boolean; $connectedAfte
   img { position: absolute; z-index: -1; }
   b { font-weight: inherit; }
   img + b { color: white; font-weight: 700; }
-  &:disabled { cursor: default; color: #a8a8ae; }
+  &:disabled { cursor: default; color: #b4b5bd; }
   &:focus-visible { outline-offset: -2px; }
 `;
 
@@ -149,12 +159,12 @@ export const StayList = styled.ul`
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    padding: 16px 0;
-    border-bottom: 1px solid #e4e6ec;
+    padding: 14px 0;
+    border-bottom: 1px solid #ededf1;
   }
-  li > div { min-width: 0; display: flex; flex-direction: column; gap: 5px; }
-  strong { overflow-wrap: anywhere; font-size: 15px; line-height: 20px; }
-  small, button { color: #8a8a8e; font-size: 13px; }
+  li > div { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+  strong { overflow-wrap: anywhere; font-size: 15px; line-height: 22px; }
+  small, button { color: #8a8a8e; font-size: 12px; line-height: 17px; }
   button { padding: 8px 0 8px 12px; flex: none; }
 `;
 

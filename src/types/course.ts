@@ -28,6 +28,7 @@ export interface CourseTheme {
 }
 
 export interface TravelerCoursePlace {
+  visitTime?: string;
   id: string;
   name: string;
   category: string;

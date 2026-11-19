@@ -16,7 +16,7 @@ import type { ItineraryDayInput, ItineraryVersionView, ItineraryVisitInput, Save
 import { useItineraryCheck } from "../../hooks/useItineraryCheck";
 import useServerTripDraft from "../../hooks/useServerTripDraft";
 import { createGeneratedTrip, mockTripStatus, placeIcon, saveMockTrip, tripStorageNotice } from "../../data/mocks/mockTripService";
-import { dateLabel, durationLabel, emptyDraft, rangeDates, tripDateStatus } from "../../utils/trip";
+import { dateLabel, durationLabel, emptyDraft, rangeDates, travelModeLabels, tripDateStatus } from "../../utils/trip";
 import type { TripDraft } from "../../types/trip";
 import { mockTripPlaces } from "../../data/mocks/tripData";
 import { mockTripCities } from "../../data/mocks/tripData";
@@ -88,6 +88,7 @@ interface ExistingTrip {
   days: ItineraryDayInput[];
   places: SavedPlaceResponse[];
   version: number;
+  validation: ItineraryVersionView["validation"];
   initialDay?: number;
   onSaved: (itinerary: ItineraryVersionView) => void;
   onClose: () => void;
@@ -190,7 +191,12 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
     0,
   );
   const hasAnyPlace = placeCount > 0;
-  const scheduled = validation?.days.find((day) => day.date === rangeDates(draft.startDate, draft.endDate)[selectedDay - 1]);
+  const validatedDays = (validation ?? (!changed ? existing?.validation : undefined))?.days;
+  const scheduled = validatedDays?.find((day) => day.date === rangeDates(draft.startDate, draft.endDate)[selectedDay - 1]);
+  const movementModes = new Set(validatedDays?.flatMap((day) =>
+    day.visits.filter((visit) => visit.travel.distanceMeters > 0 || visit.travel.minutes > 0).map((visit) => visit.travel.mode)));
+  const walkingMeters = scheduled?.visits.reduce((sum, visit) =>
+    sum + (visit.travel.mode === "WALK" ? visit.travel.distanceMeters : 0), 0);
 
   const leave = () => {
     if (existing) existing.onClose();
@@ -417,7 +423,7 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
       setNotice(tripStorageNotice);
       return;
     }
-    const params = new URLSearchParams({ toast: "saved" });
+    const params = new URLSearchParams({ toast: "saved", savedTripId: trip.id });
     if (mockTripStatus(trip) === "past") params.set("tab", "past");
     navigate(`${routes.myTrips}?${params.toString()}`);
   };
@@ -464,7 +470,7 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
           <S.Facts aria-label="여행 요약">
             <div><img src={calendarIcon} alt="" /><strong>{durationLabel(draft.startDate, draft.endDate)}</strong><span>여행 기간</span></div>
             <div><img src={pinIcon} alt="" /><strong>{placeCount}곳</strong><span>장소</span></div>
-            <div><img src={trainIcon} alt="" /><strong>미정</strong><span>이동 방법</span></div>
+            <div><img src={trainIcon} alt="" /><strong>{Array.from(movementModes, (mode) => travelModeLabels[mode]).join(" · ") || "미정"}</strong><span>이동 방법</span></div>
           </S.Facts>
         </S.ItineraryOverview>}
         <S.DayTabs aria-label="일정 일자">
@@ -496,6 +502,7 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
           <div>
             <strong>{selectedDay}일차 일정</strong>
             {placesForDay.length > 0 && <span>{placesForDay.length}곳</span>}
+            {walkingMeters !== undefined && walkingMeters > 0 && <span>도보 {(walkingMeters / 1000).toFixed(1)}km</span>}
           </div>
         </S.ScheduleHeader>
 
@@ -513,6 +520,7 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
           <S.FilledPlan>
             <S.Timeline>
               {placesForDay.map((place, index) => {
+                const leg = scheduled?.visits[index + 1]?.travel;
                 return (
                 <li key={place.id} draggable={!savingItinerary} tabIndex={0}
                   aria-label={`${place.name} 일정 순서`}
@@ -549,8 +557,8 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
                     <button className="direct-place-remove" type="button" disabled={savingItinerary}
                       onClick={() => removePlace(place.id)} aria-label={`${place.name} 삭제`}><img src={removeIcon} alt="" /></button>
                   </S.TimelineCard>
-                  {index < placesForDay.length - 1 && <S.TravelRow>{scheduled?.visits[index + 1]?.travel.minutes !== undefined
-                    ? `이동 ${scheduled.visits[index + 1].travel.minutes}분`
+                  {index < placesForDay.length - 1 && <S.TravelRow>{leg
+                    ? `${travelModeLabels[leg.mode]} ${leg.minutes}분 · ${(leg.distanceMeters / 1000).toFixed(1)}km`
                     : place.travelTime ?? ""}</S.TravelRow>}
                 </li>
                 );

@@ -36,9 +36,9 @@ export const LoginScreen = styled.div`
   background: #ffffff;
 `;
 
-export const LoginHero = styled.section<{ $withTagline: boolean }>`
+export const LoginHero = styled.section`
   position: absolute;
-  top: ${({ $withTagline }) => ($withTagline ? "194px" : "calc(50% - 205px)")};
+  top: clamp(96px, calc(50% - 187px), 250px);
   right: 20px;
   left: 20px;
   display: flex;
@@ -439,34 +439,42 @@ export const CompleteScreen = styled.main`
 
 export const FeatureScreen = styled.main`
   ${screenBase}
-  display: grid;
-  grid-template-rows: 32px minmax(160px, 1fr) auto;
-  gap: 24px;
-  padding: max(44px, env(safe-area-inset-top)) 20px 164px;
+  min-height: max(620px, 100dvh);
 `;
 
 export const FeatureSkip = styled.button`
-  justify-self: end;
+  position: absolute;
+  top: max(env(safe-area-inset-top), 6.3%);
+  right: 20px;
   min-height: 32px;
   color: ${tertiary} !important;
   font-size: 14px !important;
 `;
 
 export const FeatureIllustration = styled.div<{ $last: boolean }>`
-  grid-row: 2;
+  position: absolute;
+  top: 39.1%;
+  left: 20px;
+  right: 20px;
+  transform: translateY(-50%);
   display: grid;
   place-items: center;
   img {
     width: min(100%, ${({ $last }) => ($last ? "328px" : "241px")});
-    max-height: min(27dvh, 241px);
+    max-height: min(28dvh, 241px);
     object-fit: contain;
   }
 `;
 
 export const FeatureDescription = styled.section`
+  position: absolute;
+  top: 64.07%;
+  left: 16px;
+  right: 16px;
   text-align: center;
   h1 { margin: 28px 0 0; font-size: 24px; line-height: 32px; white-space: pre-line; }
-  p { margin: 12px 0 0; color: #5c5c63; font-size: 14px; line-height: 20px; }
+  p { margin: 10px 0 0; color: #5c5c63; font-size: 14px; line-height: 20px; }
+  @media (max-height: 700px) { top: 58%; }
 `;
 
 export const FeatureDots = styled.div`
@@ -489,6 +497,6 @@ export const CompleteContent = styled.section`
   text-align: center;
 
   > img { width: 180px; height: 180px; object-fit: contain; }
-  h1 { margin: 16px 0 0; font-size: 26px; line-height: 35px; letter-spacing: -0.26px; }
+  h1 { margin: 28px 0 0; font-size: 26px; line-height: 35px; letter-spacing: -0.26px; }
   p { margin: 12px 0 0; color: #5c5c63; font-size: 15px; line-height: 22px; }
 `;

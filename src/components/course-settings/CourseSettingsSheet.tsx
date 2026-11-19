@@ -1,4 +1,4 @@
-import { useState, type RefObject } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 import { Link } from "react-router";
 import closeIcon from "../../assets/course-settings/close.svg";
 import editIcon from "../../assets/course-settings/edit.svg";
@@ -36,14 +36,14 @@ interface CourseSettingsSheetProps {
   onDiscardAndClose: () => void;
   onCancelNameEdit: () => void;
   onCopyInviteLink: () => void;
-  onNotice: (message: string) => void;
   onClose: () => void;
   initialCloseConfirm?: boolean;
   selectedCover: number;
   tripDays: number;
   onCoverChange: (index: number) => void;
-  onSaveCover: () => void;
   onTripDaysChange: (days: number) => void;
+  durationPending?: boolean;
+  durationError?: string;
   onSaveDuration: () => void;
   tripCity?: string;
   tripDateLabel?: string;
@@ -77,14 +77,14 @@ function CourseSettingsSheet({
   onDiscardAndClose,
   onCancelNameEdit,
   onCopyInviteLink,
-  onNotice,
   onClose,
   initialCloseConfirm = false,
   selectedCover,
   tripDays,
   onCoverChange,
-  onSaveCover,
   onTripDaysChange,
+  durationPending = false,
+  durationError,
   onSaveDuration,
   tripCity = "일본 · 도쿄",
   tripDateLabel = "2026.05.18 – 05.21 · 3박 4일",
@@ -94,8 +94,15 @@ function CourseSettingsSheet({
   const [showCloseConfirm, setShowCloseConfirm] = useState(
     initialCloseConfirm,
   );
+  const [albumCover, setAlbumCover] = useState("");
+  const [coverError, setCoverError] = useState("");
+  const albumUrl = useRef("");
+  useEffect(() => () => { if (albumUrl.current) URL.revokeObjectURL(albumUrl.current); }, []);
+  const covers = albumCover ? [...coverImages, albumCover] : coverImages;
+  const activeCover = selectedCover < covers.length ? selectedCover : 0;
 
   const requestClose = () => {
+    if (activeSheet === "duration" && durationPending) return;
     if (activeSheet === "trip" && isDirty) {
       setShowCloseConfirm(true);
       return;
@@ -113,11 +120,12 @@ function CourseSettingsSheet({
       }}
     >
       <S.BottomSheet
+        data-panel={activeSheet}
         role="dialog"
         aria-modal="true"
         aria-labelledby={`${activeSheet}-sheet-title`}
       >
-        <SheetHandle onClose={requestClose} closeDisabled={showCloseConfirm} />
+        <SheetHandle onClose={requestClose} closeDisabled={showCloseConfirm || durationPending} />
         <S.SheetHeader>
           <h2 id={`${activeSheet}-sheet-title`}>
             {sheetTitles[activeSheet]}
@@ -125,6 +133,7 @@ function CourseSettingsSheet({
           <button
             type="button"
             aria-label="닫기"
+            disabled={durationPending}
             onMouseDown={(event) => event.preventDefault()}
             onClick={requestClose}
           >
@@ -223,30 +232,40 @@ function CourseSettingsSheet({
           <S.CoverContent>
             <p>코스에 담긴 장소 사진 중에서 골라주세요</p>
             <S.CoverGrid>
-              {coverImages.map((image, index) => (
-                <button key={image} type="button" aria-label={`대표 이미지 ${index + 1} 선택`} aria-pressed={selectedCover === index} onClick={() => onCoverChange(index)}>
+              {covers.map((image, index) => (
+                <button key={image} type="button" aria-label={`대표 이미지 ${index + 1} 선택`} aria-pressed={activeCover === index} onClick={() => onCoverChange(index)}>
                   <img src={image} alt="" />
-                  {selectedCover === index && <span><img src={selectedCheck} alt="" /></span>}
+                  {activeCover === index && <span><img src={selectedCheck} alt="" /></span>}
                 </button>
               ))}
               <label>
                 <strong aria-hidden="true"><img src={addIcon} alt="" /></strong>
                 <span>앨범에서 선택</span>
-                <input type="file" accept="image/*" aria-label="앨범에서 대표 이미지 선택" onChange={() => onNotice("앨범에서 고른 사진을 대표 이미지 후보에 추가했어요.")} />
+                <input type="file" accept="image/*" aria-label="앨범에서 대표 이미지 선택" onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (!file) return;
+                  if (albumUrl.current) URL.revokeObjectURL(albumUrl.current);
+                  albumUrl.current = URL.createObjectURL(file);
+                  setAlbumCover(albumUrl.current);
+                  onCoverChange(coverImages.length);
+                  setCoverError("");
+                }} />
               </label>
             </S.CoverGrid>
-            <S.SheetPrimaryButton type="button" onClick={onSaveCover}>변경하기</S.SheetPrimaryButton>
+            {coverError && <p role="alert">{coverError}</p>}
+            <S.SheetPrimaryButton type="button" onClick={() => setCoverError("대표 이미지 변경은 아직 저장할 수 없어요.")}>변경하기</S.SheetPrimaryButton>
           </S.CoverContent>
         )}
         {activeSheet === "duration" && (
           <S.DurationContent>
             <p>지금 코스는 {tripDays}일 일정이에요</p>
             <S.DurationControl>
-              <button type="button" aria-label="여행 기간 하루 줄이기" disabled={tripDays <= 1} onClick={() => onTripDaysChange(Math.max(1, tripDays - 1))}><img src={durationMinus} alt="" /></button>
+              <button type="button" aria-label="여행 기간 하루 줄이기" disabled={durationPending || tripDays <= 1} onClick={() => onTripDaysChange(Math.max(1, tripDays - 1))}><img src={durationMinus} alt="" /></button>
               <div><strong>{tripDays - 1}박 {tripDays}일</strong><span>1일차 ~ {tripDays}일차</span></div>
-              <button type="button" aria-label="여행 기간 하루 늘리기" disabled={tripDays >= 10} onClick={() => onTripDaysChange(Math.min(10, tripDays + 1))}><img src={durationPlus} alt="" /></button>
+              <button type="button" aria-label="여행 기간 하루 늘리기" disabled={durationPending || tripDays >= 10} onClick={() => onTripDaysChange(Math.min(10, tripDays + 1))}><img src={durationPlus} alt="" /></button>
             </S.DurationControl>
-            <S.SheetPrimaryButton type="button" onClick={onSaveDuration}>변경하기</S.SheetPrimaryButton>
+            {durationError && <p role="alert">{durationError}</p>}
+            <S.SheetPrimaryButton type="button" disabled={durationPending} onClick={onSaveDuration}>{durationPending ? "저장하고 있어요" : "변경하기"}</S.SheetPrimaryButton>
           </S.DurationContent>
         )}
       </S.BottomSheet>

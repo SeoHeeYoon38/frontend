@@ -28,23 +28,23 @@ import * as S from "./ProfileEditPage.styled";
 function ProfileEditPage() {
   const navigate = useNavigate();
   const liveProfile = isApiEnabled() && hasAuthSession();
-  const [initialProfile, setInitialProfile] = useState(() => {
-    const stored = readProfileSettings(window.localStorage);
-    return liveProfile ? { ...stored, nickname: "", email: "", introduction: "" } : stored;
-  });
+  const [initialProfile, setInitialProfile] = useState(() => liveProfile
+    ? { nickname: "", email: "", introduction: "", avatar: profileAvatarId(null) }
+    : readProfileSettings(window.localStorage));
   const [nickname, setNickname] = useState(initialProfile.nickname);
   const [introduction, setIntroduction] = useState(initialProfile.introduction);
   const [avatar, setAvatar] = useState<ProfileAvatar>(initialProfile.avatar);
   const [showPhotoSheet, setShowPhotoSheet] = useState(false);
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
-  const [loading, setLoading] = useState(liveProfile);
+  const [profileState, setProfileState] = useState<"loading" | "ready" | "failed">(liveProfile ? "loading" : "ready");
   const [saving, setSaving] = useState(false);
   const [serverError, setServerError] = useState("");
   const pendingSave = useRef(false);
   const nicknameText = nickname.trim();
   const nicknameChanged = nicknameText !== initialProfile.nickname;
   const format = nicknameChanged ? validateNicknameFormat(nicknameText) : { valid: true, tone: "default" as const, message: "" };
-  const needsNicknameCheck = liveProfile && !loading && format.valid && nicknameChanged;
+  const formDisabled = profileState !== "ready" || saving;
+  const needsNicknameCheck = liveProfile && profileState === "ready" && format.valid && nicknameChanged;
   const { availability: checked, clear: clearNicknameCheck, markTaken } = useNicknameAvailability(
     needsNicknameCheck ? nicknameText : undefined,
   );
@@ -60,27 +60,25 @@ function ProfileEditPage() {
           email: user.email,
           introduction: user.bio ?? "",
           avatar: profileAvatarId(user.characterId),
-          travelPreferences: initialProfile.travelPreferences,
         };
         setInitialProfile(profile);
         setNickname(profile.nickname);
         setIntroduction(profile.introduction);
         setAvatar(profile.avatar);
+        setProfileState("ready");
       })
       .catch((reason: unknown) => {
         if (!controller.signal.aborted) {
+          setProfileState("failed");
           setServerError(
             reason instanceof Error
               ? reason.message
               : "프로필을 불러오지 못했어요. 다시 시도해 주세요.",
           );
         }
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, [initialProfile.travelPreferences, liveProfile]);
+  }, [liveProfile]);
 
   const validation = !liveProfile ? validateNickname(nickname, initialProfile.nickname)
     : !needsNicknameCheck ? format
@@ -93,7 +91,7 @@ function ProfileEditPage() {
     introduction !== initialProfile.introduction ||
     avatar !== initialProfile.avatar;
   const canSave =
-    dirty && validation.valid && introduction.length <= 30 && !loading && !saving && Boolean(nicknameText);
+    dirty && validation.valid && introduction.length <= 30 && !formDisabled && Boolean(nicknameText);
   const avatarImage = profileCharacter(avatar).image;
   const introductionAtLimit = introduction.length >= 30;
 
@@ -147,7 +145,18 @@ function ProfileEditPage() {
       }
     }
 
-    saveProfileSettings(window.localStorage, profile);
+    try {
+      if (liveProfile) {
+        const stored = readProfileSettings(window.localStorage);
+        if (stored.email === profile.email) profile.travelPreferences = stored.travelPreferences;
+      }
+      saveProfileSettings(window.localStorage, profile);
+    } catch {
+      if (!liveProfile) {
+        setServerError("프로필을 저장하지 못했어요. 다시 시도해 주세요.");
+        return;
+      }
+    }
     navigate(routes.my, { replace: true, state: { profileSaved: true } });
   };
 
@@ -164,11 +173,11 @@ function ProfileEditPage() {
         <S.AvatarButton
           type="button"
           aria-label="프로필 캐릭터 변경"
-          disabled={loading || saving}
+          disabled={formDisabled}
           onClick={() => setShowPhotoSheet(true)}
         >
           <img className="profile-avatar-background" src={avatarBackground} alt="" />
-          <img className="profile-avatar-character" src={avatarImage} alt="" />
+          {profileState === "ready" && <img className="profile-avatar-character" src={avatarImage} alt="" />}
         </S.AvatarButton>
 
         <S.Field $tone={validation.tone}>
@@ -178,12 +187,12 @@ function ProfileEditPage() {
               id="profile-nickname"
               value={nickname}
               maxLength={12}
-              disabled={loading || saving}
+              disabled={formDisabled}
               aria-invalid={validation.tone === "error"}
               aria-describedby="profile-nickname-status"
               onChange={(event) => changeNickname(event.target.value)}
             />
-            {nicknameChanged && nickname && !loading && (
+            {nicknameChanged && nickname && profileState === "ready" && (
               <button type="button" aria-label="닉네임 지우기" disabled={saving} onClick={() => changeNickname("")}>
                 <img src={clearIcon} alt="" />
               </button>
@@ -213,7 +222,7 @@ function ProfileEditPage() {
               id="profile-introduction"
               value={introduction}
               maxLength={30}
-              disabled={loading || saving}
+              disabled={formDisabled}
               aria-describedby={introductionAtLimit ? "profile-introduction-limit" : undefined}
               onChange={(event) => setIntroduction(event.target.value)}
             />
@@ -226,7 +235,7 @@ function ProfileEditPage() {
 
       <S.Cta>
         <button type="button" disabled={!canSave} onClick={() => void save()}>
-          {loading ? "프로필을 불러오고 있어요" : saving ? "저장하고 있어요" : "저장하기"}
+          {profileState === "loading" ? "프로필을 불러오고 있어요" : saving ? "저장하고 있어요" : "저장하기"}
         </button>
       </S.Cta>
 

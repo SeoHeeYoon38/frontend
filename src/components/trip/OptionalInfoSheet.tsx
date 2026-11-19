@@ -224,7 +224,7 @@ function FlightSheet({ draft, onClose, onSave, prepareServerTrip }: ReservationS
   }
 
   if (calendar) return (
-    <TripSheet key="flight-calendar" title="언제 떠나세요?" variant="dates" onClose={() => setCalendar(undefined)}
+    <TripSheet key="flight-calendar" title="언제 떠나세요?" variant="dates" compactHeader minHeight={654} onClose={() => setCalendar(undefined)}
       footer={<S.Primary type="button" disabled={!validDate(calendar.start) || !validDate(calendar.end)} onClick={() => {
         setPeriod(calendar);
         selectDate(direction === "outbound" ? calendar.start : calendar.end);
@@ -364,7 +364,7 @@ function StaySheet({ draft, onClose, onSave, prepareServerTrip }: ReservationShe
   }
 
   if (calendar) return (
-    <TripSheet key="stay-calendar" title="언제 머무르세요?" variant="dates" onClose={() => setCalendar(undefined)}
+    <TripSheet key="stay-calendar" title="언제 머무르세요?" variant="dates" compactHeader minHeight={642} onClose={() => setCalendar(undefined)}
       footer={<S.Primary type="button" disabled={!calendar.start || !calendar.end || calendar.start >= calendar.end} onClick={() => {
         setCheckIn(calendar.start);
         setCheckOut(calendar.end);
@@ -380,7 +380,7 @@ function StaySheet({ draft, onClose, onSave, prepareServerTrip }: ReservationShe
 
   const form = editing !== undefined;
   return (
-    <TripSheet key="stay" title="숙소 등록" contentGap={24} closeDisabled={saving}
+    <O.StaySheet key="stay" title="숙소 등록" minHeight={form ? 439 : 401} contentGap={24} closeDisabled={saving}
       onClose={form && stays.length ? () => setEditing(undefined) : onClose}
       footer={form
         ? <S.Primary type="button" disabled={!hotel || !checkIn || !checkOut || checkOut <= checkIn} onClick={registerStay}>숙소 등록하기</S.Primary>
@@ -432,7 +432,7 @@ function StaySheet({ draft, onClose, onSave, prepareServerTrip }: ReservationShe
         </>
       )}
       {error && <S.ErrorText role="alert">{error}</S.ErrorText>}
-    </TripSheet>
+    </O.StaySheet>
   );
 }
 

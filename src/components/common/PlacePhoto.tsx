@@ -69,14 +69,31 @@ export function PlaceThumbnail(props: PhotoSource & { placeholder?: ReactNode })
   return <Photo key={JSON.stringify([props.courseId, props.placeId])} {...props} thumbnail />;
 }
 
-export function PlaceGallery(props: PhotoSource) {
+export function PlaceGallery({ images, ...props }: PhotoSource & { images?: readonly string[] }) {
   const [index, setIndex] = useState(0);
-  const [count, setCount] = useState(0);
+  const [photoCount, setCount] = useState(0);
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
+  const count = images?.length ?? photoCount;
   const visibleDots = Math.min(5, count);
   const firstDot = Math.min(Math.max(index - 2, 0), count - visibleDots);
   return (
-    <div className="place-gallery">
-      <Photo key={index} {...props} index={index} onCount={setCount} />
+    <div className="place-gallery"
+      onTouchStart={({ touches }) => {
+        touchStart.current = touches.length === 1 ? { x: touches[0].clientX, y: touches[0].clientY } : null;
+      }}
+      onTouchCancel={() => { touchStart.current = null; }}
+      onTouchEnd={({ changedTouches }) => {
+        const start = touchStart.current;
+        touchStart.current = null;
+        if (!start || count < 2 || !changedTouches.length) return;
+        const dx = changedTouches[0].clientX - start.x;
+        const dy = changedTouches[0].clientY - start.y;
+        if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
+          setIndex(current => Math.max(0, Math.min(count - 1, current + (dx < 0 ? 1 : -1))));
+        }
+      }}>
+      {images ? <span className="place-photo"><img src={images[index]} alt={props.name} /></span> :
+        <Photo key={index} {...props} index={index} onCount={setCount} />}
       {count > 1 && (
         <>
           <span className="place-gallery__count" aria-live="polite">{index + 1} / {count}</span>

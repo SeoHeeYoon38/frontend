@@ -1,4 +1,6 @@
-import { apiRequest } from "./client";
+import { ApiError, apiRequest } from "./client";
+import { getLatestItinerary } from "./itineraries";
+import { getReservations } from "./reservations";
 import { isMapCoordinate } from "../utils/googleMaps";
 import type {
   CityResponse,
@@ -79,5 +81,22 @@ export function updateTrip(
     json: input,
     signal,
   });
+}
+
+export async function updateTripDates(tripId: number, input: TripUpdateInput & { startDate: string; endDate: string }) {
+  // Changing trip dates does not move the server's itinerary versions or reservations.
+  const itinerary = await getLatestItinerary(tripId).catch((reason: unknown) => {
+    if (!(reason instanceof ApiError && reason.code === "ITINERARY_NOT_FOUND")) throw reason;
+  });
+  if (itinerary) throw new Error("저장된 일정의 날짜와 여행 기간을 함께 변경할 수 없어요.");
+  const { flights, stays, rental } = await getReservations(tripId);
+  const bookedDates = [
+    flights?.outbound?.arrival.time.slice(0, 10), flights?.return?.departure.time.slice(0, 10),
+    ...stays.flatMap((stay) => [stay.checkIn, stay.checkOut]), ...(rental?.dates ?? []),
+  ];
+  if (bookedDates.some((date) => date && (date < input.startDate || date > input.endDate))) {
+    throw new Error("항공권·숙소·렌터카의 예약 날짜를 포함하는 여행 기간을 선택해 주세요.");
+  }
+  return updateTrip(tripId, input);
 }
 

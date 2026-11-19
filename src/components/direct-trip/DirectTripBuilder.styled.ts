@@ -94,21 +94,19 @@ export const SearchHandle = styled.div`
 
 export const PlainHeader = styled.header`
   position: relative;
-  height: 54px;
+  height: 48px;
   flex: 0 0 auto;
   display: flex;
   align-items: center;
-  padding: 0 20px;
-  border-bottom: 1px solid #f1f1f4;
+  padding: 0 10px;
 
   h1 {
     position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
+    left: 52px;
     margin: 0;
-    color: ${navy};
-    font-size: 17px;
-    line-height: 24px;
+    color: #1a1a1a;
+    font-size: 16px;
+    line-height: 22px;
     font-weight: 700;
     white-space: nowrap;
   }
@@ -135,8 +133,10 @@ export const BackButton = styled.button`
 export const InfoScroll = styled.main`
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
-  padding: 34px 20px 132px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 28px 20px 0;
   scrollbar-width: none;
 
   &::-webkit-scrollbar {
@@ -449,7 +449,7 @@ export const Facts = styled.div`
   }
 
   img { width: 24px; height: 24px; margin-bottom: 4px; }
-  strong { color: #1a1a1a; font-size: 15px; line-height: 22px; white-space: nowrap; }
+    strong { color: #1a1a1a; font-size: 15px; line-height: 22px; text-align: center; overflow-wrap: anywhere; }
   span { color: #8a8a8e; font-size: 12px; line-height: 17px; }
 `;
 
