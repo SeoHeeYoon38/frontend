@@ -1313,26 +1313,52 @@
 .course-edit-preview {
   display: grid;
   gap: 12px;
-  padding: 8px 0 24px;
+  padding: 0 0 16px;
 }
 
 .course-edit-preview p {
   margin: 0;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.course-edit-preview > p:not(.course-edit-preview-reason, [role="alert"]),
+.course-edit-preview > span {
+  color: #8a8a8e;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+}
+
+.course-edit-preview > .course-edit-preview-reason {
   font-size: 15px;
   line-height: 1.6;
 }
 
-.course-edit-preview span {
-  color: #8a8a8e;
-  font-size: 13px;
+.course-edit-preview-actions {
+  display: grid;
+  gap: 15px;
+  margin: -24px -20px 0;
+  border-top: 1px solid #e4e6ec;
+  padding: 16px 20px max(41px, env(safe-area-inset-bottom));
 }
 
-.course-edit-preview button {
-  min-height: 44px;
-  border: 1px solid #e4e6ec;
-  border-radius: 12px;
-  background: #fff;
-  color: #090738;
+.course-edit-preview-actions > button {
+  min-height: 56px;
+  text-align: center;
+  font-size: 16px;
+  line-height: 22px;
   font-weight: 700;
+}
+
+.course-edit-preview-actions > .course-edit-preview-keep {
+  border: 1px solid #a9a9a9;
+  border-radius: 16px;
+  background: #fff;
+  color: #000;
+}
+
+.course-edit-preview-actions > .course-edit-preview-keep:disabled {
+  opacity: 0.5;
 }
 
