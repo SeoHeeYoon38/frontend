@@ -828,13 +828,17 @@ function ServerTripPlan({ tripId, userId }: { tripId: number; userId: number }) 
           pending={editPending}
           error={actionError}
         />}
-        {showAiEdit && editPreview && <TripSheet title="수정안 확인" variant="course" closeDisabled={editPending}
+        {showAiEdit && editPreview && <TripSheet title="수정안 확인" compactHeader courseHeight={593} closeDisabled={editPending}
           onClose={() => { setEditPreview(undefined); setShowAiEdit(false); }}
-          footer={<button className="course-sheet__primary" type="button" disabled={editPending} onClick={() => void applyEdit()}>
-            {editPending ? "일정에 적용하고 있어요" : "이 일정 적용하기"}
-          </button>}>
+          footer={<div className="course-edit-preview-actions">
+            <button className="course-edit-preview-keep" type="button" disabled={editPending}
+              onClick={() => { setEditPreview(undefined); setShowAiEdit(false); }}>기존 일정 유지</button>
+            <button className="course-sheet__primary" type="button" disabled={editPending} onClick={() => void applyEdit()}>
+              {editPending ? "일정에 적용하고 있어요" : "이 일정 적용하기"}
+            </button>
+          </div>}>
           <div className="course-edit-preview">
-            <p>{editPreview.reason}</p>
+            <p className="course-edit-preview-reason">{editPreview.reason}</p>
             <span>변경 {editPreview.diff.changes.length}건
               {editPreview.diff.reorderedDays.length > 0 && ` · 순서 변경 ${editPreview.diff.reorderedDays.length}일`}</span>
             {!editPreview.itinerary.validation.summary.valid && (
@@ -844,7 +848,6 @@ function ServerTripPlan({ tripId, userId }: { tripId: number; userId: number }) 
               </>
             )}
             {actionError && <p role="alert">{actionError}</p>}
-            <button type="button" disabled={editPending} onClick={() => { setEditPreview(undefined); setShowAiEdit(false); }}>기존 일정 유지</button>
           </div>
         </TripSheet>}
         {registrationOpen && data && <TripInformationSheet
