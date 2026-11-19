@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router";
 import { ApiError } from "../api/client";
+import ItineraryIssues from "../components/course-completion/ItineraryIssues";
 import {
   applyItineraryEdit,
   getItineraryHistory,
@@ -441,7 +442,9 @@ function ServerTripPlan({ tripId, userId }: { tripId: number; userId: number }) 
     try {
       setEditPreview(await requestItineraryEdit(tripId, message));
     } catch (reason) {
-      setActionError(reason instanceof Error ? reason.message : "수정안을 만들지 못했어요.");
+      setActionError(reason instanceof ApiError && reason.status === 500
+        ? "AI가 수정안을 만들지 못했어요. 입력한 내용으로 다시 시도해 주세요."
+        : reason instanceof Error ? reason.message : "수정안을 만들지 못했어요.");
     } finally {
       setEditPending(false);
     }
@@ -461,17 +464,20 @@ function ServerTripPlan({ tripId, userId }: { tripId: number; userId: number }) 
       setNotice("");
       void reloadHistory().catch(() => undefined);
     } catch (reason) {
-      if (reason instanceof ApiError && reason.status === 409) {
+      if (reason instanceof ApiError && reason.status === 409 && reason.code === "ITINERARY_VERSION_CONFLICT") {
         setEditPreview(undefined);
         setActionError("일정이 변경되어 수정안을 적용하지 못했어요. 최신 일정을 확인하고 수정안을 다시 만들어 주세요.");
         try {
           const itinerary = await getLatestItinerary(tripId);
           setData((current) => current && !olderItinerary(itinerary, current.itinerary) ? { ...current, itinerary } : current);
           setActiveDay(0);
-          await reloadHistory();
+          void reloadHistory().catch(() => undefined);
         } catch {
           setActionError("최신 일정을 불러오지 못했어요. 여행 일정을 다시 열고 수정안을 만들어 주세요.");
         }
+      } else if (reason instanceof ApiError && reason.status === 404 && reason.code === "EDIT_REQUEST_NOT_FOUND") {
+        setEditPreview(undefined);
+        setActionError("적용할 수정안을 찾지 못했어요. 입력한 내용으로 수정안을 다시 만들어 주세요.");
       } else {
         setActionError(reason instanceof Error ? reason.message : "수정안을 적용하지 못했어요.");
       }
@@ -825,6 +831,12 @@ function ServerTripPlan({ tripId, userId }: { tripId: number; userId: number }) 
             <p>{editPreview.reason}</p>
             <span>변경 {editPreview.diff.changes.length}건
               {editPreview.diff.reorderedDays.length > 0 && ` · 순서 변경 ${editPreview.diff.reorderedDays.length}일`}</span>
+            {!editPreview.itinerary.validation.summary.valid && (
+              <>
+                <p>수정안에 확인이 필요한 일정이 있어요. 내용을 확인한 뒤 적용할 수 있어요.</p>
+                <ItineraryIssues validation={editPreview.itinerary.validation} />
+              </>
+            )}
             {actionError && <p role="alert">{actionError}</p>}
             <button type="button" disabled={editPending} onClick={() => { setEditPreview(undefined); setShowAiEdit(false); }}>기존 일정 유지</button>
           </div>
