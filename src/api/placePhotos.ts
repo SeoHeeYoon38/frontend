@@ -3,7 +3,8 @@ import { ApiError, apiRequest } from "./client";
 export interface PlacePhoto {
   photoUrl: string;
   totalCount: number;
-  attributions: { name: string; uri?: string }[];
+  attributions: { name: string; uri?: string; photoUri?: string }[];
+  googleMapsUri?: string;
 }
 
 const photos = new Map<string, Promise<PlacePhoto | null>>();

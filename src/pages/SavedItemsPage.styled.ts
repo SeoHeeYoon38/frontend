@@ -218,6 +218,7 @@ export const PlaceRow = styled(ItemRow)`
 `;
 
 export const CourseRow = styled(ItemRow)`
+  position: relative;
   min-height: 88px;
 
   > img, > span {
@@ -232,6 +233,8 @@ export const CourseRow = styled(ItemRow)`
   }
 
   a strong { display: block; }
+  a::after { position: absolute; inset: 0; content: ""; }
+  > button { position: relative; }
 `;
 
 export const ImageFallback = styled.span`

@@ -1,0 +1,92 @@
+.course-photo-open {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: zoom-in;
+}
+
+.course-photo-viewer {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100dvh;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: #141414;
+  color: white;
+}
+
+.course-photo-viewer[open] {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+
+.course-photo-viewer__scroll {
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.course-photo-viewer__image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: zoom-in;
+}
+
+.course-photo-viewer__image[aria-pressed="true"] {
+  width: 200%;
+  height: 200%;
+  cursor: zoom-out;
+}
+
+.course-photo-viewer__image img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.course-photo-viewer__credits {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 12px;
+  padding: 8px 16px max(12px, env(safe-area-inset-bottom));
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.course-photo-viewer__credits a,
+.course-photo-viewer__credits span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: inherit;
+}
+
+.course-photo-viewer__credits img {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+}
+
+.course-photo-viewer__close {
+  position: absolute;
+  top: max(12px, env(safe-area-inset-top));
+  right: max(12px, env(safe-area-inset-right));
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: #fff;
+  cursor: pointer;
+}

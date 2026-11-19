@@ -275,7 +275,7 @@ function TravelerCoursePage() {
     <S.Shell>
       <S.Hero>
         {liveCourseId ? (
-          <CourseCardPhoto id={course.id} title={course.title} coverUrl={course.hero} firstPlaceId={course.firstPlaceId} />
+          <CourseCardPhoto id={course.id} title={course.title} coverUrl={course.hero} firstPlaceId={course.firstPlaceId} expandable />
         ) : course.hero && <img src={course.hero} alt={course.title.replace("\n", " ")} />}
         <S.Navigation aria-label="여행자 코스 탐색">
           <button type="button" aria-label="이전 화면으로 돌아가기" onClick={() => {

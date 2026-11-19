@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { getPlacePhoto, type PlacePhoto } from "../../api/placePhotos";
 import chevronIcon from "../../assets/icons/nav-chevron-right.svg";
+import CoursePhotoViewer from "./CoursePhotoViewer";
 import "./PlacePhoto.css";
 
 interface PhotoSource {
@@ -9,11 +10,15 @@ interface PhotoSource {
   name: string;
 }
 
-function Photo({ placeId, courseId, name, index = 0, thumbnail = false, onCount, placeholder }: PhotoSource & {
+interface ThumbnailOptions {
+  placeholder?: ReactNode;
+  coursePreview?: "card" | "detail";
+}
+
+function Photo({ placeId, courseId, name, index = 0, thumbnail = false, onCount, placeholder, coursePreview }: PhotoSource & ThumbnailOptions & {
   index?: number;
   thumbnail?: boolean;
   onCount?: (count: number) => void;
-  placeholder?: ReactNode;
 }) {
   const ref = useRef<HTMLSpanElement>(null);
   const [result, setResult] = useState<PlacePhoto | null>();
@@ -52,7 +57,8 @@ function Photo({ placeId, courseId, name, index = 0, thumbnail = false, onCount,
       {result && !failed ? (
         <>
           <img src={result.photoUrl} alt={thumbnail ? "" : name} onError={() => setFailed(true)} />
-          {result.attributions.length > 0 && (
+          {coursePreview === "detail" && <CoursePhotoViewer src={result.photoUrl} title={name} authors={result.attributions} mapsUri={result.googleMapsUri} />}
+          {!coursePreview && result.attributions.length > 0 && (
             <span className="place-photo__credit">{result.attributions.map(({ name }) => name).join(", ")}</span>
           )}
         </>
@@ -65,7 +71,7 @@ function Photo({ placeId, courseId, name, index = 0, thumbnail = false, onCount,
   );
 }
 
-export function PlaceThumbnail(props: PhotoSource & { placeholder?: ReactNode }) {
+export function PlaceThumbnail(props: PhotoSource & ThumbnailOptions) {
   return <Photo key={JSON.stringify([props.courseId, props.placeId])} {...props} thumbnail />;
 }
 
