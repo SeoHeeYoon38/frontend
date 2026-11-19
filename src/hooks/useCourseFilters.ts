@@ -10,13 +10,12 @@ import {
   mockRecentDestinations,
   mockPopularCourses,
   mockTravelerCourses,
-  mockCourseThemes,
 } from "../data/mocks/courseData";
 import { getCities } from "../api/trips";
 import { getCourses } from "../api/courses";
 import { isApiEnabled } from "../api/config";
 import { courseSummaryToTravelCourse } from "../api/adapters";
-import { courseInterests } from "../config/courseConfig";
+import { courseInterests, courseThemes } from "../config/courseConfig";
 
 const recentDestinationsKey = "dotlo:recent-course-destinations";
 
@@ -125,7 +124,7 @@ function useCourseFilters() {
     setIsRegionOpen(false);
   }
 
-  const themes = liveCourses ? [] : mockCourseThemes.filter(
+  const themes = courseThemes.filter(
     (theme) =>
       (destination
         ? theme.cities.includes(destination.name)

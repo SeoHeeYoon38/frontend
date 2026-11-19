@@ -114,12 +114,14 @@ export const InputWrap = styled.div<{ $tone?: "default" | "success" | "error" }>
   align-items: center;
   gap: 8px;
   padding: 0 12px 0 16px;
-  border: 1px solid ${({ $tone }) => $tone === "error" ? "#e5484d" : $tone === "success" ? "#00b9d4" : "#e4e6ec"};
+  border: ${({ $tone }) => $tone === "error" || $tone === "success" ? "1.5px" : "1px"} solid;
+  border-color: ${({ $tone }) => $tone === "error" ? "#e5484d" : $tone === "success" ? "#00b8d4" : "#e4e6ec"};
   border-radius: 12px;
   background: #ffffff;
 
   &:focus-within {
-    border-color: ${({ $tone }) => $tone === "error" ? "#e5484d" : $tone === "success" ? "#00b9d4" : "#090738"};
+    border-width: 1.5px;
+    border-color: ${({ $tone }) => $tone === "error" ? "#e5484d" : $tone === "success" ? "#00b8d4" : "#090738"};
   }
 
   input {
@@ -138,6 +140,7 @@ export const InputWrap = styled.div<{ $tone?: "default" | "success" | "error" }>
     line-height: 17px;
   }
   button { flex: none; display: grid; place-items: center; min-width: 22px; height: 30px; }
+  &:not(:focus-within) button { display: none; }
   [aria-describedby="profile-introduction-limit"] + span { color: #e5484d; }
 `;
 

@@ -1,4 +1,6 @@
 import styled from "styled-components";
+import TripSheet from "../common/TripSheet";
+import { SheetHeader as TripSheetHeader } from "../common/TripSheet.styled";
 
 const focusRing = `
   outline: 3px solid rgba(91, 79, 232, 0.45);
@@ -987,6 +989,60 @@ export const ShareList = styled.ul`
     font-size: 10px;
     line-height: 1.4;
     white-space: nowrap;
+  }
+`;
+
+export const FriendInviteSheet = styled(TripSheet)`
+  --sheet-handle-color: #d1d1d6;
+  ${TripSheetHeader} {
+    padding: 31px 0 6px;
+    h2 { font-size: 22px; line-height: 30px; letter-spacing: -0.11px; }
+    > button { width: 24px; height: 24px; }
+  }
+  ${InviteContent} {
+    padding: 0 0 max(34px, env(safe-area-inset-bottom));
+    > p:first-child { margin: 0 0 20px; color: #8a8a8e; font-size: 14px; line-height: 20px; }
+  }
+  ${LinkBox} {
+    height: 50px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    padding: 6px 6px 6px 16px;
+    border: 0;
+    border-radius: 14px;
+    background: #f3f5fa;
+    > span { font-size: 14px; line-height: 20px; font-weight: 500; color: #5c5c63; }
+    button {
+      height: 38px;
+      padding: 0 14px !important;
+      border-radius: 10px !important;
+      background: #090738 !important;
+      font-size: 13px;
+    }
+    button[data-copied] { color: #5c5c63; background: transparent !important; }
+  }
+  ${ShareSection} { margin-top: 20px; padding: 0; border: 0; }
+  ${ShareList} {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 0;
+    button { gap: 4px; }
+    img { width: 60px; height: 60px; }
+    li:first-child img { width: 72px; height: 72px; }
+    span { color: #000; font-size: 11px; line-height: 13px; }
+  }
+  ${MemberSection} {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid #e4e6ec;
+    h3 { margin-bottom: 6px; line-height: 17px; }
+  }
+  ${MemberList} {
+    li { min-height: 56px; grid-template-columns: 36px 1fr auto; gap: 12px; }
+    li > img { width: 36px; height: 36px; }
+    strong { font-size: 15px; font-weight: 700; }
+    strong small { font-size: 13px; }
+    li > span { padding: 0; color: #8a8a8e; background: none; font-size: 12px; font-weight: 400; }
   }
 `;
 

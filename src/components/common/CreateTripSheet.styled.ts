@@ -8,15 +8,16 @@ export const Sheet = styled.dialog`
   max-width: none;
   max-height: calc(100dvh - 24px);
   margin: 0 auto;
-  padding: 37px 20px 0;
+  padding: 37px 20px max(54px, calc(20px + env(safe-area-inset-bottom)));
   border: 0;
   border-radius: 24px 24px 0 0;
   background: #fff;
   color: #1a1a1a;
   overscroll-behavior: contain;
+  --sheet-handle-color: #d1d1d6;
 
   &::backdrop {
-    background: #0907386b;
+    background: rgba(10, 10, 26, 0.45);
   }
 
   h2 {

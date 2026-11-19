@@ -1,4 +1,10 @@
 import type { ChatMessage, ChatPoll } from "../api/chat.ts";
+import type { ItineraryDiff, ItineraryDraft } from "../api/types.ts";
+
+export function confirmedPollAddition(placeId: string, date: string, draft: ItineraryDraft, diff: ItineraryDiff) {
+  return diff.changes.some((change) => change.kind === "ADDED" && change.placeId === placeId && change.toDate === date) &&
+    draft.days.some((item) => item.date === date && item.visits.some((visit) => visit.placeId === placeId));
+}
 
 export function pollWinner(poll: ChatPoll) {
   if (poll.status !== "CLOSED") return undefined;
@@ -19,10 +25,15 @@ export function mergePolls(current: ChatPoll[], incoming: ChatPoll[]) {
 export function withPollCards(messages: ChatMessage[], polls: ChatPoll[]): ChatMessage[] {
   const shown = new Set(messages.filter((item) => item.payload?.card?.kind === "POLL")
     .map((item) => item.payload?.card?.pollId));
-  return [...messages, ...polls.filter((poll) => !shown.has(poll.pollId)).map((poll): ChatMessage => ({
-    id: -1_000_000_000 - poll.pollId, type: "AI", sender: null, text: poll.question,
-    payload: { card: { kind: "POLL", pollId: poll.pollId } }, createdAt: "",
-  }))];
+  const timeline = [...messages];
+  for (const poll of polls) {
+    if (shown.has(poll.pollId)) continue;
+    const card: ChatMessage = { id: -1_000_000_000 - poll.pollId, type: "AI", sender: null, text: poll.question,
+      payload: { card: { kind: "POLL", pollId: poll.pollId } }, createdAt: "" };
+    const completion = timeline.findIndex((item) => item.payload?.card?.kind === "POLL_PLACE_ADDED" && item.payload.card.pollId === poll.pollId);
+    timeline.splice(completion < 0 ? timeline.length : completion, 0, card);
+  }
+  return timeline;
 }
 
 export function readRecentPolls(value: unknown): ChatPoll[] {

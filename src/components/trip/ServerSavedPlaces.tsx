@@ -60,11 +60,12 @@ interface ServerSavedPlacesProps {
   importView?: PlaceImportView;
   onImportViewChange?: (view: PlaceImportView) => void;
   onLoadingChange?: (loading: boolean) => void;
+  onTripError?: (reason: unknown) => boolean;
 }
 
 function ServerSavedPlaces({
   tripId, recommendationCity, initialSelectedIds, onSelectionChange, onContinue, onPick, onPickMany, pickDay, pickedPlaceIds,
-  pickLabel = "일정에 담기", pickedLabel = "이날 일정에 담았어요", importView, onImportViewChange, onLoadingChange,
+  pickLabel = "일정에 담기", pickedLabel = "이날 일정에 담았어요", importView, onImportViewChange, onLoadingChange, onTripError,
 }: ServerSavedPlacesProps) {
   const isTripCreation = Boolean(onContinue);
   const [places, setPlaces] = useState<SavedPlaceResponse[]>();
@@ -82,6 +83,9 @@ function ServerSavedPlaces({
   const [error, setError] = useState("");
   const [importNotice, setImportNotice] = useState("");
   const request = useRef<AbortController | null>(null);
+  const handleLoadError = useEffectEvent((reason: unknown) => {
+    if (!onTripError?.(reason)) setError("저장 장소를 불러오지 못했어요.");
+  });
 
   useEffect(() => {
     const controller = new AbortController();
@@ -95,7 +99,7 @@ function ServerSavedPlaces({
           setShowImport(isTripCreation && currentPlaces.length === 0);
         }
       },
-      () => { if (!signal.aborted) setError("저장 장소를 불러오지 못했어요."); },
+      (reason: unknown) => { if (!signal.aborted) handleLoadError(reason); },
     );
     return () => {
       controller.abort();
@@ -119,7 +123,7 @@ function ServerSavedPlaces({
       await action(controller.signal);
       return !controller.signal.aborted;
     } catch (reason) {
-      if (!controller.signal.aborted) {
+      if (!controller.signal.aborted && !onTripError?.(reason)) {
         setError(reason instanceof Error ? reason.message : "장소 요청을 처리하지 못했어요.");
       }
       return false;

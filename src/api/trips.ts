@@ -83,6 +83,10 @@ export function updateTrip(
   });
 }
 
+export function isMissingTrip(reason: unknown) {
+  return reason instanceof ApiError && reason.status === 404 && reason.code === "TRIP_NOT_FOUND";
+}
+
 /** A locally restored new-trip form can outlive its server draft. */
 export async function saveNewTripDraft(id: number | undefined, input: TripInput) {
   if (id !== undefined) {
@@ -95,7 +99,7 @@ export async function saveNewTripDraft(id: number | undefined, input: TripInput)
         return await updateTrip(id, input);
       }
     } catch (reason) {
-      if (!(reason instanceof ApiError && reason.status === 404 && reason.code === "TRIP_NOT_FOUND")) throw reason;
+      if (!isMissingTrip(reason)) throw reason;
     }
   }
   return createTrip(input);

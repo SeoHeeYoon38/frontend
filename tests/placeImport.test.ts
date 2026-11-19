@@ -1,6 +1,45 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { createServer } from "vite";
 import { extractMapsListLink, googleMapsImportTarget, validateMapsListLink, validateTakeoutFile } from "../src/utils/placeImport.ts";
+
+test("가져온 장소의 외부 조회만 실패하면 같은 여행에 저장된 목록을 다시 읽는다", async () => {
+  const server = await createServer({
+    envDir: false, appType: "custom", logLevel: "error",
+    define: {
+      "import.meta.env.VITE_API_MODE": JSON.stringify("live"),
+      "import.meta.env.VITE_API_BASE_URL": JSON.stringify("https://example.test"),
+    },
+    server: { middlewareMode: true, hmr: false, ws: false },
+  });
+  const oldFetch = globalThis.fetch;
+  const oldWindow = Object.getOwnPropertyDescriptor(globalThis, "window");
+  Object.defineProperty(globalThis, "window", { configurable: true, value: {
+    location: { origin: "http://localhost" }, localStorage: { getItem: () => null }, setTimeout, clearTimeout,
+  } });
+  const saved = { places: [{ id: 3, matchStatus: "NEEDS_REVIEW", name: "도톤보리" }] };
+  const reads: string[] = [];
+  let failure = "EXTERNAL_API_ERROR";
+  globalThis.fetch = async (url, init) => {
+    const path = new URL(String(url)).pathname;
+    if (path === "/api/trips/12/places/enrich" && init?.method === "POST")
+      return Response.json({ code: failure }, { status: 502 });
+    reads.push(path);
+    return Response.json(saved);
+  };
+  try {
+    const { enrichSavedPlaces } = await server.ssrLoadModule("/src/api/places.ts");
+    assert.deepEqual(await enrichSavedPlaces(12), saved);
+    failure = "TRIP_NOT_FOUND";
+    await assert.rejects(enrichSavedPlaces(12), { code: failure });
+    assert.deepEqual(reads, ["/api/trips/12/places"]);
+  } finally {
+    globalThis.fetch = oldFetch;
+    if (oldWindow) Object.defineProperty(globalThis, "window", oldWindow);
+    else Reflect.deleteProperty(globalThis, "window");
+    await server.close();
+  }
+});
 
 test("Takeout ZIP·CSV는 20MB까지 선택할 수 있다", () => {
   const limit = 20 * 1024 * 1024;

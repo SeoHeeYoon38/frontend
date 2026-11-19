@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { ChatMessage, ChatPoll } from "../src/api/chat.ts";
-import { mergePolls, pollWinner, readRecentPolls, withPollCards } from "../src/utils/chatPolls.ts";
+import { confirmedPollAddition, mergePolls, pollWinner, readRecentPolls, withPollCards } from "../src/utils/chatPolls.ts";
 
 function poll(overrides: Partial<ChatPoll> = {}): ChatPoll {
   return { pollId: 7, question: "어디로 갈까요?", status: "OPEN", totalMembers: 3, votedCount: 1,
@@ -55,4 +55,22 @@ test("최근 투표 응답은 배열 또는 polls 목록을 읽고 잘못된 응
   assert.deepEqual(readRecentPolls([]), []);
   assert.throws(() => readRecentPolls({}), /최근 투표 응답/);
   assert.throws(() => readRecentPolls([{ pollId: 7 }]), /최근 투표 응답/);
+});
+
+test("투표 장소 추가는 저장된 날짜와 실제 ADDED 변경이 모두 일치해야 확정한다", () => {
+  const date = "2026-11-23";
+  const draft = { days: [{ date, visits: [{ placeId: "park" }] }] };
+  const diff = { changes: [{ kind: "ADDED" as const, itemId: "v1", placeId: "park", toDate: date,
+    fromDate: null, fromStayMinutes: null, toStayMinutes: null, fromFixedStart: null, toFixedStart: null }], reorderedDays: [] };
+  assert.ok(confirmedPollAddition("park", date, draft, diff));
+  assert.equal(confirmedPollAddition("park", date, draft, { ...diff, changes: [] }), false);
+  assert.equal(confirmedPollAddition("park", date, { days: [] }, diff), false);
+  assert.equal(confirmedPollAddition("park", "2026-12-01", draft, diff), false);
+});
+
+test("최근 투표만 복구한 방에서도 원래 투표가 완료 카드 앞에 나온다", () => {
+  const completed: ChatMessage = { id: -1, type: "AI", sender: null, text: "완료", createdAt: "",
+    payload: { card: { kind: "POLL_PLACE_ADDED", pollId: 7 } } };
+  assert.deepEqual(withPollCards([completed], [poll()]).map((item) => item.payload?.card?.kind),
+    ["POLL", "POLL_PLACE_ADDED"]);
 });

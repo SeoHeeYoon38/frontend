@@ -32,7 +32,7 @@
   width: min(100%, 402px);
   min-height: 100vh;
   margin: 0 auto;
-  overflow: hidden;
+  overflow: clip;
   background: #fff;
   box-shadow: 0 0 30px rgb(28 28 56 / 8%);
 }

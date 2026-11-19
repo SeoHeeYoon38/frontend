@@ -13,6 +13,7 @@ import type { TripInteractions } from "../../api/interactions";
 import { getPlaceDetail, getPlaceHours, type PlaceDetailResponse, type PlaceHoursResponse } from "../../api/places";
 import type { CoursePlace } from "../../types/courseCompletion";
 import { isMapCoordinate } from "../../utils/googleMaps";
+import { placeAsObject } from "../../utils/trip";
 import CourseRouteMap from "./CourseRouteMap";
 
 interface PlaceDetailProps {
@@ -250,7 +251,7 @@ function PlaceDetail({ place, onBack, onRemove, onMove, onReplace, server, remov
       </div>}
       {confirmRemove && <div className="place-detail__confirm-layer" role="presentation" onClick={() => setConfirmRemove(false)}>
         <section role="alertdialog" aria-modal="true" aria-labelledby="place-remove-title" onClick={(event) => event.stopPropagation()}>
-          <h2 id="place-remove-title">{place.name}을 일정에서 뺄까요?</h2>
+          <h2 id="place-remove-title">{placeAsObject(place.name)} 일정에서 뺄까요?</h2>
           <p>{server?.day ? `${server.day}일차 코스에서 빠지고` : "일정에서 빠지고"}<br />일행에게도 바로 반영돼요.</p>
           {removeError && <p role="alert">{removeError}</p>}
           <div>

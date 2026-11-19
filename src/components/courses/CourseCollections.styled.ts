@@ -14,11 +14,14 @@ export const Heading = styled.div`
     margin: 0;
     font-size: 19px;
     font-weight: 700;
+    line-height: 27px;
+    letter-spacing: -0.5px;
   }
   a,
   span {
     font-size: 13px;
     font-weight: 500;
+    line-height: 18px;
     color: #8a8a8e;
     white-space: nowrap;
   }
@@ -91,6 +94,7 @@ export const Meta = styled.div`
   gap: 7px;
   align-items: center;
   font-size: 12px;
+  line-height: 17px;
   color: rgba(255, 255, 255, 0.85);
   i {
     height: 10px;
@@ -113,6 +117,8 @@ export const Theme = styled.article`
     margin: 0;
     font-size: 14px;
     font-weight: 700;
+    line-height: 20px;
+    letter-spacing: 0;
   }
 `;
 export const ThemeCities = styled.div`
@@ -120,11 +126,21 @@ export const ThemeCities = styled.div`
   align-items: center;
   gap: 7px;
   font-size: 12px;
+  font-weight: 500;
+  line-height: 17px;
+  letter-spacing: 0;
   color: #8a8a8e;
   white-space: nowrap;
   span + span {
-    border-left: 1px solid #d1d1d9;
-    padding-left: 7px;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+  }
+  span + span::before {
+    content: "";
+    width: 1px;
+    height: 10px;
+    background: #d1d1d9;
   }
 `;
 export const TravelerList = styled.div`
@@ -149,7 +165,8 @@ export const TravelerText = styled.div`
   min-width: 0;
   h3 {
     font-size: 15px;
-    line-height: 1.45;
+    line-height: 22px;
+    letter-spacing: 0;
     white-space: pre-line;
     margin: 0;
   }
@@ -166,6 +183,8 @@ export const Author = styled.div`
   align-items: center;
   gap: 6px;
   font-size: 12px;
+  line-height: 17px;
+  font-weight: 500;
   color: #555;
   flex-wrap: wrap;
   img {

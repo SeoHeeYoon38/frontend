@@ -21,9 +21,9 @@ function CourseCollections({
 
   return (
     <>
-      {popularCourses.length > 0 && <S.Section aria-label="이번 주 많이 저장한 코스">
+      {popularCourses.length > 0 && <S.Section aria-label="이번 주 많이 찜한 코스">
         <S.Heading>
-          <h2>이번 주 많이 저장한 코스</h2>
+          <h2>이번 주 많이 찜한 코스</h2>
           {travelerCourses.length > 0 && <a href="#traveler-courses">전체 보기</a>}
         </S.Heading>
         <S.Carousel>

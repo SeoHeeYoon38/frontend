@@ -22,6 +22,7 @@ function resultKey(message: ChatMessage) {
 export interface LocalChatResult extends ChatMessage {
   afterMessageId: number;
   requestedAfterId?: number;
+  addedPlace?: { day: number; placeId: string; name: string; tagline: string | null };
 }
 
 function messagePosition(message: ChatMessage | LocalChatResult) {
