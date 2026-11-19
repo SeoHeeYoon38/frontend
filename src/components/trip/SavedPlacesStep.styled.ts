@@ -1,6 +1,9 @@
 import { Footer, Step, Title } from "./Trip.styled";
 import styled from "styled-components";
+import TripSheet from "../common/TripSheet";
+import { SheetHeader } from "../common/TripSheet.styled";
 import selectedCheck from "../../assets/icons/status-selected-check.svg";
+import emptyCourseCheck from "../../assets/figma/recommend-empty-background.svg";
 export const ConnectVisual = styled.div`
   position: relative;
   width: calc(100% + 40px);
@@ -663,7 +666,9 @@ export const SuggestedCourse = styled.button`
   .suggested-cover[data-count="3"] { grid-template-rows: 1fr 1fr; }
   .suggested-cover[data-count="3"] > :first-child { grid-row: span 2; }
   .suggested-cover > * { width: 100%; height: 100%; min-height: 0; min-width: 0; border-radius: 0; object-fit: cover; }
+  .suggested-photo-fallback { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
   .suggested-check { position: absolute; top: 12px; right: 12px; width: 26px; height: 26px; }
+  &[data-selected="false"] .suggested-check { background: url(${emptyCourseCheck}) center / contain no-repeat; }
 
   > .suggested-course-copy {
     display: grid;
@@ -686,8 +691,18 @@ export const RecommendedMap = styled(CourseMap)`
   & > .course-map { height: 100%; }
 `;
 
+export const RecommendedDetailSheet = styled(TripSheet)`
+  --sheet-handle-top: 10px;
+  --sheet-handle-color: #d1d1d6;
+  ${SheetHeader} { padding: 37px 0 6px; }
+  ${SheetHeader} h2 { font-size: 22px; line-height: 30px; letter-spacing: -.11px; }
+  ${SheetHeader} button { margin-right: -7px; }
+  .recommended-detail-meta { line-height: 17px; font-weight: 500; }
+`;
+
 export const SuggestedStops = styled.div`
-  margin-top: 8px;
+  margin-top: 7px;
+  .suggested-photo-fallback { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 `;
 
 export const SuggestedStopCard = styled.label`
@@ -708,7 +723,7 @@ export const SuggestedStopCard = styled.label`
 `;
 
 export const SuggestedStopMove = styled.div`
- height: 37px;
+  height: 37px;
 `;
 
 export const SuggestedDots = styled.div`
