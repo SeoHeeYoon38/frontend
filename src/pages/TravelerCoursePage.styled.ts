@@ -23,6 +23,10 @@ export const Hero = styled.header`
     object-fit: cover;
   }
 
+  .place-photo__credit {
+    font-size: 11px;
+  }
+
   &::after {
     content: "";
     position: absolute;

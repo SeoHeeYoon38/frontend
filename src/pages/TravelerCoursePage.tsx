@@ -17,6 +17,7 @@ import TravelerPlaceDetail from "../components/traveler-course/TravelerPlaceDeta
 import TravelerAiChat from "../components/traveler-course/TravelerAiChat";
 import CourseLoginSheet from "../components/traveler-course/CourseLoginSheet";
 import { PlaceThumbnail } from "../components/common/PlacePhoto";
+import CourseCardPhoto from "../components/common/CourseCardPhoto";
 import * as S from "./TravelerCoursePage.styled";
 import { courseFavoritesPath, importedTripPath, serverTripPlanPath } from "../utils/navigation";
 import { createImportedTrip, saveMockTrip, tripStorageNotice } from "../data/mocks/mockTripService";
@@ -34,7 +35,7 @@ import * as ImportedSheet from "./ImportedTripPage.styled";
 import closeIcon from "../assets/icons/action-close.svg";
 import { courseImportEndDate, courseImportUncertain } from "../utils/courseImport";
 import { ApiError } from "../api/client";
-import { courseTitle } from "../api/adapters";
+import { courseTitle, firstCoursePlaceId } from "../api/adapters";
 
 const categoryLabels: Record<PlaceCategoryCode, string> = {
   FOOD: "맛집",
@@ -50,7 +51,7 @@ const categoryLabels: Record<PlaceCategoryCode, string> = {
 
 function courseView(course: CourseDetailResponse): TravelerCourseView {
   const cityImage = mockTripCities.find((item) => item.name === course.city)?.image;
-  const hero = course.coverImageUrl || cityImage || "";
+  const hero = course.coverImageUrl?.trim() ?? "";
   const duration = `${course.nightCount}박 ${course.dayCount}일`;
   return {
     id: String(course.id),
@@ -65,6 +66,7 @@ function courseView(course: CourseDetailResponse): TravelerCourseView {
     placeCount: course.stopCount,
     transport: course.transportSummary ?? "미정",
     hero,
+    firstPlaceId: firstCoursePlaceId(course),
     authorImage: course.author.imageUrl ?? "",
     mapFull: travelerCourse.mapFull,
     days: course.days.map((day) => ({
@@ -73,7 +75,7 @@ function courseView(course: CourseDetailResponse): TravelerCourseView {
         id: stop.placeId,
         name: stop.name,
         category: categoryLabels[stop.category],
-        image: stop.imageUrl || hero,
+        image: stop.imageUrl || hero || cityImage || "",
         latitude: stop.latitude,
         longitude: stop.longitude,
         visitTime: stop.visitTime ?? undefined,
@@ -97,7 +99,6 @@ function TravelerCoursePage() {
   const [course, setCourse] = useState<TravelerCourseView | undefined>(() =>
     apiEnabled ? undefined : travelerCourse,
   );
-  const [serverCoverImageUrl, setServerCoverImageUrl] = useState<string>();
   const [courseDayCount, setCourseDayCount] = useState(0);
   const [loadError, setLoadError] = useState(() => apiEnabled && !liveCourseId ? "코스 주소를 확인해 주세요." : "");
   const [activeDay, setActiveDay] = useState(0);
@@ -131,7 +132,6 @@ function TravelerCoursePage() {
         if (controller.signal.aborted) return;
         setCourse(courseView(response));
         setCourseDayCount(response.dayCount);
-        setServerCoverImageUrl(response.coverImageUrl || undefined);
         setActiveDay(0);
         setLoadError("");
       },
@@ -181,7 +181,7 @@ function TravelerCoursePage() {
       durationLabel: course.duration,
       city: course.city,
       placeCount: course.placeCount,
-      image: liveCourseId ? serverCoverImageUrl || "" : course.hero,
+      image: course.hero,
       author: course.author,
     })) {
       setNotice(isSaved ? "찜한 코스에서 뺐어요" : "찜한 코스에 담았어요");
@@ -223,7 +223,7 @@ function TravelerCoursePage() {
       }
       navigate(serverTripPlanPath("my-trips", String(result.tripId)), {
         replace: true,
-        state: { courseImported: true, importedCoverImageUrl: serverCoverImageUrl },
+        state: { courseImported: true, importedCoverImageUrl: course.hero || undefined },
       });
     } catch (reason) {
       if (courseImportUncertain(reason)) {
@@ -274,7 +274,9 @@ function TravelerCoursePage() {
   return (
     <S.Shell>
       <S.Hero>
-        {course.hero && <img src={course.hero} alt={course.title.replace("\n", " ")} />}
+        {liveCourseId ? (
+          <CourseCardPhoto id={course.id} title={course.title} coverUrl={course.hero} firstPlaceId={course.firstPlaceId} />
+        ) : course.hero && <img src={course.hero} alt={course.title.replace("\n", " ")} />}
         <S.Navigation aria-label="여행자 코스 탐색">
           <button type="button" aria-label="이전 화면으로 돌아가기" onClick={() => {
             if (typeof settingsSearch === "string") navigate({ pathname: routes.tripSettings, search: settingsSearch });

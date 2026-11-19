@@ -3,6 +3,7 @@ import type { TravelCourse, CourseInterest } from "../types/course";
 import type { CourseSummary } from "../types/home";
 import type {
   CompanionCode,
+  CourseDetailResponse,
   CourseSummaryResponse,
   PlaceCategoryCode,
   PreferenceAnalysis,
@@ -143,6 +144,10 @@ function courseInterest(tags: string[]): CourseInterest[] {
     if (/휴양|휴식|바다|resort|relax/.test(normalized)) values.add("휴양");
   });
   return values.size ? [...values] : ["전체"];
+}
+
+export function firstCoursePlaceId(course: CourseDetailResponse): string | null {
+  return course.days.find((day) => day.stops.length > 0)?.stops[0].placeId ?? null;
 }
 
 export function courseTitle(title: string) {
