@@ -15,35 +15,48 @@ export const Heading = styled.header`
   p img { width: 14px; height: 18px; object-fit: contain; }
 `;
 
-export const MethodList = styled.div`display: flex; flex-direction: column; gap: 12px;`;
+export const ImportEntry = styled(Flow)`
+  gap: 24px;
+`;
 
-export const MethodCard = styled.button`
-  width: 100%; min-height: 126px; display: flex; align-items: center; gap: 12px; padding: 18px 14px;
-  border: 1px solid #e5e5ea; border-radius: 18px; background: #fff; text-align: left; box-shadow: 0 1px 2px rgb(10 8 56 / 3%);
-  > img { width: 14px; height: 14px; flex: 0 0 auto; }
+export const ImportHeading = styled(Heading)`
+  h1 { letter-spacing: 0; }
+  p { gap: 5px; margin-top: 10px; font-weight: 500; line-height: 18px; }
+  p img { width: 14px; height: 14px; flex: none; }
+`;
+
+export const MethodList = styled.div`display: flex; flex-direction: column; gap: 24px;`;
+
+export const MethodCard = styled.button<{ $file?: boolean }>`
+  width: 100%; display: flex; align-items: center; gap: ${({ $file }) => $file ? "12px" : "14px"};
+  padding: ${({ $file }) => $file ? "16px" : "18px 16px 18px 18px"};
+  border: 1px solid #e4e6ec; border-radius: 16px; background: #fff; text-align: left;
+  > img { flex: none; }
 `;
 
 export const MethodIcon = styled.span<{ $tone: "blue" | "purple" }>`
-  width: 44px; height: 44px; display: grid; place-items: center; flex: 0 0 auto; border-radius: 50%;
-  background: ${({ $tone }) => $tone === "blue" ? "#e8f7ff" : "#f0eeff"};
-  img { width: 24px; height: 24px; }
+  width: 44px; height: 44px; display: grid; place-items: center; flex: none;
+  border-radius: ${({ $tone }) => $tone === "blue" ? "12px" : "50%"};
+  background: ${({ $tone }) => $tone === "blue" ? "#ddf7ff" : "#efedff"};
 `;
 
-export const MethodContent = styled.span`
-  min-width: 0; flex: 1;
-  strong { display: block; font-size: 15px; line-height: 22px; }
-  p { margin: 5px 0 10px; color: #6b6b70; font-size: 12px; line-height: 18px; word-break: keep-all; }
+export const MethodContent = styled.span<{ $file?: boolean }>`
+  min-width: 0; flex: 1; display: flex; flex-direction: column;
+  gap: ${({ $file }) => $file ? "2px" : "6px"};
+  strong { font-size: ${({ $file }) => $file ? "14px" : "16px"}; line-height: ${({ $file }) => $file ? "19px" : "22px"}; }
+  > span { color: #5c5c63; font-size: 12px; line-height: 16px; font-weight: 400; }
 `;
 
 export const Badges = styled.span`
-  display: flex; flex-wrap: wrap; gap: 4px;
-  span { padding: 3px 7px; border-radius: 999px; background: #f4f4f7; color: #8a8a8e; font-size: 10px; line-height: 14px; font-weight: 500; }
+  display: flex; flex-wrap: wrap; gap: 6px;
+  span { padding: 3px 8px; border-radius: 6px; background: #f3f5fa; color: #8a8a8e; font-size: 11px; line-height: 15px; font-weight: 500; }
+  span:first-child { background: #efedff; color: #6b6bcc; }
 `;
 
 export const InfoBox = styled.div`
-  display: flex; align-items: flex-start; gap: 8px; padding: 14px 16px; border-radius: 12px; background: #f3f5fa;
-  img { flex: none; margin-top: 1px; }
-  p { margin: 0; color: #5c5c63; font-size: 12px; line-height: 16px; }
+  display: flex; align-items: flex-start; gap: 8px; margin-top: 11px; padding: 14px; border-radius: 12px; background: #f3f5fa;
+  img { width: 16px; height: 16px; flex: none; }
+  p { margin: 0; color: #5c5c63; font-size: 12px; line-height: 16px; font-weight: 400; }
 `;
 
 export const SkipButton = styled.button`
@@ -53,6 +66,7 @@ export const SkipButton = styled.button`
 
 export const MethodSkipButton = styled(Primary)`
   margin-top: auto;
+  margin-bottom: max(36px, env(safe-area-inset-bottom));
   cursor: pointer;
   &:active { background: #24214f; }
   &:focus-visible { outline: 2px solid #6456c4; outline-offset: 2px; }
@@ -194,7 +208,11 @@ export const GuideLink = styled.button`
 `;
 
 export const LinkForm = styled.form`
-  display: flex; min-height: 320px; flex: 1; flex-direction: column; gap: 24px;
+  display: flex; min-height: 320px; flex: 1; flex-direction: column;
+  > ${FormFooter} {
+    position: sticky; bottom: 0; padding: 13px 0 max(36px, env(safe-area-inset-bottom));
+    background: linear-gradient(transparent, #fff 13px);
+  }
 `;
 
 export const LinkField = styled.div`
@@ -204,10 +222,10 @@ export const LinkField = styled.div`
 
 export const LinkInput = styled.div<{ $invalid: boolean }>`
   display: flex; gap: 8px; align-items: center; min-height: 52px; padding: 8px 8px 8px 16px;
-  border: 1px solid ${({ $invalid }) => $invalid ? "#e5484d" : "transparent"};
+  box-shadow: inset 0 0 0 1px ${({ $invalid }) => $invalid ? "#e5484d" : "transparent"};
   border-radius: 12px; background: #f3f5fa;
-  &:focus-within { border-color: ${({ $invalid }) => $invalid ? "#e5484d" : "#090738"}; }
-  input { flex: 1; min-width: 0; padding: 0; border: 0; background: transparent; font-size: 14px; }
+  &:focus-within { box-shadow: inset 0 0 0 1px ${({ $invalid }) => $invalid ? "#e5484d" : "#090738"}; }
+  input { flex: 1; min-width: 0; padding: 0; border: 0; background: transparent; font-size: 14px; font-weight: 400; line-height: 19px; }
   input:focus-visible { outline: none; }
   input::placeholder { color: #b4b5bd; }
   input[readonly] { color: #8a8a8e; text-overflow: ellipsis; }
@@ -217,6 +235,7 @@ export const LinkInput = styled.div<{ $invalid: boolean }>`
     min-height: 36px; padding: 6px 12px; border: 1px solid #e4e6ec; border-radius: 8px;
     background: #fff; color: #5c5c63; font-size: 13px; font-weight: 500;
   }
+  button:not(.clear-link) { min-width: 92px; justify-content: center; }
   .clear-link {
     width: 34px;
     min-height: 34px;
@@ -234,16 +253,21 @@ export const LinkProgress = styled.p`
 `;
 
 export const LinkGuide = styled.section`
-  padding: 16px; border: 1px solid #e0e3eb; border-radius: 16px;
-  > a { margin-top: 12px; }
-  strong { font-size: 14px; }
-  ol { display: grid; gap: 12px; margin: 12px 0 0; padding: 0; list-style: none; counter-reset: step; }
-  li { display: flex; align-items: center; gap: 10px; color: #5c5c63; font-size: 12px; line-height: 18px; }
+  margin-top: 13px; padding: 16px 16px 15px; border: 1px solid #e4e6ec; border-radius: 16px;
+  h2 { margin: 0; font-size: 14px; line-height: 19px; }
+  ol { display: grid; gap: 10px; margin: 12px 0 0; padding: 0; list-style: none; counter-reset: step; }
+  li { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 10px; color: #5c5c63; font-size: 12px; line-height: 16px; }
   li::before {
     counter-increment: step; content: counter(step);
     display: grid; place-items: center; width: 20px; height: 20px; flex: none;
-    border-radius: 50%; background: #f3f5fa; font-size: 11px; font-weight: 600;
+    border-radius: 50%; background: #f3f5fa; font-size: 11px; font-weight: 500;
   }
+  p { margin: 0; padding: 2px 0; line-height: 16px; font-weight: 400; }
+  img { display: block; max-width: 100%; height: auto; }
+  li:first-child img, li:nth-child(3) img { margin-top: 6px; }
+  li:last-child img { margin-top: 3px; }
+  a { color: inherit; text-decoration: none; }
+  a:focus-visible { outline: 2px solid #6456c4; outline-offset: 2px; }
 `;
 
 export const ImportProgress = styled.div`
