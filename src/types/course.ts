@@ -57,6 +57,7 @@ export interface TravelerCourseView {
   placeCount: number;
   transport: string;
   hero: string;
+  firstPlaceId?: string | null;
   authorImage: string;
   mapFull: string;
   days: TravelerCourseDay[];
