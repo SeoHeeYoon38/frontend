@@ -127,6 +127,10 @@
   box-shadow: 0 10px 26px rgb(0 0 0 / 28%);
 }
 
+.course-toast--confirmation {
+  pointer-events: none;
+}
+
 .course-toast span {
   color: #00e1ff;
   font-weight: 700;
