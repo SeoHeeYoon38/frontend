@@ -153,6 +153,12 @@ export const TripHeader = styled.header`
     font-size: 14px;
     color: #0079c2;
   }
+  small { font: inherit; }
+  &:has(~ main [data-place-import-entry]) {
+    button img { transform: translate(-6px, -2px); }
+    span { font-size: 13px; line-height: 18px; transform: translateY(-2px); }
+    small { color: #8a8a8e; }
+  }
 `;
 export const Progress = styled.div`
   flex-shrink: 0;
@@ -168,4 +174,5 @@ export const Progress = styled.div`
   span[data-filled="true"] {
     background: #00e1ff;
   }
+  &:has(+ main [data-place-import-entry]) { transform: translateY(-3px); }
 `;

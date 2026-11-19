@@ -57,7 +57,7 @@ function Header({
             >
               <img src={flowBack} alt="" />
             </button>
-            {!hideProgress && <span>{step} / 3</span>}
+            {!hideProgress && <span>{step}<small> / 3</small></span>}
           </S.TripHeader>
           {!hideProgress && (
             <S.Progress aria-label={`${step}/3 단계`}>

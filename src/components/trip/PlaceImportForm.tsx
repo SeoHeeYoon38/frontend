@@ -1,5 +1,6 @@
 import { useId, useRef, useState, type ClipboardEvent } from "react";
-import googleMapsLogo from "../../assets/images/brand-google-maps.webp";
+import googleMapsLogo from "../../assets/place-import/method-google-maps.png";
+import methodChevron from "../../assets/place-import/method-chevron.svg";
 import checkIcon from "../../assets/place-import/upload-02.svg";
 import chevronIcon from "../../assets/place-import/upload-more.svg";
 import fileRemoveIcon from "../../assets/place-import/file-remove.svg";
@@ -17,6 +18,10 @@ import linkLock from "../../assets/place-import/link-lock.svg";
 import linkPaste from "../../assets/place-import/link-paste.svg";
 import linkSpinner from "../../assets/place-import/link-spinner.svg";
 import linkStatusSpinner from "../../assets/place-import/link-status-spinner.svg";
+import savedTabExample from "../../assets/place-import/saved-tab-example.png";
+import shareOptionsExample from "../../assets/place-import/share-options-example.png";
+import shareListExample from "../../assets/place-import/share-list-example.png";
+import copyLinkExample from "../../assets/place-import/copy-link-example.png";
 import loadingCharacter from "../../assets/trip-generation-illustration.png";
 import loadingDots from "../../assets/place-import/loading-dots.svg";
 import { extractMapsListLink, googleMapsImportTarget, maxTakeoutFileSize, validateMapsListLink, validateTakeoutFile } from "../../utils/placeImport";
@@ -139,33 +144,32 @@ function PlaceImportForm({ onImport, onSkip, busy = false, enriching = false, im
   );
 
   if (view === "method") return (
-    <I.Flow aria-label="Google 지도 장소 가져오기">
-      <I.Heading>
+    <I.ImportEntry data-place-import-entry aria-label="Google 지도 장소 가져오기">
+      <I.ImportHeading>
         <h1>Google 지도 장소 가져오기</h1>
         <p><img src={googleMapsLogo} alt="" />Google 지도에 저장해 둔 여행 장소를 도틀로로 가져와 보세요.</p>
-      </I.Heading>
+      </I.ImportHeading>
       <I.MethodList>
         <I.MethodCard type="button" onClick={() => { setError(""); setDismissedImportError(importError); setView("link"); }}>
           <I.MethodIcon $tone="purple"><img src={linkIcon} alt="" /></I.MethodIcon>
           <I.MethodContent>
             <strong>공유 리스트 링크로 가져오기</strong>
-            <p>Google 지도에서 공유한 리스트 링크를 붙여넣어 가져와요.</p>
-            <I.Badges><span>공개 리스트만 가능</span></I.Badges>
+            <span>Google 지도에서 공유한 리스트 링크를<br />붙여넣어 가져와요.</span>
+            <I.Badges><span>추천</span><span>공개 목록만 가능</span></I.Badges>
           </I.MethodContent>
-          <img src={chevronIcon} alt="" />
+          <img src={methodChevron} alt="" />
         </I.MethodCard>
-        <I.MethodCard type="button" onClick={() => setView("guide")}>
+        <I.MethodCard $file type="button" onClick={() => setView("guide")}>
           <I.MethodIcon $tone="blue"><img src={zipIcon} alt="" /></I.MethodIcon>
-          <I.MethodContent>
+          <I.MethodContent $file>
             <strong>Takeout 파일로 가져오기</strong>
-            <p>Google에서 내려받은 ZIP 또는 CSV 파일을 올려 저장 리스트를 한 번에 가져와요.</p>
-            <I.Badges><span>ZIP · CSV</span><span>최대 20MB</span><span>저장됨(Saved)만 지원</span></I.Badges>
+            <span>저장 리스트가 많다면<br />한 번에 가져올 수 있어요</span>
           </I.MethodContent>
-          <img src={chevronIcon} alt="" />
+          <img src={methodChevron} alt="" />
         </I.MethodCard>
       </I.MethodList>
       {onSkip && <I.MethodSkipButton type="button" onClick={onSkip}>나중에 할게요</I.MethodSkipButton>}
-    </I.Flow>
+    </I.ImportEntry>
   );
 
   if (view === "guide") return (
@@ -196,14 +200,14 @@ function PlaceImportForm({ onImport, onSkip, busy = false, enriching = false, im
   );
 
   if (view === "link") return (
-    <I.Flow>
-      <I.Heading><h1>공유 리스트 링크를 붙여넣어 주세요</h1><p>Google 지도에서 공개로 설정한 리스트만 가져올 수 있어요.</p></I.Heading>
+    <I.ImportEntry data-place-import-entry>
+      <I.ImportHeading><h1>공유 리스트 링크를 붙여넣어 주세요</h1><p>Google 지도에서 공개로 설정한 리스트만 가져올 수 있어요.</p></I.ImportHeading>
       <I.LinkForm noValidate onSubmit={(event) => { event.preventDefault(); submitLink(); }}>
         <I.LinkField>
           <label htmlFor={linkInputId}>리스트 링크</label>
           <I.LinkInput $invalid={Boolean(linkError && link.trim())}>
             <input ref={linkInput} id={linkInputId} type="text" inputMode="url" autoCapitalize="none" spellCheck={false}
-              placeholder="https://maps.app.goo.gl/…" value={link} readOnly={busy}
+              placeholder="https://maps.app.goo.gl/..." value={link} readOnly={busy}
               aria-invalid={Boolean(linkError && link.trim())} aria-describedby={linkError ? linkErrorId : undefined}
               onBlur={() => { if (!busy && link.trim()) setLinkChecked(true); }}
               onChange={(event) => changeLink(event.target.value)} onPaste={busy ? undefined : pasteSharedText} />
@@ -224,16 +228,27 @@ function PlaceImportForm({ onImport, onSkip, busy = false, enriching = false, im
           )}
         </I.LinkField>
         {!busy && <I.LinkGuide>
-          <strong>리스트를 공개로 설정하는 방법</strong>
+          <h2>리스트를 공개로 설정하는 방법</h2>
           <ol>
-            {!mapsTarget.opensSavedList && <li>지도 홈이 열리면 [나] 또는 [저장됨]을 눌러요</li>}
-            <li>가져올 리스트를 열고 [공유]를 눌러요</li>
-            <li>링크로 볼 수 있도록 공개 설정을 켜요</li>
-            <li>링크를 복사해 여기에 붙여넣어요</li>
+            <li>
+              <a href={mapsTarget.href} target="_blank" rel="noreferrer" aria-label="Google 지도에서 내 페이지 열기 (새 창)">
+                <p>Google 지도 앱에서 <strong>[내 페이지]</strong> 탭을 열어요</p>
+                <img src={savedTabExample} width="205" height="33" alt="Google 지도 하단의 내 페이지 탭" />
+              </a>
+            </li>
+            <li><div>
+              <p>공유 옵션에서 <strong>[공유됨]</strong>을 선택해요</p>
+              <img src={shareOptionsExample} width="132" height="89" alt="공유 옵션에서 공유됨을 선택한 모습" />
+            </div></li>
+            <li><div>
+              <p>가져올 리스트를 열고 <strong>[공유]</strong>를 눌러요</p>
+              <img src={shareListExample} width="177" height="41" alt="리스트 오른쪽 위의 공유 버튼" />
+            </div></li>
+            <li><div>
+              <p>링크를 복사해 여기에 붙여넣어요</p>
+              <img src={copyLinkExample} width="138" height="45" alt="공유 메뉴의 복사 버튼" />
+            </div></li>
           </ol>
-          <I.ExternalLink href={mapsTarget.href} target="_blank" rel="noreferrer">
-            구글맵으로 이동하기
-          </I.ExternalLink>
         </I.LinkGuide>}
         <I.InfoBox><img src={linkLock} alt="" /><p>공개 리스트는 링크를 가진 누구나 볼 수 있어요. 개인적인 장소가 포함되어 있지 않은지 확인해 주세요.</p></I.InfoBox>
         <I.FormFooter>
@@ -244,7 +259,7 @@ function PlaceImportForm({ onImport, onSkip, busy = false, enriching = false, im
           </I.PrimaryButton>
         </I.FormFooter>
       </I.LinkForm>
-    </I.Flow>
+    </I.ImportEntry>
   );
 
   const uploadFailure = !busy && !fileError ? visibleError : "";
