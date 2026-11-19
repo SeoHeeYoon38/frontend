@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { createServer } from "vite";
 
-test("일정 추가는 AI 배치 실패에서 검증된 장소를 복구하고 날짜 변경은 일정·예약을 확인한다", async () => {
+test("장소는 사용자가 고른 유효한 날에 한 번 저장하고, 충돌은 최신 일정으로 갱신한다", async () => {
   const server = await createServer({ envDir: false, define: {
     "import.meta.env.VITE_API_MODE": JSON.stringify("live"),
     "import.meta.env.VITE_API_BASE_URL": JSON.stringify("https://example.test"),
@@ -14,21 +14,34 @@ test("일정 추가는 AI 배치 실패에서 검증된 장소를 복구하고 �
   } });
   const date = "2026-12-10";
   let hasItinerary = true;
-  let addError = "PLACE_ADD_FAILED";
-  let matched = false;
+  let addError: { status: number; code: string; message: string } | undefined;
   let booked = false;
   let readFails = false;
   const days = [{ date: "2026-12-09", visits: [{ itemId: "visit-1", placeId: "first" }] },
     { date, visits: [{ itemId: "visit-2", placeId: "second" }] }];
   const writes: { baseVersion?: number; days?: typeof days; startDate?: string; endDate?: string }[] = [];
   const json = (value: unknown, status = 200) => Response.json(value, { status });
+  const steps: string[] = [];
+  const suggestion = { recommendedDay: 1, days: days.map((item, index) => ({ day: index + 1, date: item.date })) };
+  const stored = { version: 7, draft: { days } };
   globalThis.fetch = async (url, init) => {
     const path = new URL(String(url)).pathname;
-    if (path.endsWith("/add-place")) return json({ code: addError }, addError === "EXTERNAL_API_ERROR" ? 502 : 400);
-    if (path.endsWith("/places")) return json({ places: [{ placeId: "provider-place", matchStatus: matched ? "MATCHED" : "PENDING" }] });
+    if (path.endsWith("/add-place/suggest")) {
+      assert.equal(init?.method, "POST");
+      assert.deepEqual(JSON.parse(String(init?.body)), { placeId: "new-place" });
+      steps.push("suggest");
+      return json(suggestion);
+    }
+    if (path.endsWith("/add-place")) {
+      assert.equal(init?.method, "POST");
+      assert.deepEqual(JSON.parse(String(init?.body)), { placeId: "new-place", day: 2 });
+      steps.push("add");
+      return addError ? json(addError, addError.status) : json({ itinerary: stored });
+    }
     if (path.endsWith("/latest")) {
+      steps.push("latest");
       if (readFails) return json({ code: "SERVER_ERROR" }, 503);
-      return hasItinerary ? json({ version: 7, draft: { days } }) : json({ code: "ITINERARY_NOT_FOUND" }, 404);
+      return hasItinerary ? json(stored) : json({ code: "ITINERARY_NOT_FOUND" }, 404);
     }
     if (path.endsWith("/reservations")) return json({ flights: null, rental: null,
       stays: booked ? [{ checkIn: date, checkOut: "2026-12-11" }] : [] });
@@ -40,26 +53,27 @@ test("일정 추가는 AI 배치 실패에서 검증된 장소를 복구하고 �
     throw new Error(`Unexpected request: ${path}`);
   };
   try {
-    const { addPlaceOnDate } = await server.ssrLoadModule("/src/api/itineraries.ts");
-    await addPlaceOnDate(12, "new-place", 2, date);
-    assert.equal(writes[0].baseVersion, 7);
-    assert.deepEqual(writes[0].days?.[0], days[0]);
-    assert.deepEqual(writes[0].days?.[1].visits.map((visit) => visit.placeId), ["second", "new-place"]);
-    assert.ok(writes[0].days?.[1].visits[1].itemId);
-    await addPlaceOnDate(12, "second", 2, date);
-    await assert.rejects(addPlaceOnDate(12, "first", 2, date), /다른 일차/);
-    addError = "PLACE_NOT_PLANNABLE";
-    await assert.rejects(addPlaceOnDate(12, "unavailable", 2, date), { code: addError });
-    assert.equal(writes.length, 1);
-
-    addError = "EXTERNAL_API_ERROR";
-    await assert.rejects(addPlaceOnDate(12, "provider-place", 2, date), { code: addError });
-    await addPlaceOnDate(12, "second", 2, date);
-    assert.equal(writes.length, 1);
-    matched = true;
-    await addPlaceOnDate(12, "provider-place", 2, date);
-    assert.equal(writes[1].baseVersion, 7);
-    assert.deepEqual(writes[1].days?.[1].visits.map((visit) => visit.placeId), ["second", "provider-place"]);
+    const { addPlaceOnDate, reloadAfterPlaceAddError } = await server.ssrLoadModule("/src/api/itineraries.ts");
+    assert.deepEqual(await addPlaceOnDate(12, "new-place", 2, date), stored);
+    assert.deepEqual(steps.splice(0), ["suggest", "add"]);
+    await assert.rejects(addPlaceOnDate(12, "new-place", 1, date), { code: "ITINERARY_VERSION_CONFLICT" });
+    assert.deepEqual(steps.splice(0), ["suggest"]);
+    for (const failure of [
+      { status: 400, code: "PLACE_ADD_FAILED", message: "저장 장소 목록에 담아 두었으니 직접 넣으실 수 있습니다." },
+      { status: 502, code: "EXTERNAL_API_ERROR", message: "장소 조회 실패" },
+      { status: 500, code: "INTERNAL_SERVER_ERROR", message: "AI 실패" },
+      { status: 409, code: "ITINERARY_VERSION_CONFLICT", message: "일정 변경" },
+      { status: 400, code: "PLACE_ALREADY_IN_ITINERARY", message: "이미 일정에 있는 장소" },
+    ]) {
+      addError = failure;
+      const reason = await addPlaceOnDate(12, "new-place", 2, date).catch((reason: unknown) => reason);
+      assert.equal(reason.code, failure.code);
+      assert.equal(reason.message, failure.message);
+      const changed = failure.status === 409 || failure.code === "PLACE_ALREADY_IN_ITINERARY";
+      assert.deepEqual(await reloadAfterPlaceAddError(12, reason), changed ? stored : undefined);
+      assert.deepEqual(steps.splice(0), changed ? ["suggest", "add", "latest"] : ["suggest", "add"]);
+    }
+    assert.equal(writes.length, 0);
 
     const { updateTripDates } = await server.ssrLoadModule("/src/api/trips.ts");
     const dates = { startDate: "2026-12-09", endDate: date };
@@ -70,10 +84,10 @@ test("일정 추가는 AI 배치 실패에서 검증된 장소를 복구하고 �
     booked = false;
     readFails = true;
     await assert.rejects(updateTripDates(12, dates), { code: "SERVER_ERROR" });
-    assert.equal(writes.length, 2);
+    assert.equal(writes.length, 0);
     readFails = false;
     await updateTripDates(12, dates);
-    assert.deepEqual(writes.slice(2), [dates]);
+    assert.deepEqual(writes, [dates]);
   } finally {
     globalThis.fetch = oldFetch;
     if (oldWindow) Object.defineProperty(globalThis, "window", oldWindow);

@@ -1,6 +1,6 @@
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import type { Preferences, TripDraft } from "../../types/trip";
-import type { PlaceCategoryCode, PreferenceProfile, PreferenceView, UserPreferenceView } from "../../api/types";
+import type { PreferenceCategoryCode, PreferenceProfile, PreferenceView, UserPreferenceView } from "../../api/types";
 import promptAi from "../../assets/icons/ai-prompt-ai.svg";
 import promptError from "../../assets/icons/ai-prompt-error.svg";
 import food from "../../assets/icons/ai-prompt-food.svg";
@@ -12,7 +12,7 @@ import removeChip from "../../assets/icons/ai-prompt-chip-remove.svg";
 import addChip from "../../assets/icons/ai-prompt-chip-add.svg";
 import sparkle from "../../assets/icons/status-ai-sparkle.svg";
 import { analyzeMockPreferences } from "../../data/mocks/tripService";
-import { isServerTripId, preferenceAnalysisToDraft, preferenceResultToDraft } from "../../api/adapters";
+import { hotSpringPreference, isServerTripId, preferenceAnalysisToDraft, preferenceResultToDraft } from "../../api/adapters";
 import { shouldUseMockFallback } from "../../api/client";
 import { isApiEnabled } from "../../api/config";
 import { hasAuthSession } from "../../api/tokenStorage";
@@ -28,9 +28,9 @@ const examples = [
   { text: "부모님과 함께, 많이 안 걷게", sentence: "부모님과 함께 가서 너무 많이 걷지 않으면 좋겠어요.", icon: person },
 ];
 
-const interestLabels: Record<PlaceCategoryCode, string> = {
+const interestLabels: Record<PreferenceCategoryCode, string> = {
   FOOD: "미식", CAFE: "카페", SIGHTSEEING: "관광", SHOPPING: "쇼핑",
-  NATURE: "자연", CULTURE: "문화", NIGHTLIFE: "야경", ACTIVITY: "체험", OTHER: "기타",
+  NATURE: "자연", CULTURE: "문화", NIGHTLIFE: "야경", ACTIVITY: "체험",
 };
 const paceChoices = [
   { label: "덜 걷기", field: "walking", value: "LESS" },
@@ -42,7 +42,7 @@ const paceChoices = [
 ] as const;
 const companionChoices = ["혼자", "친구", "연인", "가족", "부모님"];
 const chipGroups = [
-  { key: "tastes", title: "취향", options: Object.values(interestLabels) },
+  { key: "tastes", title: "취향", options: [...Object.values(interestLabels), hotSpringPreference] },
   { key: "pace", title: "방식", options: paceChoices.map((choice) => choice.label) },
   { key: "companion", title: "동행", options: companionChoices },
 ] as const;
@@ -56,7 +56,9 @@ function showPreferenceLabels(preferences: Preferences, draft: TripDraft) {
     .flatMap((note) => note.slice(companionNote.length).split(", "));
   return {
     ...preferences,
-    tastes: profile ? profile.interests.map((code) => interestLabels[code]) : preferences.tastes,
+    tastes: profile
+      ? [...profile.interests.map((code) => interestLabels[code]), ...profile.notes.filter((note) => note === hotSpringPreference)]
+      : preferences.tastes,
     pace: profile
       ? paceChoices.filter(({ field, value }) => profile[field] === value).map(({ label }) => label)
       : preferences.pace.filter((label) => label !== "보통 강도"),
@@ -70,7 +72,11 @@ function showPreferenceLabels(preferences: Preferences, draft: TripDraft) {
 
 function updateProfile(profile: PreferenceProfile, group: ChipGroup, label: string, remove: boolean, selected: string[]) {
   if (group === "tastes") {
-    const code = (Object.keys(interestLabels) as PlaceCategoryCode[]).find((key) => interestLabels[key] === label);
+    if (label === hotSpringPreference) {
+      const notes = profile.notes.filter((note) => note !== label);
+      return { ...profile, notes: remove ? notes : [...notes, label] };
+    }
+    const code = (Object.keys(interestLabels) as PreferenceCategoryCode[]).find((key) => interestLabels[key] === label);
     if (!code) return profile;
     return {
       ...profile,

@@ -1,5 +1,4 @@
 import { ApiError, apiRequest, queryString } from "./client";
-import { getSavedPlaces } from "./places";
 import type {
   GeneratedItineraryResponse,
   ItineraryEditPreview,
@@ -79,11 +78,11 @@ export function getLatestItinerary(tripId: number, signal?: AbortSignal) {
 
 export function suggestPlaceDay(tripId: number, placeId: string, signal?: AbortSignal) {
   return apiRequest<PlaceDaySuggestion>(`/api/trips/${tripId}/itineraries/add-place/suggest`, {
-    method: "POST", json: { placeId }, signal,
+    method: "POST", json: { placeId }, signal, timeoutMs: 180_000,
   });
 }
 
-export function addPlaceToItinerary(tripId: number, placeId: string, day: number) {
+export function addPlaceToItinerary(tripId: number, placeId: string, day: number, signal?: AbortSignal) {
   return apiRequest<{
     placeName: string;
     reason: string;
@@ -92,36 +91,30 @@ export function addPlaceToItinerary(tripId: number, placeId: string, day: number
   }>(`/api/trips/${tripId}/itineraries/add-place`, {
     method: "POST",
     json: { placeId, day },
+    signal,
     timeoutMs: 180_000,
   });
 }
 
-export async function addPlaceOnDate(tripId: number, placeId: string, day: number, date: string) {
-  let providerError: ApiError | undefined;
+export async function addPlaceOnDate(tripId: number, placeId: string, day: number, date: string, signal?: AbortSignal) {
+  const suggestion = await suggestPlaceDay(tripId, placeId, signal);
+  // The user already chose a day on the itinerary, before opening the place picker.
+  const selected = suggestion.days.find((choice) => choice.day === day && choice.date === date);
+  if (!selected) throw new ApiError(409, "ITINERARY_VERSION_CONFLICT", "선택한 여행 날짜가 변경됐어요.");
+  signal?.throwIfAborted();
+  return (await addPlaceToItinerary(tripId, placeId, selected.day, signal)).itinerary;
+}
+
+export async function reloadAfterPlaceAddError(tripId: number, reason: unknown, signal?: AbortSignal) {
+  if (!(reason instanceof ApiError)) return;
+  const conflict = reason.status === 409 && reason.code === "ITINERARY_VERSION_CONFLICT";
+  if (!conflict && reason.code !== "PLACE_ALREADY_IN_ITINERARY") return;
   try {
-    return (await addPlaceToItinerary(tripId, placeId, day)).itinerary;
-  } catch (reason) {
-    if (!(reason instanceof ApiError)) throw reason;
-    if (reason.code === "EXTERNAL_API_ERROR") providerError = reason;
-    else if (reason.code !== "PLACE_ADD_FAILED") throw reason;
+    return await getLatestItinerary(tripId, signal);
+  } catch (loadError) {
+    if (signal?.aborted) throw loadError;
+    throw new Error("일정이 변경됐지만 최신 일정을 불러오지 못했어요. 다시 시도해 주세요.");
   }
-  // Re-read the confirmed version before attempting a manual insertion.
-  const latest = await getLatestItinerary(tripId);
-  const alreadyIn = latest.draft.days.find((item) => item.visits.some((visit) => visit.placeId === placeId));
-  if (alreadyIn?.date === date) return latest;
-  if (alreadyIn) throw new Error("다른 일차에 이미 추가된 장소예요.");
-  if (!latest.draft.days.some((item) => item.date === date)) throw new Error("일정의 날짜가 변경됐어요. 날짜를 다시 선택해 주세요.");
-  if (providerError) {
-    // The provider may have failed before resolving this place, or later while arranging it.
-    const saved = await getSavedPlaces(tripId);
-    if (!saved.places.some((place) => place.placeId === placeId && place.matchStatus === "MATCHED")) {
-      throw providerError;
-    }
-  }
-  const days = latest.draft.days.map((item) => item.date !== date ? item : {
-    ...item, visits: [...item.visits, { itemId: crypto.randomUUID(), placeId }],
-  });
-  return saveItinerary(tripId, days, latest.version);
 }
 
 export function requestItineraryEdit(

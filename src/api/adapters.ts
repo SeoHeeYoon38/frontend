@@ -7,6 +7,7 @@ import type {
   PlaceCategoryCode,
   PreferenceAnalysis,
   PreferenceChip,
+  PreferenceCategoryCode,
   PreferenceInput,
   PreferenceProfile,
   SavedPlaceResponse,
@@ -32,7 +33,9 @@ const categoryLabels: Record<PlaceCategoryCode, TripPlace["category"]> = {
   OTHER: "명소",
 };
 
-const onboardingInterestCodes: Record<string, PlaceCategoryCode> = {
+export const hotSpringPreference = "온천과 휴식";
+
+const onboardingInterestCodes: Partial<Record<string, PreferenceCategoryCode>> = {
   "맛집 탐방": "FOOD",
   "카페 투어": "CAFE",
   "자연 풍경": "NATURE",
@@ -41,7 +44,6 @@ const onboardingInterestCodes: Record<string, PlaceCategoryCode> = {
   "야경": "NIGHTLIFE",
   "사진 명소": "SIGHTSEEING",
   "액티비티": "ACTIVITY",
-  "온천과 휴식": "OTHER",
   "골목 산책": "SIGHTSEEING",
 };
 
@@ -119,7 +121,7 @@ export function onboardingPreferencesToInput(
 ): PreferenceInput {
   const interests = selected
     .map((label) => onboardingInterestCodes[label])
-    .filter((code): code is PlaceCategoryCode => Boolean(code));
+    .filter((code) => code !== undefined);
 
   return {
     pace: "NORMAL",
@@ -127,7 +129,7 @@ export function onboardingPreferencesToInput(
     dayStart: "NORMAL",
     interests: [...new Set(interests)],
     avoid: [],
-    notes: [],
+    notes: selected.includes(hotSpringPreference) ? [hotSpringPreference] : [],
     rawText: null,
   };
 }

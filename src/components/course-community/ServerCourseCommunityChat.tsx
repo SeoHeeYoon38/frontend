@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { addPlaceToItinerary, requestItineraryEdit } from "../../api/itineraries";
+import { addPlaceToItinerary, reloadAfterPlaceAddError, requestItineraryEdit } from "../../api/itineraries";
 import { getPlaceDetail } from "../../api/places";
 import { coordinateChat, createChatPoll, getChatMessages, getRecentChatPolls, sendChatMessage, voteChatPoll,
   type ChatMessage, type ChatPoll } from "../../api/chat";
@@ -50,6 +50,7 @@ export default function ServerCourseCommunityChat({ tripId, onBack, onViewCourse
   const placeNames = useRef(new Map<string, string>());
   const localId = useRef(-1);
   const [selectedPollId, setSelectedPollId] = useState<number>();
+  const [suggestionRevision, setSuggestionRevision] = useState(0);
   const pollRevision = useRef(0);
   const history = useRef<ChatMessage[]>([]);
   const lifetime = useRef<AbortController | null>(null);
@@ -360,12 +361,12 @@ export default function ServerCourseCommunityChat({ tripId, onBack, onViewCourse
       hideHeader={!!winner} contentGap={0} className={winner ? "community-poll-day-sheet" : undefined}
       closeDisabled={pending} onClose={() => setSelectedPollId(undefined)}>
       {winner && <h2 className="community-poll-day-sheet__title">{winner.name}, 언제 넣을까요?</h2>}
-      {winner ? <PlaceDayPicker inChat key={`${selectedPoll.pollId}:${winner.placeId}`} tripId={tripId}
+      {winner ? <PlaceDayPicker inChat key={`${selectedPoll.pollId}:${winner.placeId}:${suggestionRevision}`} tripId={tripId}
         placeId={winner.placeId} pending={pending} onConfirm={async (day, date) => {
           await run(async () => {
             const signal = lifetime.current?.signal;
             try {
-              const result = await addPlaceToItinerary(tripId, winner.placeId, day);
+              const result = await addPlaceToItinerary(tripId, winner.placeId, day, signal);
               if (signal?.aborted) return;
               if (!confirmedPollAddition(winner.placeId, date, result.itinerary.draft, result.diff)) {
                 throw new Error("선택한 날짜에 장소가 추가됐는지 확인하지 못했어요. 코스를 다시 확인해 주세요.");
@@ -377,7 +378,13 @@ export default function ServerCourseCommunityChat({ tripId, onBack, onViewCourse
                 { card: { kind: "POLL_PLACE_ADDED", pollId: selectedPoll.pollId } }, undefined,
                 { day, placeId: winner.placeId, name, tagline: winner.tagline });
               setSelectedPollId(undefined);
-            } catch (reason) { throw new Error(placeDayError(reason)); }
+            } catch (reason) {
+              if (signal?.aborted) return;
+              const latest = await reloadAfterPlaceAddError(tripId, reason, signal);
+              if (signal?.aborted) return;
+              if (latest) setSuggestionRevision((value) => value + 1);
+              throw new Error(placeDayError(reason));
+            }
           });
         }} /> : <p>투표가 마감되고 단독 1위가 정해진 후 다시 선택해 주세요.</p>}
       {error && <p role="alert">{error}</p>}
