@@ -44,7 +44,7 @@ function CourseCommunityPage() {
 
   if (returnTripId && /^\d+$/.test(returnTripId)) return (
     <div className="course-community-shell">
-      <ServerCourseCommunityChat tripId={Number(returnTripId)} initialDay={readPlanDay(location.search)}
+      <ServerCourseCommunityChat key={returnTripId} tripId={Number(returnTripId)} initialDay={readPlanDay(location.search)}
         onBack={() => navigate(backPath)} onViewCourse={(day) => navigate(viewCoursePath(day))} />
     </div>
   );

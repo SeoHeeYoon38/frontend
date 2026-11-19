@@ -51,11 +51,9 @@ export function sendChatMessage(tripId: number, value: string, signal?: AbortSig
   });
 }
 
-export function coordinateChat(tripId: number, messages: ChatMessage[], memberIds: number[], signal?: AbortSignal) {
-  const input = coordinationMessages(messages, memberIds);
-  if (!input.length) throw new Error("조율할 대화가 없어요. 현재 일행과 먼저 이야기를 나눠 주세요.");
+export function coordinateChat(tripId: number, signal?: AbortSignal) {
   return apiRequest<ChatCoordinationResult>(`/api/trips/${tripId}/chat/coordinate`, {
-    method: "POST", json: { messages: input }, signal, timeoutMs: 180_000,
+    method: "POST", signal, timeoutMs: 180_000,
   });
 }
 

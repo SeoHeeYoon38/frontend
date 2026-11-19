@@ -9,17 +9,47 @@ export function coordinationMessages(messages: ChatMessage[], memberIds: number[
 }
 
 function resultKey(message: ChatMessage) {
+  if (message.type !== "AI") return;
   const card = message.payload?.card;
   if (card?.kind === "POLL") return JSON.stringify([card.kind, card.pollId]);
-  return JSON.stringify([message.text, card?.kind,
-    card?.summaries?.map((item) => [item.userId, item.point]),
+  if (card?.kind !== "OPINION_SUMMARY") return;
+  return JSON.stringify([message.text, card.kind,
+    card.summaries?.map((item) => [item.userId, item.point]),
     message.payload?.options?.title,
     message.payload?.options?.items.map((item) => [item.id, item.label])]);
 }
 
-export function visibleChatMessages(saved: ChatMessage[], local: ChatMessage[]) {
-  const keys = new Set(saved.filter((item) => item.type === "AI").map(resultKey));
-  return [...saved, ...local.filter((item) => !keys.has(resultKey(item)))];
+export interface LocalChatResult extends ChatMessage {
+  afterMessageId: number;
+  requestedAfterId?: number;
+}
+
+function messagePosition(message: ChatMessage | LocalChatResult) {
+  return "afterMessageId" in message ? message.afterMessageId : message.id;
+}
+
+export function visibleChatMessages(saved: ChatMessage[], local: LocalChatResult[]): ChatMessage[] {
+  if (!local.length) return saved;
+  const timeline: (ChatMessage | LocalChatResult)[] = [...saved, ...local];
+  timeline.sort((a, b) => messagePosition(a) - messagePosition(b));
+  const waiting = new Map<string, LocalChatResult[]>();
+  for (const message of local) {
+    const key = resultKey(message);
+    if (!key) continue;
+    const results = waiting.get(key);
+    if (results) results.push(message);
+    else waiting.set(key, [message]);
+  }
+  const replaced = new Set<number>();
+  for (const message of timeline) {
+    if ("afterMessageId" in message) continue;
+    const key = resultKey(message);
+    const results = key && waiting.get(key);
+    if (!results) continue;
+    const index = results.findIndex((result) => message.id > (result.requestedAfterId ?? result.afterMessageId));
+    if (index >= 0) replaced.add(results.splice(index, 1)[0].id);
+  }
+  return timeline.filter((message) => !replaced.has(message.id));
 }
 
 export function chatActionError(reason: unknown) {
