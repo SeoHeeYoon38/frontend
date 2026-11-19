@@ -270,6 +270,12 @@ function ServerTripPlan({ tripId, userId }: { tripId: number; userId: number }) 
   }, [imported, notice]);
 
   useEffect(() => {
+    if (!confirmation) return;
+    const timeout = window.setTimeout(() => setConfirmation(undefined), 2_500);
+    return () => window.clearTimeout(timeout);
+  }, [confirmation]);
+
+  useEffect(() => {
     if (!placeAddNotice) return;
     const footer = addPlaceButton.current?.closest("main")?.querySelector(".course-cta");
     (footer ?? addPlaceButton.current)?.scrollIntoView({ block: "end" });
@@ -860,7 +866,7 @@ function ServerTripPlan({ tripId, userId }: { tripId: number; userId: number }) 
         {placeAddNotice ? <div className="course-toast" role="status"><img src={addedCheckIcon} alt="" /><p>{placeAddNotice}</p></div>
           : imported && notice && <div className="course-toast" role="status"><img src={checkIcon} alt="" /><p>{notice}</p></div>}
         {confirmation && (
-          <div className="course-toast" role="status">
+          <div className="course-toast course-toast--confirmation" role="status">
             <img src={checkIcon} alt="" />
             <p>코스가 완성돼서 내 여행에 저장했어요</p>
           </div>
