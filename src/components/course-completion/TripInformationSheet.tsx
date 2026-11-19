@@ -1,21 +1,27 @@
 import { useRef, useState } from "react";
 import styled from "styled-components";
-import { updateTrip } from "../../api/trips";
+import { updateTrip, updateTripDates } from "../../api/trips";
 import type { CompanionCode, TripResponse } from "../../api/types";
-import { companionLabels } from "../../utils/serverTrip";
+import { apiTripToDraft, companionLabels } from "../../utils/serverTrip";
 import { formatTripDetailDateRange } from "../../utils/importedTrip";
+import { courseImportEndDate } from "../../utils/courseImport";
+import { dayCount, durationLabel, validDate } from "../../utils/trip";
 import minusIcon from "../../assets/icons/counter-minus.svg";
 import plusIcon from "../../assets/icons/counter-plus.svg";
 import chevronIcon from "../../assets/my/sort-chevron.svg";
+import lockIcon from "../../assets/place-import/link-lock.svg";
 import avatarBlue from "../../assets/course-settings/avatar-blue.png";
 import avatarPurple from "../../assets/course-settings/avatar-purple.png";
 import avatarYellow from "../../assets/course-settings/avatar-yellow.png";
 import TripSheet from "../common/TripSheet";
 import SettingsConfirmDialog from "../common/SettingsConfirmDialog";
+import DateRangePicker from "../trip/DateRangePicker";
 import * as S from "../trip/Trip.styled";
 
 const companions: CompanionCode[] = ["ALONE", "FRIEND", "COUPLE", "FAMILY"];
 const avatars = [avatarYellow, avatarBlue, avatarPurple];
+const movementChoices = ["도보와 버스", "대중교통", "택시", "렌터카"];
+type EditField = "name" | "destination" | "dates" | "people" | "movement";
 
 const Details = styled.dl`
   margin: 0;
@@ -41,7 +47,7 @@ const Row = styled.div`
   }
 
   > button img { width: 16px; height: 16px; }
-  > button[aria-expanded="true"] img { transform: rotate(180deg); }
+  > button[aria-expanded="true"] img[data-chevron] { transform: rotate(180deg); }
   dd[data-empty] { color: #8a8a8e; }
 `;
 
@@ -64,6 +70,52 @@ const InlinePeople = styled.div`
   ${S.Counter} button { height: 32px; width: 32px; }
   ${S.Counter} button img { height: 14px; width: 14px; }
   ${S.Counter} strong, ${S.Counter} small { font-size: 16px; line-height: 22px; }
+`;
+
+const DestinationNotice = styled.aside`
+  display: flex;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #f4f5f9;
+  font-size: 13px;
+  line-height: 1.5;
+
+  img { width: 16px; height: 16px; }
+  strong { display: block; font-weight: 600; }
+  p { margin: 2px 0 0; color: #8a8a8e; }
+`;
+
+const NameEditor = styled.div`
+  display: flex;
+  align-items: center;
+  min-height: 50px;
+  gap: 8px;
+  border: 1.5px solid #090738;
+  border-radius: 10px;
+  padding: 0 12px;
+  margin: 0 0 16px;
+  input { width: 100%; min-width: 0; border: 0; outline: 0; background: transparent; color: #1a1a1a; font: inherit; }
+  &:focus-within { outline: 2px solid #090738; outline-offset: -2px; }
+  input:focus-visible { outline: 0; }
+  span { color: #8a8a8e; font-size: 12px; }
+  button { width: 20px; height: 20px; color: #8a8a8e; }
+`;
+
+const MovementChoices = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-bottom: 16px;
+  button { min-height: 36px; padding: 0 14px; border-radius: 20px; background: #f3f4f8; color: #5c5c63; font-size: 14px; }
+  button[aria-pressed="true"] { background: #090738; color: white; }
+`;
+
+const InlineDates = styled.div`
+  display: grid;
+  gap: 12px;
+  padding: 0 0 12px;
 `;
 
 function PeopleChoices({ companion, count, inline, onChange }: {
@@ -103,32 +155,63 @@ function PeopleChoices({ companion, count, inline, onChange }: {
   </>;
 }
 
-export default function TripInformationSheet({ trip, title, movementLabel = "", mode, onClose, onSaved }: {
+export default function TripInformationSheet({ trip, title, movementLabel = "", mode, imported = false, inlineEditors = false, canChangeDates = false, onClose, onSaved }: {
   trip: TripResponse;
   title: string;
   movementLabel?: string;
   mode: "register" | "edit";
+  imported?: boolean;
+  inlineEditors?: boolean;
+  canChangeDates?: boolean;
   onClose: () => void;
-  onSaved: (trip: TripResponse) => void;
+  onSaved: (trip: TripResponse, registered: boolean) => void;
 }) {
   const register = mode === "register";
   const [choice, setChoice] = useState<{ companion?: CompanionCode; count: number }>(() => register
     ? { count: 2 } : { companion: trip.companion, count: trip.companionCount });
   const [peopleDraft, setPeopleDraft] = useState<typeof choice>();
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState<EditField>();
+  const [name, setName] = useState(title);
+  const [movement, setMovement] = useState(movementLabel);
+  const [start, setStart] = useState(trip.startDate);
+  const [calendarStart, setCalendarStart] = useState<string>();
+  const duration = dayCount(trip.startDate, trip.endDate);
+  const end = courseImportEndDate(start, duration);
   const [confirmClose, setConfirmClose] = useState(false);
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
   const saving = useRef(false);
-  const dirty = Boolean(choice.companion) && (register || choice.companion !== trip.companion || choice.count !== trip.companionCount);
+  const peopleChanged = Boolean(choice.companion) && (register || choice.companion !== trip.companion || choice.count !== trip.companionCount);
+  const datesChanged = start !== trip.startDate;
+  const dirty = peopleChanged || datesChanged || name !== title || movement !== movementLabel;
+
+  function toggle(field: EditField) {
+    setError("");
+    setExpanded(expanded === field ? undefined : field);
+  }
+  function editButton(field: EditField, label: string, open: () => void = () => toggle(field)) {
+    return <button type="button" aria-label={label} aria-expanded={expanded === field} disabled={pending} onClick={open}>
+      {inlineEditors ? <img data-chevron src={chevronIcon} alt="" /> : "수정"}
+    </button>;
+  }
 
   async function save() {
-    if (!choice.companion || !dirty || saving.current) return;
+    if (!dirty || saving.current) return;
+    const unsupported = [name !== title && "여행 이름", movement !== movementLabel && "기본 이동 수단", datesChanged && !canChangeDates && "저장된 일정의 날짜"].filter(Boolean);
+    if (unsupported.length) {
+      setConfirmClose(false);
+      setError(`${unsupported.join(" · ")} 변경은 아직 저장할 수 없어요. 원래 값으로 되돌린 뒤 다른 변경을 저장해 주세요.`);
+      return;
+    }
     saving.current = true;
     setPending(true);
     setError("");
     try {
-      onSaved(await updateTrip(trip.id, { companion: choice.companion, companionCount: choice.count }));
+      const people = peopleChanged && choice.companion ? { companion: choice.companion, companionCount: choice.count } : {};
+      const updated = datesChanged
+        ? await updateTripDates(trip.id, { ...people, startDate: start, endDate: end })
+        : await updateTrip(trip.id, people);
+      onSaved(updated, !register || Boolean(choice.companion));
     } catch (reason) {
       setConfirmClose(false);
       setError(reason instanceof Error ? reason.message : "여행 정보를 저장하지 못했어요. 다시 시도해 주세요.");
@@ -137,6 +220,15 @@ export default function TripInformationSheet({ trip, title, movementLabel = "", 
       setPending(false);
     }
   }
+
+  if (calendarStart !== undefined) return (
+    <TripSheet key="dates" title="언제 떠나세요?" variant="dates" onClose={() => setCalendarStart(undefined)} footer={
+      <S.Primary type="button" disabled={!validDate(calendarStart)} onClick={() => { setStart(calendarStart); setCalendarStart(undefined); }}>선택 완료</S.Primary>
+    }>
+      <S.CalendarHelp>코스 기간({durationLabel(trip.startDate, trip.endDate)})에 맞춰 날짜를 골라주세요</S.CalendarHelp>
+      <DateRangePicker start={calendarStart} end={courseImportEndDate(calendarStart, duration)} onChange={(value) => setCalendarStart(value)} />
+    </TripSheet>
+  );
 
   if (peopleDraft) return (
     <TripSheet key="people" title="누구와 떠나세요?" variant="people" minHeight={490} contentGap={16}
@@ -148,37 +240,68 @@ export default function TripInformationSheet({ trip, title, movementLabel = "", 
   );
 
   return <>
-    <TripSheet key="info" title={register ? "여행 정보 등록" : "여행 정보 수정"} variant="trip-info" closeDisabled={pending}
+    <TripSheet key="info" title="여행 정보 수정" variant="trip-info" closeDisabled={pending}
       onClose={() => { if (dirty) setConfirmClose(true); else onClose(); }} footer={
         <S.Primary type="button" disabled={!dirty || pending} onClick={() => void save()}>
           {pending ? "저장하고 있어요" : "저장"}
         </S.Primary>
       }>
       <Details>
-        <Row><dt>여행 이름</dt><dd>{title}</dd></Row>
-        <Row><dt>여행지</dt><dd>{trip.city}</dd></Row>
-        <Row><dt>날짜</dt><dd>{formatTripDetailDateRange(trip.startDate, trip.endDate)}</dd></Row>
+        <div>
+          <Row><dt>여행 이름</dt><dd>{expanded === "name" ? "" : name}</dd>{editButton("name", "여행 이름 수정")}</Row>
+          {expanded === "name" && <NameEditor>
+            <input aria-label="여행 이름" maxLength={20} value={name} onChange={(event) => { setName(event.target.value); setError(""); }} />
+            <span>{name.length}/20</span><button type="button" aria-label="여행 이름 지우기" onClick={() => setName("")}>×</button>
+          </NameEditor>}
+        </div>
+        <div>
+          <Row><dt>여행지</dt><dd>{[trip.city, apiTripToDraft(trip).country].filter(Boolean).join(", ")}</dd>
+            {imported && <button type="button" aria-label="여행지 안내" aria-expanded={expanded === "destination"}
+              onClick={() => setExpanded(expanded === "destination" ? undefined : "destination")}>
+              <img src={lockIcon} alt="" />
+            </button>}
+          </Row>
+          {expanded === "destination" && <DestinationNotice>
+            <img src={lockIcon} alt="" />
+            <div><strong>가져온 코스는 여행지를 바꿀 수 없어요</strong>
+              <p>코스의 장소가 {trip.city}에 맞춰져 있어요. 다른 곳으로 가려면 새 여행을 만들어 주세요.</p></div>
+          </DestinationNotice>}
+        </div>
+        <div>
+          <Row><dt>날짜</dt><dd>{formatTripDetailDateRange(start, end || trip.endDate)}</dd>
+            {editButton("dates", "날짜 수정", () => { if (inlineEditors) toggle("dates"); else { setError(""); setCalendarStart(start); } })}
+          </Row>
+          {expanded === "dates" && <InlineDates><DateRangePicker start={start} end={end} onChange={(value) => { setStart(value); setError(""); }} /></InlineDates>}
+        </div>
         <div>
           <Row>
             <dt>인원</dt>
             <dd data-empty={!choice.companion || undefined}>{choice.companion
               ? choice.companion === "ALONE" ? "혼자" : `${companionLabels[choice.companion]} ${choice.count}명`
               : "함께 가는 사람을 알려주세요"}</dd>
-            <button type="button" aria-label={register ? "동행 등록" : "동행 수정"} aria-expanded={!register ? expanded : undefined}
+            <button type="button" aria-label={!choice.companion ? "동행 등록" : "동행 수정"} aria-expanded={inlineEditors ? expanded === "people" : undefined}
               disabled={pending} onClick={() => {
-                if (register) setPeopleDraft(choice);
-                else setExpanded(!expanded);
+                if (inlineEditors) setExpanded(expanded === "people" ? undefined : "people");
+                else setPeopleDraft(choice);
               }}>
-              {register ? choice.companion ? "수정" : "등록" : <img src={chevronIcon} alt="" />}
+              {inlineEditors ? <img data-chevron src={chevronIcon} alt="" /> : choice.companion ? "수정" : "등록"}
             </button>
           </Row>
-          {expanded && <InlinePeople>
+          {expanded === "people" && <InlinePeople>
             <PeopleChoices {...choice} inline onChange={(companion, count) => { if (!pending) setChoice({ companion, count }); }} />
           </InlinePeople>}
         </div>
-        {movementLabel && <Row><dt>이동 수단</dt><dd>{movementLabel}</dd></Row>}
+        {movementLabel && <div>
+          <Row><dt>이동 수단</dt><dd>{movement}</dd>{editButton("movement", "이동 수단 수정")}</Row>
+          {expanded === "movement" && <MovementChoices>{movementChoices.map((option) =>
+            <button key={option} type="button" aria-pressed={movement === option} onClick={() => { setMovement(option); setError(""); }}>{option}</button>)}</MovementChoices>}
+        </div>}
       </Details>
-      {error && <S.ErrorText role="alert">{error}</S.ErrorText>}
+      {error && <S.ErrorText role="alert">{error}
+        {(name !== title || movement !== movementLabel || (datesChanged && !canChangeDates)) && <button type="button" onClick={() => {
+          setName(title); setMovement(movementLabel); if (!canChangeDates) setStart(trip.startDate); setError("");
+        }}>원래 값으로 되돌리기</button>}
+      </S.ErrorText>}
     </TripSheet>
     {confirmClose && <SettingsConfirmDialog title="저장하지 않고 닫을까요?" description="바꾼 여행 정보가 저장되지 않아요"
       cancelLabel="닫기" confirmLabel="저장하기" pending={pending} onCancel={onClose}

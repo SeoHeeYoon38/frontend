@@ -76,6 +76,7 @@ function courseView(course: CourseDetailResponse): TravelerCourseView {
         image: stop.imageUrl || hero,
         latitude: stop.latitude,
         longitude: stop.longitude,
+        visitTime: stop.visitTime ?? undefined,
       })),
     })),
   };
@@ -101,6 +102,7 @@ function TravelerCoursePage() {
   const [loadError, setLoadError] = useState(() => apiEnabled && !liveCourseId ? "코스 주소를 확인해 주세요." : "");
   const [activeDay, setActiveDay] = useState(0);
   const [mapDay, setMapDay] = useState<number>();
+  const [returnPin, setReturnPin] = useState<string>();
   const [placeOrigin, setPlaceOrigin] = useState<"course" | "map">("course");
   const { isCourseSaved, setCourse: setSavedCourse, saveError, coursesLoading, coursesLoadError, pendingId } = useSavedItems(!isGuest);
   const [notice, setNotice] = useState("");
@@ -237,9 +239,11 @@ function TravelerCoursePage() {
         photoCourseId={liveCourseId ?? undefined}
         sampleMap={liveCourseId ? undefined : course.mapFull}
         activeDay={mapDay}
+        initialSelectedId={returnPin}
         onBack={() => setScreen("course")}
         onDayChange={setMapDay}
-        onOpenPlace={(place) => {
+        onOpenPlace={(place, pin) => {
+          setReturnPin(pin);
           setSelectedPlaceId(String(place.id));
           setPlaceOrigin("map");
           setScreen("place");
@@ -311,6 +315,7 @@ function TravelerCoursePage() {
           {day && <S.MapPreview type="button" aria-label={`${day.label} 지도 보기`} onClick={() => {
             detailScroll.current = window.scrollY;
             setMapDay(activeDay);
+            setReturnPin(undefined);
             setScreen("map");
           }}>
             {liveCourseId ? <CourseRouteMap

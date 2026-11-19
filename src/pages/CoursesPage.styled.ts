@@ -52,13 +52,11 @@ export const CityPhoto = styled.img<{ $selected: boolean }>`
   outline: ${({ $selected }) => ($selected ? "2.5px solid #090738" : "none")};
   outline-offset: -2.5px;
 `;
-export const CityGroup = styled.div<{ $selected: boolean; $single?: boolean }>`
+export const CityGroup = styled.div<{ $selected: boolean }>`
   width: 56px;
   height: 56px;
   display: grid;
-  grid-template-columns: repeat(${({ $single }) => $single ? 1 : 2}, 1fr);
-  grid-auto-rows: minmax(0, 1fr);
-  gap: 2px;
+  place-items: center;
   border-radius: 50%;
   background: #f4f5fa;
   overflow: hidden;
@@ -67,6 +65,7 @@ export const CityGroup = styled.div<{ $selected: boolean; $single?: boolean }>`
 
   img { width: 100%; height: 100%; min-height: 0; object-fit: cover; }
   .city-placeholder { width: 22px; height: 22px; margin: auto; }
+  .search-city { width: 36px; height: 36px; }
 `;
 export const LoadMessage = styled.p`
   display: flex;

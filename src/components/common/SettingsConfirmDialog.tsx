@@ -46,7 +46,7 @@ interface SettingsConfirmDialogProps {
   error?: string;
   onCancel: () => void;
   onDismiss?: () => void;
-  onConfirm: () => void;
+  onConfirm?: () => void;
 }
 
 export default function SettingsConfirmDialog({
@@ -70,7 +70,7 @@ export default function SettingsConfirmDialog({
       {error && <p role="alert">{error}</p>}
       <footer>
         <button type="button" autoFocus={!onDismiss} disabled={pending} onClick={onCancel}>{cancelLabel}</button>
-        <button type="button" autoFocus={Boolean(onDismiss)} data-primary data-tone={tone} disabled={pending} onClick={onConfirm}>{confirmLabel}</button>
+        <button type="button" autoFocus={Boolean(onDismiss && onConfirm)} data-primary data-tone={tone} disabled={pending || !onConfirm} onClick={onConfirm}>{confirmLabel}</button>
       </footer>
     </Dialog>
   );

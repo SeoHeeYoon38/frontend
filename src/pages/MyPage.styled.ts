@@ -3,6 +3,10 @@ import styled, { css } from "styled-components";
 
 export const Page = styled.div`
   min-height: 650px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px 0 24px;
   background: #ffffff;
 `;
 
@@ -15,20 +19,19 @@ export const ProfileSection = styled.section`
 `;
 
 export const Avatar = styled.div`
-  width: 72px;
-  height: 72px;
+  width: 64px;
+  height: 64px;
+  margin: 4px;
   flex: 0 0 auto;
   display: grid;
   place-items: center;
   overflow: hidden;
-  border: 4px solid #ffffff;
   border-radius: 50%;
   background: #ddf9fd;
-  box-shadow: 0 0 0 1px #dff7fa;
 
   img {
-    width: 58px;
-    height: 58px;
+    width: 54px;
+    height: 54px;
     object-fit: contain;
   }
 `;
@@ -41,15 +44,17 @@ export const ProfileText = styled.div`
   gap: 4px;
 
   strong {
+    display: flex;
+    align-items: center;
+    gap: 6px;
     color: #1a1a1a;
     font-size: 22px;
     line-height: 30px;
     font-weight: 700;
   }
 
-  strong span {
-    font-weight: 500;
-  }
+  strong b, small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  strong span { flex: none; font-weight: 500; }
 
   small {
     color: #8a8a8e;
@@ -60,18 +65,18 @@ export const ProfileText = styled.div`
 
 export const EditButton = styled(Link)`
   flex: 0 0 auto;
-  padding: 7px 10px;
+  padding: 7px 12px;
   border: 1px solid #e4e6ec;
   border-radius: 16px;
   color: #090738;
-  font-size: 12px;
+  font-size: 13px;
   line-height: 18px;
   font-weight: 700;
   text-decoration: none;
 `;
 
 export const Stats = styled.section`
-  min-height: 135px;
+  min-height: 126px;
   display: flex;
   align-items: center;
   padding: 20px;
@@ -89,22 +94,21 @@ export const StatLink = styled(Link)`
   & + &::before {
     content: "";
     position: absolute;
-    top: 28px;
+    top: calc(50% - 20px);
     left: 0;
     width: 1px;
     height: 40px;
-    background: #f0f1f5;
+    background: #f3f5fa;
   }
 
   img {
     width: 26px;
     height: 26px;
     object-fit: contain;
-    filter: saturate(1.15) contrast(1.05);
   }
 
   strong {
-    margin-top: 4px;
+    margin-top: 8px;
     color: #1a1a1a;
     font-size: 20px;
     line-height: 27px;
@@ -120,7 +124,7 @@ export const StatLink = styled(Link)`
 `;
 
 export const GoogleLink = styled(Link)`
-  min-height: 84px;
+  min-height: 73px;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -163,6 +167,15 @@ export const GoogleLink = styled(Link)`
     border-radius: 50%;
     background: #00c7df;
   }
+
+  > b[data-imported="false"] {
+    padding: 8px 14px;
+    border-radius: 16px;
+    color: #fff;
+    background: #090738;
+    font-size: 13px;
+    line-height: 18px;
+  }
 `;
 
 export const GoogleLogo = styled.span`
@@ -189,7 +202,7 @@ export const Band = styled.div`
 export const MenuSection = styled.section`
   display: flex;
   flex-direction: column;
-  padding: 16px 20px 4px;
+  padding: 8px 20px 0;
 
   h2 {
     margin: 0 0 8px;
@@ -251,18 +264,17 @@ export const Toast = styled.div`
   position: fixed;
   z-index: 8;
   right: 20px;
-  bottom: 104px;
+  bottom: 105px;
   left: 20px;
   width: min(calc(100% - 40px), 362px);
   margin: 0 auto;
   padding: 14px 16px;
-  border-radius: 12px;
+  border-radius: 14px;
   color: #ffffff;
-  background: #090738;
+  background: rgba(23, 23, 26, 0.94);
   font-size: 14px;
   line-height: 20px;
-  font-weight: 700;
-  box-shadow: 0 8px 24px rgba(9, 7, 56, 0.2);
+  font-weight: 500;
 
   display: flex;
   align-items: center;

@@ -92,7 +92,7 @@ export const Intro = styled.section`
   gap: 16px;
 
   h1 {
-    margin: 0;
+    margin: 8px 0 0;
     white-space: pre-line;
     font-size: 26px;
     line-height: 35px;
@@ -100,7 +100,7 @@ export const Intro = styled.section`
   }
 
   > p {
-    margin: 0;
+    margin: 8px 0 0;
     color: #5c5c63;
     font-size: 14px;
     line-height: 20px;
@@ -136,6 +136,7 @@ export const Author = styled.div`
 
   strong,
   small {
+    margin-top: 2px;
     display: block;
   }
 

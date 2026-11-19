@@ -103,10 +103,12 @@ function initialDraft(
     }
   } catch {
   }
-  if (!mockTripCities.some((city) => city.name === draft.city)) draft.city = "";
-  draft.places = draft.places.map(
-    (place) => mockTripPlaces.find((item) => item.id === place.id) ?? place,
-  );
+  if (!isApiEnabled()) {
+    if (!mockTripCities.some((city) => city.name === draft.city)) draft.city = "";
+    draft.places = draft.places.map(
+      (place) => mockTripPlaces.find((item) => item.id === place.id) ?? place,
+    );
+  }
   return { ...draft, tripId: draft.tripId || crypto.randomUUID() };
 }
 function useTripCreate(

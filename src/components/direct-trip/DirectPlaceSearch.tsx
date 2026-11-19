@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { addSavedPlace, enrichSavedPlaces, getNearbyPlaces, getPopularPlaces, getSavedPlaces, importSharedList, searchPlaces, uploadTakeout } from "../../api/places";
-import type { PlaceCandidate, PlaceCategoryCode, PopularPlaceResponse, SavedPlaceResponse } from "../../api/types";
+import { getTripCity } from "../../api/trips";
+import type { CityResponse, PlaceCandidate, PlaceCategoryCode, PopularPlaceResponse, SavedPlaceResponse } from "../../api/types";
+import { savedPlacesForTripCity } from "../../utils/tripPlaces";
 import { PlaceThumbnail } from "../common/PlacePhoto";
 import SheetHandle from "../common/SheetHandle";
 import PlaceImportForm, { type PlaceImportInput } from "../trip/PlaceImportForm";
@@ -136,10 +138,12 @@ export default function DirectPlaceSearch({
   const [category, setCategory] = useState<Category>("ALL");
   const [query, setQuery] = useState(initialQuery);
   const [saved, setSaved] = useState<SavedPlaceResponse[]>();
+  const [destination, setDestination] = useState<CityResponse>();
   const [popular, setPopular] = useState<PopularPlaceResponse[]>();
   const [nearby, setNearby] = useState<PlaceCandidate[]>();
   const [searchResult, setSearchResult] = useState<{ query: string; places: PlaceCandidate[] }>();
   const [selected, setSelected] = useState<Choice[]>([]);
+  const placesToAdd = selected.filter((item) => !pickedPlaceIds.has(item.placeId));
   const [recent, setRecent] = useState(() => readRecent(city));
   const [showDays, setShowDays] = useState(false);
   const [showImport, setShowImport] = useState(false);
@@ -158,14 +162,18 @@ export default function DirectPlaceSearch({
     if (!live) return;
     const controller = new AbortController();
     void Promise.allSettled([
-      getSavedPlaces(tripId, controller.signal),
+      Promise.all([getSavedPlaces(tripId, controller.signal), getTripCity(city, controller.signal)]),
       getPopularPlaces(tripId, controller.signal),
       nearbyLat !== undefined && nearbyLng !== undefined
         ? getNearbyPlaces(tripId, nearbyLat, nearbyLng, undefined, controller.signal)
         : Promise.resolve(undefined),
     ]).then(([savedResult, popularResult, nearbyResult]) => {
       if (controller.signal.aborted) return;
-      if (savedResult.status === "fulfilled") setSaved(savedResult.value.places);
+      if (savedResult.status === "fulfilled") {
+        const [response, tripCity] = savedResult.value;
+        setDestination(tripCity);
+        setSaved(response.places);
+      }
       else setLoadError("저장한 장소를 불러오지 못했어요.");
       if (popularResult.status === "fulfilled") setPopular(popularResult.value);
       else setLoadError((current) => current || "추천 장소를 불러오지 못했어요.");
@@ -204,18 +212,18 @@ export default function DirectPlaceSearch({
   }
 
   async function addSelected() {
-    if (savePending.current || !selected.length) return;
+    if (savePending.current || !placesToAdd.length) return;
     savePending.current = true;
     setBusy(true);
     setSaveError("");
     try {
       if (!live) {
-        onAddDemo(selected.map((item) => item.placeId));
+        onAddDemo(placesToAdd.map((item) => item.placeId));
         return;
       }
       let places = saved ?? [];
       const toAdd: SavedPlaceResponse[] = [];
-      for (const item of selected) {
+      for (const item of placesToAdd) {
         let found = places.find((place) => place.placeId === item.placeId && place.matchStatus === "MATCHED");
         if (!found) {
           const response = await addSavedPlace(tripId, item.placeId);
@@ -263,7 +271,8 @@ export default function DirectPlaceSearch({
   }
 
   const demoChoices = (demoPlaces ?? []).map(demoChoice);
-  const savedChoices = live ? (saved ?? []).flatMap((place) => savedChoice(place) ?? [])
+  const cityPlaces = destination?.name === city ? savedPlacesForTripCity(saved ?? [], destination) : [];
+  const savedChoices = live ? cityPlaces.flatMap((place) => savedChoice(place) ?? [])
     : demoLinked ? demoChoices.filter((item) => item.source === "saved") : [];
   const popularChoices = live ? (popular ?? []).map(popularChoice)
     : demoChoices.filter((item) => item.source === "popular");
@@ -281,23 +290,26 @@ export default function DirectPlaceSearch({
   function placeRow(item: Choice) {
     const checked = selected.some((choice) => choice.placeId === item.placeId);
     const alreadyAdded = pickedPlaceIds.has(item.placeId);
+    const matchIndex = normalizedQuery ? item.name.toLowerCase().indexOf(normalizedQuery) : -1;
     return (
       <S.PlaceRow key={`${item.source}-${item.placeId}`} type="button"
-        aria-pressed={checked || alreadyAdded} disabled={alreadyAdded || busy} onClick={() => toggle(item)}>
+        data-added={alreadyAdded} aria-pressed={alreadyAdded ? undefined : checked} disabled={alreadyAdded || busy} onClick={() => toggle(item)}>
         <S.Thumbnail>
           {item.demo?.image ? <img src={item.demo.image} alt="" />
             : <PlaceThumbnail placeId={item.placeId} name={item.name} />}
         </S.Thumbnail>
         <S.PlaceInfo>
-          <strong>{item.name}</strong>
+          <strong>{matchIndex < 0 ? item.name : <>
+            {item.name.slice(0, matchIndex)}<mark>{item.name.slice(matchIndex, matchIndex + normalizedQuery.length)}</mark>{item.name.slice(matchIndex + normalizedQuery.length)}
+          </>}</strong>
           <small>{item.source === "saved" && <img src={googleMapsLogo} alt="" />}
             {categoryLabels[item.category ?? "OTHER"] ?? "장소"}
             {item.address && <><i aria-hidden="true" />{item.address}</>}
           </small>
         </S.PlaceInfo>
-        <S.SelectIndicator $checked={checked || alreadyAdded}>
-          {(checked || alreadyAdded) && <img src={selectedIcon} alt="" />}
-        </S.SelectIndicator>
+        {alreadyAdded ? <S.AlreadyAdded>이미 담았어요</S.AlreadyAdded> : <S.SelectIndicator $checked={checked}>
+          {checked && <img src={selectedIcon} alt="" />}
+        </S.SelectIndicator>}
       </S.PlaceRow>
     );
   }
@@ -322,7 +334,7 @@ export default function DirectPlaceSearch({
             </S.SearchField>
           </S.Header>
           <S.TargetDay>
-            <button type="button" onClick={() => setShowDays(true)} aria-expanded={showDays}>
+            <button type="button" disabled={busy} onClick={() => setShowDays(true)} aria-expanded={showDays}>
               {selectedDay}일차 {day?.date}<img src={dayChevron} alt="" />
             </button>
             <span>에 담아요</span>
@@ -362,6 +374,7 @@ export default function DirectPlaceSearch({
                     {label} {value === "ALL" ? savedChoices.length : savedChoices.filter((item) => categoryMatches(item.category, value)).length}
                   </button>
                 ))}</S.Categories>
+                {live && <S.SectionHead><button type="button" onClick={() => setShowImport(true)}>장소 가져오기</button></S.SectionHead>}
                 <S.Section>{filteredSaved.map(placeRow)}{filteredSaved.length === 0 && <S.State>이 카테고리에 저장한 장소가 없어요.</S.State>}</S.Section>
               </>
             ) : (
@@ -374,10 +387,15 @@ export default function DirectPlaceSearch({
             )}
           </S.Scroll>
           <S.Footer>
-            {selected.length > 0 && <S.SelectedPlaces>{selected.map((item) => <button type="button" key={item.placeId} onClick={() => toggle(item)}>{item.name}<img src={removeIcon} alt="" /></button>)}</S.SelectedPlaces>}
+            {placesToAdd.length > 0 && <S.SelectedPlaces>{placesToAdd.map((item) => (
+              <button type="button" key={item.placeId} disabled={busy} aria-label={item.name + " 선택 해제"} onClick={() => toggle(item)}>
+                <span className="picked-photo">{item.demo?.image ? <img src={item.demo.image} alt="" /> : <PlaceThumbnail placeId={item.placeId} name={item.name} />}</span>
+                {item.name}<img src={removeIcon} alt="" />
+              </button>
+            ))}</S.SelectedPlaces>}
             {saveError && <S.Error role="alert">{saveError}</S.Error>}
-            <button className="primary" type="button" disabled={!selected.length || busy} onClick={() => void addSelected()}>
-              {busy ? "장소를 담고 있어요" : selected.length ? `${selected.length}곳을 ${selectedDay}일차에 담기` : "담을 장소를 골라주세요"}
+            <button className="primary" type="button" disabled={!placesToAdd.length || busy} onClick={() => void addSelected()}>
+              {busy ? "장소를 담고 있어요" : placesToAdd.length ? `${placesToAdd.length}곳을 ${selectedDay}일차에 담기` : "담을 장소를 골라주세요"}
             </button>
           </S.Footer>
           {showDays && <S.DayOverlay onMouseDown={() => setShowDays(false)}>

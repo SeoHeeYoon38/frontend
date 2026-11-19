@@ -1,7 +1,8 @@
 import backIcon from "../../assets/course-completion/back.svg";
 import settingsIcon from "../../assets/course-completion/settings.svg";
 import chatIcon from "../../assets/course-community/chat.svg";
-import inviteIcon from "../../assets/course-settings-details/member-add.svg";
+import inviteIcon from "../../assets/course-completion/invite-plus.svg";
+import memberInviteIcon from "../../assets/course-completion/member-invite-plus.svg";
 import { communityMembers } from "../../data/mocks/courseCommunityData";
 import type { MockTrip } from "../../types/mockTrip";
 import { formatTripDateRange } from "../../utils/importedTrip";
@@ -48,6 +49,9 @@ function CourseHero({ trip, onOpenSettings, onOpenChat, onInvite, onBack, varian
         {communityMembers.map((member) => <li key={member.id} title={member.name}>
           <img src={member.avatar} alt={member.name} />
         </li>)}
+        {onInvite && <li className="course-hero__member-invite">
+          <button type="button" onClick={onInvite} aria-label="친구 초대"><img src={memberInviteIcon} alt="" /></button>
+        </li>}
       </ul> : onInvite && <button className="course-hero__invite" type="button" onClick={onInvite}>
         <img src={inviteIcon} alt="" />친구 초대
       </button>}

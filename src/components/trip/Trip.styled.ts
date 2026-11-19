@@ -185,7 +185,7 @@ export const CalendarGrid = styled.div`
 export const Weekday = styled.span`
   font-size: 12px;
   color: #8a8a8e;
-  padding: 8px 0;
+  line-height: 17px;
   &:first-child {
     color: #f04452;
   }
@@ -361,9 +361,15 @@ export const CompanionChoices = styled(Chips)`
 `;
 
 export const CompanionIllustration = styled.img`
-  width: min(100%, 178px);
-  height: 112px;
+  max-width: 100%;
+  height: auto;
   object-fit: contain;
+`;
+export const CompanionCard = styled(PeopleBox)`
+  gap: 0;
+  background: #f3f5fa;
+  > strong { margin-top: 14px; font-size: 17px; line-height: 24px; }
+  > p:last-child:not(:first-child) { margin-top: 6px; font-size: 13px; line-height: 20px; }
 `;
 export const ExtraPeople = styled.div`
   position: relative;

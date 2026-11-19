@@ -1,9 +1,15 @@
+type KakaoLink = { webUrl: string; mobileWebUrl: string };
+
 export interface KakaoShare {
   sendDefault(template: {
     objectType: "text";
     text: string;
-    link: { webUrl: string; mobileWebUrl: string };
+    link: KakaoLink;
     buttonTitle: string;
+  } | {
+    objectType: "feed";
+    content: { title: string; description: string; imageUrl: string; link: KakaoLink };
+    buttons: { title: string; link: KakaoLink }[];
   }): void | Promise<unknown>;
 }
 

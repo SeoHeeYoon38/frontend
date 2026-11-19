@@ -32,7 +32,7 @@ export const Page = styled.div`
 `;
 
 export const Header = styled.header`
-  height: 54px;
+  height: 48px;
   display: flex;
   align-items: center;
   gap: 14px;
@@ -46,8 +46,8 @@ export const Header = styled.header`
   }
 
   img {
-    width: 10px;
-    height: 18px;
+    width: 8.11667px;
+    height: 14.5333px;
   }
 
   h1 {
@@ -61,6 +61,7 @@ export const Header = styled.header`
 
 export const Tabs = styled.div`
   height: 45px;
+  margin-top: 4px;
   display: flex;
   align-items: stretch;
   gap: 24px;

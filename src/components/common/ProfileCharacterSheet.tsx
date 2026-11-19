@@ -65,7 +65,7 @@ export default function ProfileCharacterSheet({ current, title, description = "�
 }) {
   const [selected, setSelected] = useState(current);
   return (
-    <TripSheet title={title} variant="course" courseHeight={337} contentGap={0} onClose={onClose}
+    <TripSheet title={title} variant="course" courseHeight={383} contentGap={0} onClose={onClose}
       footer={<Apply type="button" onClick={() => onApply(selected)}>{confirmLabel}</Apply>}>
       <Label>{description}</Label>
       <Choices role="group" aria-label="기본 이미지">

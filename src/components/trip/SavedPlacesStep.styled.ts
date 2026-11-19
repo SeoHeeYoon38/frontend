@@ -1,4 +1,4 @@
-import { Step, Title } from "./Trip.styled";
+import { Footer, Step, Title } from "./Trip.styled";
 import styled from "styled-components";
 import selectedCheck from "../../assets/icons/status-selected-check.svg";
 export const ConnectVisual = styled.div`
@@ -563,6 +563,11 @@ export const StopMove = styled.div`
 
 export const PlacesStep = styled(Step)<{ $empty: boolean }>`
   gap: ${({ $empty }) => ($empty ? "10px" : "14px")};
+  > ${Footer} {
+    position: sticky;
+    bottom: 0;
+    margin-top: auto;
+  }
 `;
 
 export const LoadingState = styled(CenterState)`

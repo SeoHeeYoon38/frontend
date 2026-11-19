@@ -169,14 +169,22 @@ export const Categories = styled.div`
 
 export const PlaceRow = styled.button`
   width: 100%;
-  min-height: 76px;
+  min-height: 72px;
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 10px 0;
   text-align: left;
   &:disabled { cursor: default; }
-  &[aria-pressed="true"] strong { color: #0079c2; }
+  &[data-added="true"] > span:nth-child(-n+2) { opacity: 0.4; }
+`;
+
+export const AlreadyAdded = styled.span`
+  flex: none;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 17px;
+  color: ${muted};
 `;
 
 export const Thumbnail = styled.span`
@@ -204,6 +212,7 @@ export const PlaceInfo = styled.span`
     line-height: 22px;
     font-weight: 700;
   }
+  mark { background: none; color: #0079c2; }
   small {
     display: flex;
     align-items: center;
@@ -282,26 +291,28 @@ export const Error = styled.p`
 export const Footer = styled.footer`
   flex: 0 0 auto;
   display: grid;
-  gap: 10px;
-  padding: 12px 20px max(20px, env(safe-area-inset-bottom));
-  border-top: 1px solid ${border};
+  gap: 0;
+  padding: 12px 20px max(34px, env(safe-area-inset-bottom));
   background: #fff;
   .primary {
     width: 100%;
     height: 56px;
-    border-radius: 14px;
+    border-radius: 16px;
     background: ${navy};
     color: #fff;
     font-size: 16px;
     font-weight: 700;
     text-align: center;
   }
-  .primary:disabled { background: #e4e6ec; color: #b4b5bd; cursor: default; }
+  .primary:disabled { background: #ededf1; color: #b4b5bd; cursor: default; }
 `;
 
 export const SelectedPlaces = styled.div`
   display: flex;
   gap: 6px;
+  margin: -12px -20px 0;
+  padding: 12px 20px;
+  border-top: 1px solid ${border};
   overflow-x: auto;
   scrollbar-width: none;
   button {
@@ -309,12 +320,24 @@ export const SelectedPlaces = styled.div`
     display: flex;
     align-items: center;
     gap: 6px;
-    padding: 7px 10px;
-    border-radius: 16px;
+    padding: 4px 10px 4px 4px;
+    border-radius: 18px;
     background: #f3f5fa;
     font-size: 13px;
   }
-  button img { width: 8.4px; height: 8.4px; }
+  button > img { width: 8.4px; height: 8.4px; }
+  .picked-photo {
+    display: block;
+    width: 24px;
+    height: 24px;
+    overflow: hidden;
+    border-radius: 50%;
+  }
+  .picked-photo > img, .picked-photo .place-photo--thumbnail {
+    width: 24px;
+    height: 24px;
+    object-fit: cover;
+  }
 `;
 
 export const DayOverlay = styled.div`
@@ -329,20 +352,20 @@ export const DayOverlay = styled.div`
 export const DaySheet = styled.section`
   position: relative;
   width: 100%;
-  max-height: 70%;
+  max-height: min(550px, calc(100dvh - 72px));
   overflow-y: auto;
-  padding: 38px 20px 30px;
+  padding: 35px 20px 34px;
   border-radius: 22px 22px 0 0;
   background: #fff;
   --sheet-handle-top: 9px;
   --sheet-handle-color: #d1d1d6;
-  header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-  h2 { margin: 0; font-size: 17px; line-height: 24px; }
+  header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  h2 { margin: 0; font-size: 20px; line-height: 27px; }
   header button { width: 24px; height: 24px; display: grid; place-items: center; }
   header button img { display: block; width: 24px; height: 24px; }
   .day-row {
     width: 100%;
-    min-height: 70px;
+    min-height: 71px;
     display: flex;
     align-items: center;
     justify-content: space-between;

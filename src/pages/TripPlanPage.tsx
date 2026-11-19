@@ -137,7 +137,7 @@ function CoursePlan({ tripId, initialDay }: { tripId: string; initialDay: number
           onBack={() => navigate(tripPlanBackPath(location.search))}
           onOpenSettings={() => navigate(`${tripSettingsPath(planOrigin, trip.id)}&day=${activeDay + 1}`)}
           onOpenChat={sharedSample ? () => openChat(activeDay + 1) : undefined}
-          onInvite={sharedSample ? undefined : () => navigate(`${tripSettingsPath(planOrigin, trip.id)}&panel=invite&day=${activeDay + 1}`)}
+          onInvite={() => navigate(`${tripSettingsPath(planOrigin, trip.id)}&panel=invite&day=${activeDay + 1}`)}
         />
 
         <div className="course-content">

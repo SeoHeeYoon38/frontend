@@ -1,7 +1,9 @@
+import { useEffect } from "react";
 import { useSearchParams } from "react-router";
 import pinIcon from "../assets/course-settings/pin.svg";
 import checkIcon from "../assets/icons/status-selected-check.svg";
 import closeIcon from "../assets/icons/action-close.svg";
+import savedCheck from "../assets/direct-trip/added-check.svg";
 import CreateTripSheet from "../components/common/CreateTripSheet";
 import { mockTripStatus, mockTripSummary, readMockTrips, readTripStorageNotice } from "../data/mocks/mockTripService";
 import type { MyTripSummary } from "../types/myTrips";
@@ -92,9 +94,22 @@ function MyTripsPage() {
     setSearchParams(next);
   };
 
+  const showSavedToast = searchParams.get("toast") === "saved";
+  useEffect(() => {
+    if (!showSavedToast) return;
+    const timer = window.setTimeout(() => {
+      const next = new URLSearchParams(searchParams);
+      next.delete("toast");
+      next.delete("savedTripId");
+      setSearchParams(next, { replace: true });
+    }, 4000);
+    return () => window.clearTimeout(timer);
+  }, [showSavedToast, searchParams, setSearchParams]);
+
   return (
     <S.Page>
-      {toastMessage && (
+      {showSavedToast && <S.SavedToast role="status"><img src={savedCheck} alt="" />{toastMessage}</S.SavedToast>}
+      {toastMessage && !showSavedToast && (
         <S.Toast role="status" aria-live="polite">
           <span><img src={checkIcon} alt="" /></span>
           <strong>{toastMessage}</strong>

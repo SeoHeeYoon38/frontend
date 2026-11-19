@@ -37,7 +37,7 @@ export const MyTripsHeader = styled.header`
 `;
 
 export const MyHeader = styled.header`
-  min-height: 54px;
+  min-height: calc(48px + env(safe-area-inset-top));
   padding: env(safe-area-inset-top) 20px 0;
   display: flex;
   align-items: center;

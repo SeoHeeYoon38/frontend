@@ -21,7 +21,7 @@ export const Page = styled.main`
   background: #ffffff;
   box-shadow: 0 0 28px rgba(10, 10, 26, 0.08);
 
-  button {
+  :where(&) :where(button) {
     color: inherit;
     border: 0;
     padding: 0;
@@ -44,7 +44,8 @@ export const Navigation = styled.nav`
   height: 42px;
   padding: 0 20px;
   display: grid;
-  grid-template-columns: 32px 1fr 32px;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  column-gap: 10px;
   align-items: center;
 
   button,
@@ -57,8 +58,8 @@ export const Navigation = styled.nav`
 
   h1 {
     margin: 0;
-    text-align: center;
-    font-size: 18px;
+    text-align: left;
+    font-size: 16px;
     line-height: 1.4;
     font-weight: 700;
     letter-spacing: -0.4px;
@@ -277,6 +278,8 @@ export const BottomSheet = styled.section`
   max-width: 402px;
   max-height: calc(100dvh - 72px);
   height: min(527px, calc(100dvh - 72px));
+  &[data-panel="cover"] { height: min(459px, calc(100dvh - 72px)); }
+  &[data-panel="duration"] { height: min(328px, calc(100dvh - 72px)); }
   padding: 0 20px max(24px, env(safe-area-inset-bottom));
   overflow-y: auto;
   scrollbar-width: none;
@@ -854,6 +857,23 @@ export const CopyMessage = styled.p<{ $visible: boolean }>`
   line-height: 1.4;
   opacity: ${({ $visible }) => ($visible ? 1 : 0)};
   transition: opacity 160ms ease;
+`;
+
+export const SettingsToast = styled.div`
+  position: fixed;
+  left: 50%;
+  width: min(calc(100% - 40px), 362px);
+  min-height: 48px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 12px;
+  transform: translateX(-50%);
+  color: white;
+  background: #242428;
+  font-size: 14px;
+  img { width: 20px; height: 20px; }
 `;
 
 export const SuccessIcon = styled.span`

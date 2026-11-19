@@ -89,12 +89,10 @@ function MyTripsSection({ trips, tripPath = (id) => tripPlanPath("home", id), on
                 : "여행을 다녀오면 여기에 모아둘게요"}
             </p>
           </div>
-          {isUpcoming && (
-            <S.CreateButton type="button" aria-haspopup="dialog" onClick={onCreateTrip}>
-              <img src={pin} alt="" />
-              여행 만들기
-            </S.CreateButton>
-          )}
+          <S.CreateButton type="button" aria-haspopup="dialog" onClick={onCreateTrip}>
+            <img src={pin} alt="" />
+            여행 만들기
+          </S.CreateButton>
         </S.Empty>
       )}
     </C.Section>

@@ -1,4 +1,5 @@
 import styled, { keyframes } from "styled-components";
+import { Primary } from "./Trip.styled";
 
 const spin = keyframes`to { transform: rotate(360deg); }`;
 const fade = keyframes`50% { opacity: 0.4; }`;
@@ -46,15 +47,15 @@ export const InfoBox = styled.div`
 `;
 
 export const SkipButton = styled.button`
-  min-height: 40px; margin-top: auto; color: #8a8a8e; font-size: 14px; text-align: center;
+  min-height: 44px; margin-top: auto; color: #090738; font-size: 14px; text-align: center;
+  cursor: pointer;
 `;
 
-export const MethodSkipButton = styled.button`
-  width: 100%; min-height: 56px; margin-top: auto; border-radius: 16px;
-  display: grid; place-items: center; text-align: center;
-  border: 1px solid #dce1ed;
-  color: #090738; background: #f3f5fa; font-size: 15px; font-weight: 700;
-  &:active { background: #e4e6f2; }
+export const MethodSkipButton = styled(Primary)`
+  margin-top: auto;
+  cursor: pointer;
+  &:active { background: #24214f; }
+  &:focus-visible { outline: 2px solid #6456c4; outline-offset: 2px; }
 `;
 
 export const GuideList = styled.ol`

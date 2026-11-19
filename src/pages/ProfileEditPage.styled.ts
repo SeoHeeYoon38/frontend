@@ -24,7 +24,7 @@ export const Page = styled.div`
 `;
 
 export const Header = styled.header`
-  height: 54px;
+  height: 48px;
   display: flex;
   align-items: center;
   gap: 14px;
@@ -38,8 +38,8 @@ export const Header = styled.header`
   }
 
   img {
-    width: 10px;
-    height: 18px;
+    width: 8.11667px;
+    height: 14.5333px;
   }
 
   h1 {
@@ -54,7 +54,7 @@ export const Body = styled.main`
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 30px 20px 140px;
+  padding: 28px 20px 140px;
 `;
 
 export const AvatarButton = styled.button`
@@ -182,7 +182,7 @@ export const Cta = styled.footer`
   left: 0;
   width: min(100%, 402px);
   margin: 0 auto;
-  padding: 12px 20px max(20px, env(safe-area-inset-bottom));
+  padding: 12px 20px max(34px, env(safe-area-inset-bottom));
   background: #ffffff;
 
   > button {

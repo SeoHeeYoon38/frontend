@@ -1,4 +1,4 @@
-import { apiRequest, queryString } from "./client";
+import { ApiError, apiRequest, queryString } from "./client";
 import type {
   GeneratedItineraryResponse,
   ItineraryEditPreview,
@@ -92,6 +92,25 @@ export function addPlaceToItinerary(tripId: number, placeId: string, day: number
     json: { placeId, day },
     timeoutMs: 180_000,
   });
+}
+
+export async function addPlaceOnDate(tripId: number, placeId: string, day: number, date: string) {
+  try {
+    return (await addPlaceToItinerary(tripId, placeId, day)).itinerary;
+  } catch (reason) {
+    if (!(reason instanceof ApiError && reason.code === "PLACE_ADD_FAILED")) throw reason;
+  }
+  // The add endpoint saved the place, but could not fit it into its suggested route.
+  // Keep the existing order and let the manual-save endpoint validate the appended visit.
+  const latest = await getLatestItinerary(tripId);
+  const alreadyIn = latest.draft.days.find((item) => item.visits.some((visit) => visit.placeId === placeId));
+  if (alreadyIn?.date === date) return latest;
+  if (alreadyIn) throw new Error("다른 일차에 이미 추가된 장소예요.");
+  if (!latest.draft.days.some((item) => item.date === date)) throw new Error("일정의 날짜가 변경됐어요. 날짜를 다시 선택해 주세요.");
+  const days = latest.draft.days.map((item) => item.date !== date ? item : {
+    ...item, visits: [...item.visits, { itemId: crypto.randomUUID(), placeId }],
+  });
+  return saveItinerary(tripId, days, latest.version);
 }
 
 export function requestItineraryEdit(

@@ -8,13 +8,13 @@ export const Page = styled.div`
   button { padding: 0; border: 0; color: inherit; background: transparent; font: inherit; cursor: pointer; }
 `;
 export const Header = styled.header`
-  height: 54px; display: flex; align-items: center; gap: 14px; padding: 0 20px;
+  height: 48px; display: flex; align-items: center; gap: 14px; padding: 0 20px;
   a { width: 22px; height: 40px; display: grid; place-items: center; }
-  img { width: 10px; height: 18px; }
+  img { width: 8.11667px; height: 14.5333px; }
   h1 { margin: 0; font-size: 17px; line-height: 24px; font-weight: 700; }
 `;
 export const Status = styled.section`
-  display: flex; align-items: center; gap: 14px; padding: 24px 20px;
+  display: flex; align-items: center; gap: 14px; padding: 28px 20px 24px;
   > span:nth-child(2) { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
   strong { display: flex; align-items: center; gap: 6px; font-size: 17px; line-height: 24px; }
   strong i { width: 6px; height: 6px; border-radius: 50%; background: #00c7df; }
@@ -31,7 +31,7 @@ export const Imported = styled.section`
   strong { font-size: 15px; line-height: 22px; font-weight: 500; }
   strong b { color: #0079c2; }
   small { overflow: hidden; color: #8a8a8e; font-size: 12px; white-space: nowrap; text-overflow: ellipsis; }
-  button { display: inline-flex; align-items: center; gap: 4px; flex: 0 0 auto; padding: 7px 12px; border: 1px solid #e4e6ec; border-radius: 16px; font-size: 13px; font-weight: 700; }
+  button { display: inline-flex; align-items: center; gap: 4px; flex: 0 0 auto; padding: 7px 14px 7px 12px; border: 1px solid #e4e6ec; border-radius: 16px; font-size: 13px; font-weight: 700; }
   button:disabled { color: #8a8a8e; cursor: default; }
 `;
 export const Band = styled.div`height: 8px; background: #f3f5fa;`;

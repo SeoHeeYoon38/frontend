@@ -15,40 +15,41 @@ export const Page = styled.div`
 `;
 
 export const Header = styled.header`
-  height: 54px;
+  height: 48px;
   display: flex;
   align-items: center;
   gap: 14px;
   padding: 0 20px;
 
   a { width: 22px; height: 40px; display: grid; place-items: center; }
-  img { width: 10px; height: 18px; }
+  img { width: 8.11667px; height: 14.5333px; }
   h1 { margin: 0; font-size: 17px; line-height: 24px; font-weight: 700; }
 `;
 
 export const AccountCard = styled.section`
-  min-height: 96px;
+  min-height: 89px;
+  margin-top: 12px;
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 16px 20px 20px;
+  padding: 16px 20px 24px;
 
   > span { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 6px; }
   strong { overflow: hidden; font-size: 15px; line-height: 22px; text-overflow: ellipsis; white-space: nowrap; }
   small { display: flex; flex-wrap: wrap; align-items: center; gap: 5px 8px; color: #5c5c63; font-size: 11px; line-height: 15px; }
-  small b { color: #8a8a8e; font-weight: 400; white-space: nowrap; }
+  small b { color: #8a8a8e; font-size: 12px; line-height: 17px; font-weight: 400; white-space: nowrap; }
 `;
 
 export const Provider = styled.span`
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 3px 6px;
+  padding: 3px 8px 3px 6px;
   border-radius: 10px;
   background: #f3f5fa;
   color: #1a1a1a;
   white-space: nowrap;
-  img { width: 12px; height: 12px; object-fit: contain; }
+  img { width: 14px; height: 14px; object-fit: contain; }
 `;
 
 export const Avatar = styled.div`
@@ -61,7 +62,7 @@ export const Avatar = styled.div`
   background: #ddf9fd;
   overflow: hidden;
 
-  img { width: 44px; height: 44px; object-fit: contain; }
+  img { width: 40px; height: 40px; object-fit: contain; }
 `;
 
 export const Band = styled.div`
@@ -72,11 +73,11 @@ export const Band = styled.div`
 export const Section = styled.section`
   padding: 20px 20px 4px;
 
-  h2 { margin: 0 0 12px; color: #8a8a8e; font-size: 13px; line-height: 18px; font-weight: 700; }
+  h2 { margin: 0 0 8px; color: #8a8a8e; font-size: 13px; line-height: 18px; font-weight: 700; }
 `;
 
 export const ServiceRow = styled.div`
-  min-height: 72px;
+  min-height: 69px;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -86,7 +87,7 @@ export const ServiceRow = styled.div`
   > span small { display: flex; align-items: center; gap: 5px; color: #8a8a8e; font-size: 12px; line-height: 17px; }
   > span small i { width: 6px; height: 6px; border-radius: 50%; background: #e4e6ec; }
   > span small i[data-linked="true"] { background: #00c7df; }
-  > a, > button { padding: 7px 14px; border: 1px solid #e4e6ec; border-radius: 16px; font-size: 13px; line-height: 18px; font-weight: 700; }
+  > a, > button { padding: 6px 12px; border: 1px solid #e4e6ec; border-radius: 14px; font-size: 13px; line-height: 18px; font-weight: 700; }
 `;
 
 export const ServiceLogo = styled.span`
@@ -120,7 +121,7 @@ export const AccountActions = styled.div`
   align-items: center;
   justify-content: center;
   gap: 12px;
-  padding-top: 28px;
+  padding-top: 32px;
   color: #5c5c63;
   font-size: 14px;
   line-height: 20px;

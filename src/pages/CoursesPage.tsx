@@ -4,6 +4,7 @@ import CourseCollections from "../components/courses/CourseCollections";
 import RegionSelect from "../components/common/RegionSelect";
 import pin from "../assets/icons/field-location.svg";
 import down from "../assets/icons/nav-chevron-down.svg";
+import searchCity from "../assets/icons/search-city.svg";
 import * as S from "./CoursesPage.styled";
 
 function CoursesPage() {
@@ -46,14 +47,14 @@ function CoursesPage() {
           <S.City
             type="button"
             $selected={!destination}
-            onClick={() => setDestination(null)}
-            aria-pressed={!destination}
+            onClick={() => setIsRegionOpen(true)}
+            aria-haspopup="dialog"
             disabled={!cities.length}
           >
-            <S.CityGroup $selected={!destination} $single={cities.length === 1}>
-              {cities.slice(0, 4).map((city) => city.image ? <img key={city.name} src={city.image} alt="" /> : <img key={city.name} className="city-placeholder" src={pin} alt="" />)}
+            <S.CityGroup $selected={!destination}>
+              <img className="search-city" src={searchCity} alt="" />
             </S.CityGroup>
-            <span>전체</span>
+            <span>검색</span>
           </S.City>
           {cities.map((city) => (
             <S.City
@@ -66,7 +67,7 @@ function CoursesPage() {
               }
             >
               {city.image ? <S.CityPhoto src={city.image} alt="" $selected={destination?.name === city.name} /> : (
-                <S.CityGroup $selected={destination?.name === city.name} $single><img className="city-placeholder" src={pin} alt="" /></S.CityGroup>
+                <S.CityGroup $selected={destination?.name === city.name}><img className="city-placeholder" src={pin} alt="" /></S.CityGroup>
               )}
               <span>{city.name}</span>
             </S.City>

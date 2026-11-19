@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link, useOutletContext } from "react-router";
 import backIcon from "../assets/icons/nav-back.svg";
 import googleMapsLogo from "../assets/figma/course-map-google.png";
@@ -6,11 +7,13 @@ import importedIcon from "../assets/figma/my-maps-imported.svg";
 import type { UserResponse } from "../api/auth";
 import { routes } from "../config/routes";
 import useImportedGooglePlaces from "../hooks/useImportedGooglePlaces";
+import SettingsConfirmDialog from "../components/common/SettingsConfirmDialog";
 import * as S from "./GoogleMapsSettingsPage.styled";
 
 function GoogleMapsSettingsPage() {
   const account = useOutletContext<UserResponse | undefined>();
   const imported = useImportedGooglePlaces();
+  const [showDisconnect, setShowDisconnect] = useState(false);
   const hasImported = imported.count > 0;
   const checkedTime = imported.checkedAt && new Intl.DateTimeFormat("ko-KR", {
     dateStyle: "short",
@@ -71,10 +74,18 @@ function GoogleMapsSettingsPage() {
           aria-checked="false" disabled><span /></S.Toggle>
       </S.AutoImport>
       <S.Band />
-      <S.Disconnect type="button" disabled>
+      <S.Disconnect type="button" aria-haspopup="dialog" onClick={() => setShowDisconnect(true)}>
         <strong>연동 해제</strong>
-        <small>연결된 Google Maps 계정이 없어요.</small>
+        <small>해제해도 이미 불러온 장소는 그대로 남아 있어요</small>
       </S.Disconnect>
+      {showDisconnect && (
+        <SettingsConfirmDialog
+          title="Google Maps 연동 해제"
+          description={<>{hasImported && <>불러온 장소 {imported.count}곳은 그대로 남아요.<br /></>}해제할 Google Maps 계정 연결이 없어요.</>}
+          confirmLabel="해제하기" tone="danger"
+          onCancel={() => setShowDisconnect(false)}
+        />
+      )}
     </S.Page>
   );
 }

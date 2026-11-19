@@ -1,13 +1,17 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import linkIcon from "../../assets/course-settings/link.svg";
 import airDropIcon from "../../assets/course-settings/share-airdrop.png";
 import messagesIcon from "../../assets/course-settings/share-messages.png";
 import kakaoIcon from "../../assets/course-settings/share-kakao.png";
 import mailIcon from "../../assets/course-settings/share-mail.png";
+import addedCheck from "../../assets/direct-trip/added-check.svg";
+import osakaCover from "../../assets/invite/hero.png";
 import { profileCharacter } from "../../config/profileCharacters";
 import { createInvite, getTripMembers } from "../../api/members";
 import { createTripShare } from "../../api/trips";
-import type { MemberResponse } from "../../api/types";
+import type { MemberResponse, TripResponse } from "../../api/types";
+import { apiTripToSummary } from "../../utils/serverTrip";
+import { formatTripDateRange } from "../../utils/importedTrip";
 import { routes } from "../../config/routes";
 import { inviteSmsUrl } from "../../utils/inviteSharing";
 import { kakaoShareConfigured, prepareKakaoShare, reportKakaoShareError, type KakaoShare } from "../../utils/kakaoShare";
@@ -22,8 +26,9 @@ const shareActions = [
   { label: "메일", accessibilityLabel: "메일로 공유", icon: mailIcon, method: "mail" },
 ] as const;
 
-export default function ServerInviteSheet({ tripId, onClose, publicShare = false }: {
+export default function ServerInviteSheet({ tripId, trip, onClose, publicShare = false }: {
   tripId: number;
+  trip?: TripResponse;
   onClose: () => void;
   publicShare?: boolean;
 }) {
@@ -32,11 +37,26 @@ export default function ServerInviteSheet({ tripId, onClose, publicShare = false
   const [path, setPath] = useState("");
   const [attempt, setAttempt] = useState(0);
   const [loadFailed, setLoadFailed] = useState(false);
-  const [message, setMessage] = useState("");
+  const [copiedAt, setCopiedAt] = useState(0);
+  const inviteContent = useRef<HTMLDivElement>(null);
+  const [toastBottom, setToastBottom] = useState(0);
   const [actionError, setActionError] = useState("");
   const [members, setMembers] = useState<MemberResponse[]>([]);
   const [kakaoShare, setKakaoShare] = useState<KakaoShare>();
   const [kakaoLoading, setKakaoLoading] = useState(kakaoShareConfigured);
+
+  useEffect(() => {
+    if (!copiedAt) return;
+    const dialog = inviteContent.current?.closest("dialog");
+    const updatePosition = () => {
+      if (dialog) setToastBottom(window.innerHeight - dialog.getBoundingClientRect().top + 12);
+    };
+    updatePosition();
+    const observer = new ResizeObserver(updatePosition);
+    if (dialog) observer.observe(dialog);
+    const timer = window.setTimeout(() => setCopiedAt(0), 3000);
+    return () => { observer.disconnect(); window.clearTimeout(timer); };
+  }, [copiedAt]);
 
   useEffect(() => {
     const sdk = prepareKakaoShare();
@@ -77,12 +97,12 @@ export default function ServerInviteSheet({ tripId, onClose, publicShare = false
   const link = path ? new URL(path, window.location.origin).href : "";
 
   async function shareLink(method: "copy" | typeof shareActions[number]["method"]) {
-    setMessage("");
+    setCopiedAt(0);
     setActionError("");
     try {
       if (method === "copy") {
         await navigator.clipboard.writeText(link);
-        setMessage(`${linkLabel}를 복사했어요. 원하는 앱에 붙여 넣어 주세요.`);
+        setCopiedAt(Date.now());
         return;
       }
       if (method === "mail") {
@@ -94,10 +114,25 @@ export default function ServerInviteSheet({ tripId, onClose, publicShare = false
         return;
       }
       if (method === "kakao" && kakaoShare) {
-        await kakaoShare.sendDefault({
+        const shareLink = { webUrl: link, mobileWebUrl: link };
+        const summary = trip && apiTripToSummary(trip);
+        const cover = trip?.city === "오사카" ? osakaCover : summary?.coverImage;
+        if (!publicShare && trip && summary && cover) {
+          const inviter = members.find((member) => member.me)?.name;
+          await kakaoShare.sendDefault({
+            objectType: "feed",
+            content: {
+              title: `${inviter ? inviter + "님이 " : ""}${summary.title} 여행에 초대했어요`,
+              description: formatTripDateRange(trip.startDate, trip.endDate),
+              imageUrl: new URL(cover, window.location.origin).href,
+              link: shareLink,
+            },
+            buttons: [{ title: "여행 보러 가기", link: shareLink }],
+          });
+        } else await kakaoShare.sendDefault({
           objectType: "text",
           text: `도틀로 ${title}`,
-          link: { webUrl: link, mobileWebUrl: link },
+          link: shareLink,
           buttonTitle: publicShare ? "일정 보기" : "참여하기",
         });
         return;
@@ -116,8 +151,8 @@ export default function ServerInviteSheet({ tripId, onClose, publicShare = false
   }
 
   return (
-    <TripSheet title={title} onClose={onClose}>
-      <S.InviteContent>
+    <TripSheet title={title} onClose={onClose} minHeight={publicShare ? undefined : 412}>
+      <S.InviteContent ref={inviteContent}>
         <p>{publicShare ? "링크를 받은 사람은 로그인 없이 일정을 볼 수 있어요." : "링크를 받은 친구는 일정을 함께 볼 수 있어요."}</p>
         {loadFailed ? (
           <>
@@ -132,7 +167,7 @@ export default function ServerInviteSheet({ tripId, onClose, publicShare = false
             <S.LinkBox>
               <img src={linkIcon} alt="" />
               <span title={link}>{link}</span>
-              <button type="button" onClick={() => void shareLink("copy")}>링크 복사</button>
+              <button type="button" onClick={() => void shareLink("copy")}>{copiedAt ? "복사됨" : "링크 복사"}</button>
             </S.LinkBox>
             <S.ShareSection>
               <h3>공유하기</h3>
@@ -155,7 +190,9 @@ export default function ServerInviteSheet({ tripId, onClose, publicShare = false
                 </li>)}
               </S.MemberList>
             </S.MemberSection>}
-            {message && <p role="status">{message}</p>}
+            {copiedAt > 0 && <S.SettingsToast style={{ bottom: toastBottom }} role="status"><img src={addedCheck} alt="" />
+              {publicShare ? "공유 링크를 복사했어요" : "링크를 복사했어요. 친구에게 보내보세요"}
+            </S.SettingsToast>}
             {actionError && <p role="alert">{actionError}</p>}
           </>
         ) : <p role="status">{linkLabel}를 만들고 있어요.</p>}

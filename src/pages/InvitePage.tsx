@@ -13,19 +13,14 @@ import thumbThree from "../assets/invite/thumb-3.png";
 import thumbFour from "../assets/invite/thumb-4.png";
 import ticketShape from "../assets/invite/ticket-shape.svg";
 import { routes } from "../config/routes";
+import { mockTripCities } from "../data/mocks/tripData";
+import { durationLabel, validDate } from "../utils/trip";
 import { demoInviteId, savePendingInvite, serverTripPlanPath, tripCommunityPath } from "../utils/navigation";
 import { acceptInvite, getInvitePreview } from "../api/members";
 import { ApiError } from "../api/client";
 import { hasAuthSession } from "../api/tokenStorage";
 import type { InvitePreviewResponse } from "../api/types";
 import * as S from "./InvitePage.styled";
-
-const companionLabels = {
-  ALONE: "혼자",
-  COUPLE: "연인",
-  FRIEND: "친구",
-  FAMILY: "가족",
-} as const;
 
 function inviteError(reason: unknown, fallback: string) {
   if (reason instanceof ApiError) {
@@ -139,6 +134,9 @@ function InviteDetails({ inviteId }: { inviteId?: string }) {
   }
 
   const city = preview?.city ?? "오사카";
+  const hero = city === "오사카" ? heroImage : mockTripCities.find((item) => item.name === city)?.image;
+  const duration = preview && validDate(preview.startDate) && validDate(preview.endDate)
+    ? durationLabel(preview.startDate, preview.endDate) : "";
   const date = preview
     ? `${shortDate(preview.startDate)} - ${shortDate(preview.endDate)}`
     : "5.18 - 5.21";
@@ -148,26 +146,26 @@ function InviteDetails({ inviteId }: { inviteId?: string }) {
   return (
     <S.Page>
       <S.Hero>
-        <img src={heroImage} alt="벚꽃이 핀 오사카성" />
+        {hero && <img src={hero} alt={`${city} 여행지`} />}
         <S.Scrim />
         <S.Fade />
       </S.Hero>
 
       <S.InviterPill>
         <S.InviterAvatar><img src={inviterAvatar} alt="" /></S.InviterAvatar>
-        <span>{inviter}님의 초대</span>
+        <span>{inviter}님이 초대장을 보냈어요</span>
       </S.InviterPill>
 
       <S.Ticket>
         <img className="ticket-shape" src={ticketShape} alt="" />
         <S.TicketTop>
           <img className="dotlo-mark" src={dotloMark} alt="Dotlo" />
-          <h1>{city} 여행</h1>
+          <h1>{city} {duration || "여행"}</h1>
           <p>{demo ? "공동 계획을 체험하는 샘플 여행이에요." : "함께 여행 계획을 세워 보세요."}</p>
           <S.TripInfo>
             <div><span data-tone="sky"><img src={pinIcon} alt="" /></span><small>어디로</small><strong>{city}</strong></div>
             <div><span data-tone="purple"><img src={calendarIcon} alt="" /></span><small>언제</small><strong>{date}</strong></div>
-            <div><span data-tone="yellow"><img src={memberIcon} alt="" /></span><small>누구와</small><strong>{preview ? companionLabels[preview.companion] : "친구"}</strong></div>
+            <div><span data-tone="yellow"><img src={memberIcon} alt="" /></span><small>누구와</small><strong>{inviter}</strong></div>
           </S.TripInfo>
         </S.TicketTop>
         <S.Perforation><img src={dashImage} alt="" /></S.Perforation>
@@ -188,7 +186,7 @@ function InviteDetails({ inviteId }: { inviteId?: string }) {
         {error && <S.DisabledNotice role="alert">{error}</S.DisabledNotice>}
         {demo && <S.DemoNotice>공유 링크에는 샘플 여행만 표시돼요.</S.DemoNotice>}
         <button type="button" disabled={accepting} onClick={() => void joinTrip()}>
-          {accepting ? "참여하고 있어요" : demo ? "공동 계획 데모 보기" : "참여하기"}
+          {accepting ? "참여하고 있어요" : demo ? "공동 계획 데모 보기" : "여행 참여하기"}
         </button>
         <S.LaterButton type="button" disabled={accepting} onClick={() => navigate(routes.home)}>나중에 볼게요</S.LaterButton>
       </S.Actions>
