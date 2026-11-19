@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { addPlaceToItinerary, requestItineraryEdit } from "../../api/itineraries";
 import { getPlaceDetail } from "../../api/places";
 import { coordinateChat, createChatPoll, getChatMessages, getRecentChatPolls, sendChatMessage, voteChatPoll,
@@ -7,7 +7,7 @@ import { getTripMembers } from "../../api/members";
 import { getTrip } from "../../api/trips";
 import type { MemberResponse, TripResponse } from "../../api/types";
 import { apiTripToSummary } from "../../utils/serverTrip";
-import { chatActionError, visibleChatMessages } from "../../utils/chatCoordination";
+import { chatActionError, visibleChatMessages, type LocalChatResult } from "../../utils/chatCoordination";
 import { chatActions, chatStarters, isChatActionLabel, requestedChatAction, type ChatAction } from "../../utils/chatActions";
 import { mergePolls, pollWinner, withPollCards } from "../../utils/chatPolls";
 import { placeDayError } from "../../utils/placeDaySuggestion";
@@ -40,138 +40,148 @@ export default function ServerCourseCommunityChat({ tripId, onBack, onViewCourse
   const [polls, setPolls] = useState<ChatPoll[]>([]);
   const [ready, setReady] = useState(false);
   const [message, setMessage] = useState("");
+  const [sending, setSending] = useState(false);
   const [pending, setPending] = useState(false);
   const [pendingAi, setPendingAi] = useState<ChatAction>();
   const [error, setError] = useState("");
   const [syncError, setSyncError] = useState("");
-  const [localResults, setLocalResults] = useState<ChatMessage[]>([]);
+  const [localResults, setLocalResults] = useState<LocalChatResult[]>([]);
+  const placeNames = useRef(new Map<string, string>());
   const localId = useRef(-1);
   const [selectedPollId, setSelectedPollId] = useState<number>();
-  const revision = useRef(0);
+  const pollRevision = useRef(0);
+  const history = useRef<ChatMessage[]>([]);
   const lifetime = useRef<AbortController | null>(null);
   const cursor = useRef(0);
-  const fetching = useRef(false);
+  const sendInFlight = useRef(false);
   const actionInFlight = useRef(false);
   const composer = useRef<HTMLInputElement>(null);
   const bottom = useRef<HTMLDivElement>(null);
 
+  const receiveMessages = useCallback((incoming: ChatMessage[]) => {
+    if (!incoming.length) return;
+    history.current = mergeMessages(history.current, incoming);
+    setMessages(history.current);
+  }, []);
+
   useEffect(() => {
     const controller = new AbortController();
     lifetime.current = controller;
-    void Promise.all([getTrip(tripId, controller.signal), getTripMembers(tripId, controller.signal)])
-      .then(([tripResponse, memberResponse]) => {
-        if (!controller.signal.aborted) {
-          setTrip(tripResponse);
-          setMembers(memberResponse);
-        }
-      }).catch((reason: unknown) => {
-        if (!controller.signal.aborted) setError(reason instanceof Error ? reason.message : "채팅방을 열지 못했어요.");
-      });
+    const roomError = (reason: unknown) => {
+      if (!controller.signal.aborted) setError(reason instanceof Error ? reason.message : "채팅방을 열지 못했어요.");
+    };
+    void getTrip(tripId, controller.signal).then((result) => {
+      if (!controller.signal.aborted) setTrip(result);
+    }).catch(roomError);
+    void getTripMembers(tripId, controller.signal).then((result) => {
+      if (!controller.signal.aborted) setMembers(result);
+    }).catch(roomError);
+    let fetching = false;
     const poll = async () => {
-      if (fetching.current || actionInFlight.current || controller.signal.aborted) return;
-      const startedRevision = revision.current;
-      fetching.current = true;
+      if (fetching || controller.signal.aborted) return;
+      const startedRevision = pollRevision.current;
+      fetching = true;
       try {
         const response = await getChatMessages(tripId, cursor.current || undefined, controller.signal);
-        if (controller.signal.aborted || revision.current !== startedRevision || actionInFlight.current) return;
-        if (response.messages.length) cursor.current = Math.max(cursor.current, ...response.messages.map((item) => item.id));
-        setMessages((current) => mergeMessages(current, response.messages));
-        setPolls((current) => mergePolls(current, response.polls));
+        if (controller.signal.aborted) return;
+        receiveMessages(response.messages);
+        for (const item of response.messages) cursor.current = Math.max(cursor.current, item.id);
+        if (startedRevision === pollRevision.current && response.polls.length) {
+          setPolls((current) => mergePolls(current, response.polls));
+        }
         setReady(true);
         setSyncError("");
       } catch (reason) {
-        if (!controller.signal.aborted && revision.current === startedRevision && !actionInFlight.current) {
+        if (!controller.signal.aborted) {
           setSyncError("채팅을 불러오지 못해 최근 투표를 확인하고 있어요.");
           try {
             const recent = await getRecentChatPolls(tripId, controller.signal);
-            if (!controller.signal.aborted && revision.current === startedRevision && !actionInFlight.current) {
-              setPolls((current) => mergePolls(current, recent));
+            if (!controller.signal.aborted) {
+              if (startedRevision === pollRevision.current) setPolls((current) => mergePolls(current, recent));
               setSyncError("최근 투표는 갱신했지만 채팅 조회에 실패했어요. 잠시 후 다시 확인합니다.");
             }
           } catch {
-            if (!controller.signal.aborted && revision.current === startedRevision) setSyncError(reason instanceof Error ? reason.message : "채팅과 최근 투표를 불러오지 못했어요.");
+            if (!controller.signal.aborted) setSyncError(reason instanceof Error ? reason.message : "채팅과 최근 투표를 불러오지 못했어요.");
           }
         }
       } finally {
-        fetching.current = false;
+        fetching = false;
       }
     };
     void poll();
     const timer = window.setInterval(() => void poll(), 3_000);
     return () => { controller.abort(); window.clearInterval(timer); };
-  }, [tripId]);
+  }, [tripId, receiveMessages]);
 
   useEffect(() => { bottom.current?.scrollIntoView({ block: "end" }); }, [messages.length, polls.length, localResults.length, pendingAi]);
 
-  const refresh = async () => {
-    const signal = lifetime.current?.signal;
-    const response = await getChatMessages(tripId, cursor.current || undefined, signal);
-    if (signal?.aborted) return;
-    if (response.messages.length) cursor.current = Math.max(cursor.current, ...response.messages.map((item) => item.id));
-    setMessages((current) => mergeMessages(current, response.messages));
-    setPolls((current) => mergePolls(current, response.polls));
+  const receivePollUpdate = (poll: ChatPoll) => {
+    pollRevision.current += 1;
+    setPolls((current) => mergePolls(current, [poll]));
   };
 
   const run = async (action: () => Promise<unknown>, aiAction?: ChatAction) => {
-    if (actionInFlight.current) return;
+    const signal = lifetime.current?.signal;
+    if (actionInFlight.current || signal?.aborted) return;
     actionInFlight.current = true;
-    revision.current += 1;
     setPending(true);
     setPendingAi(aiAction);
     setError("");
     try {
       await action();
-      if (lifetime.current?.signal.aborted) return;
-      try {
-        await refresh();
-        setSyncError("");
-      } catch {
-        setSyncError("요청은 완료됐지만 최신 채팅을 불러오지 못했어요. 잠시 후 자동으로 다시 확인합니다.");
-      }
     } catch (reason) {
-      if (lifetime.current?.signal.aborted) return;
-      setError(chatActionError(reason));
-      try {
-        const recent = await getRecentChatPolls(tripId, lifetime.current?.signal);
-        if (!lifetime.current?.signal.aborted) setPolls((current) => mergePolls(current, recent));
-      } catch { /* Keep the last confirmed state until the next poll. */ }
+      if (!signal?.aborted) setError(chatActionError(reason));
     } finally {
       actionInFlight.current = false;
-      setPending(false);
-      setPendingAi(undefined);
+      if (!signal?.aborted) {
+        setPending(false);
+        setPendingAi(undefined);
+      }
     }
   };
 
   const send = async (value: string, clearComposer = false) => {
     const signal = lifetime.current?.signal;
-    const sent = await sendChatMessage(tripId, value, signal);
-    if (!signal?.aborted) {
-      setMessages((current) => mergeMessages(current, [sent]));
-      if (clearComposer) setMessage("");
+    sendInFlight.current = true;
+    setSending(true);
+    setError("");
+    if (clearComposer) setMessage("");
+    try {
+      const sent = await sendChatMessage(tripId, value, signal);
+      if (!signal?.aborted) receiveMessages([sent]);
+      return sent;
+    } catch (reason) {
+      if (clearComposer && !signal?.aborted) setMessage((draft) => draft || value);
+      throw reason;
+    } finally {
+      sendInFlight.current = false;
+      if (!signal?.aborted) setSending(false);
     }
-    return sent;
   };
 
   const memberIds = members.map((member) => member.userId);
-  const appendResult = (text: string, payload: ChatMessage["payload"]) => {
+  const appendResult = (text: string, payload: ChatMessage["payload"], requestedAfterId?: number) => {
     const id = localId.current--;
+    const afterMessageId = history.current.at(-1)?.id ?? 0;
     setLocalResults((current) => [...current, {
-      id, type: "AI", sender: null, text, payload, createdAt: new Date().toISOString(),
+      id, type: "AI", sender: null, text, payload, afterMessageId, requestedAfterId, createdAt: new Date().toISOString(),
     }]);
   };
-  const createPoll = async (direction: string, context = messages) => {
-    const poll = await createChatPoll(tripId, direction, context, memberIds, lifetime.current?.signal);
-    setPolls((current) => mergePolls(current, [poll]));
-    appendResult("투표할 장소를 골랐어요.", { card: { kind: "POLL", pollId: poll.pollId } });
+  const createPoll = async (direction: string, context = history.current) => {
+    const signal = lifetime.current?.signal;
+    const poll = await createChatPoll(tripId, direction, context, memberIds, signal);
+    if (signal?.aborted) return;
+    receivePollUpdate(poll);
+    appendResult("투표할 장소를 골랐어요.", { card: { kind: "POLL", pollId: poll.pollId } }, context.at(-1)?.id ?? 0);
   };
-  const chooseDirection = (label: string, isTalkMore: boolean) => void run(async () => {
+  const chooseDirection = (label: string, isTalkMore: boolean) => {
     if (isTalkMore) {
-      await send(label);
+      submit(label);
       composer.current?.focus();
       return;
     }
-    await createPoll(label);
-  }, isTalkMore ? undefined : "poll");
+    void run(() => createPoll(label), "poll");
+  };
 
   const recommendPlaces = async (request: string, signal?: AbortSignal) => {
     const prompt = [
@@ -180,35 +190,47 @@ export default function ServerCourseCommunityChat({ tripId, onBack, onViewCourse
       request,
     ].filter(Boolean).join(" ");
     const preview = await requestItineraryEdit(tripId, prompt, signal);
+    if (signal?.aborted) return;
     const ids = [...new Set(preview.diff.changes.filter((change) => change.kind === "ADDED").map((change) => change.placeId))].slice(0, 3);
     if (!ids.length) {
       appendResult("새로 추천할 장소를 찾지 못했어요. 가고 싶은 곳의 분위기나 지역을 알려주세요.", null);
       return;
     }
-    const details = await Promise.allSettled(ids.map((id) => getPlaceDetail(tripId, id, signal)));
+    const details = await Promise.allSettled(ids.map(async (id) => {
+      const cached = placeNames.current.get(id);
+      if (cached) return cached;
+      const { name } = await getPlaceDetail(tripId, id, signal);
+      if (name) placeNames.current.set(id, name);
+      return name;
+    }));
     if (signal?.aborted) return;
-    const names = details.flatMap((result) => result.status === "fulfilled" ? [result.value.name] : []);
+    const names = details.flatMap((result) => result.status === "fulfilled" && result.value ? [result.value] : []);
     appendResult(names.length
       ? `이런 곳을 추천해요.\n${names.join(" · ")}`
       : "추천 장소의 정보를 불러오지 못했어요. 잠시 후 다시 요청해 주세요.", null);
   };
 
   const submit = (value: string, action = requestedChatAction(value), clearComposer = false) => {
-    if (!value || !ready) return;
+    if (!value || !ready || sendInFlight.current) return;
+    const signal = lifetime.current?.signal;
+    if (!action) {
+      void send(value, clearComposer).catch((reason: unknown) => {
+        if (!signal?.aborted) setError(chatActionError(reason));
+      });
+      return;
+    }
     void run(async () => {
-      const signal = lifetime.current?.signal;
       const sent = await send(value, clearComposer);
-      if (!action || signal?.aborted) return;
-      const context = mergeMessages(messages, [sent]);
-      const lastTopic = [...context].reverse().find((item) => item.type === "USER" && !isChatActionLabel(item.text))?.text.trim();
+      if (signal?.aborted) return;
       if (action === "coordinate") {
-        const result = await coordinateChat(tripId, context, memberIds, signal);
-        appendResult(result.text, { card: result.card, options: result.options });
-      } else if (action === "recommend") {
-        await recommendPlaces(lastTopic?.slice(0, 260) ?? "", signal);
-      } else {
-        await createPoll(lastTopic?.slice(0, 100) || "이번 여행에서 가고 싶은 장소를 골라주세요.", context);
+        const result = await coordinateChat(tripId, signal);
+        if (!signal?.aborted) appendResult(result.text, { card: result.card, options: result.options }, sent.id);
+        return;
       }
+      const context = history.current;
+      const lastTopic = context.findLast((item) => item.type === "USER" && !isChatActionLabel(item.text))?.text.trim();
+      if (action === "recommend") await recommendPlaces(lastTopic?.slice(0, 260) ?? "", signal);
+      else await createPoll(lastTopic?.slice(0, 100) || "이번 여행에서 가고 싶은 장소를 골라주세요.", context);
     }, action);
   };
 
@@ -216,6 +238,7 @@ export default function ServerCourseCommunityChat({ tripId, onBack, onViewCourse
   const title = trip ? apiTripToSummary(trip).title : "함께하는 여행";
   const selectedPoll = polls.find((poll) => poll.pollId === selectedPollId);
   const winner = selectedPoll && pollWinner(selectedPoll);
+  const feed = useMemo(() => withPollCards(visibleChatMessages(messages, localResults), polls), [messages, localResults, polls]);
 
   return <main className="community-chat">
     <header className="community-chat__header">
@@ -243,7 +266,7 @@ export default function ServerCourseCommunityChat({ tripId, onBack, onViewCourse
           </div>
         </div>
       </article>}
-      {withPollCards(visibleChatMessages(messages, localResults), polls).map((item) => {
+      {feed.map((item) => {
         if (item.type === "SYSTEM") return <p className="community-chat__system" key={item.id}>{item.text}</p>;
         if (item.type === "USER") return item.sender?.id === me?.userId
           ? <p className="community-chat__my-message" key={item.id}>{item.text}</p>
@@ -270,7 +293,7 @@ export default function ServerCourseCommunityChat({ tripId, onBack, onViewCourse
             </div>
             {item.payload?.options && <><p className="community-chat__prompt">{item.payload.options.title}</p>
               <div className="community-chat__options">{item.payload.options.items.map((option) =>
-                <button type="button" key={option.id} disabled={pending}
+                <button type="button" key={option.id} disabled={pending || sending}
                   onClick={() => chooseDirection(option.label, option.id === "talk-more")}>{option.label}</button>)}</div></>}
             {poll && <section className="community-poll" aria-label={poll.question}>
               <header><h2>{poll.question}</h2><span>{poll.totalMembers}명 중 {poll.votedCount}명 투표 · {poll.status === "CLOSED" ? "투표 마감" : "진행 중"}</span></header>
@@ -280,7 +303,7 @@ export default function ServerCourseCommunityChat({ tripId, onBack, onViewCourse
                 aria-pressed={candidate.voterUserIds.includes(me?.userId ?? -1)}
                 onClick={() => void run(async () => {
                   const result = await voteChatPoll(tripId, poll.pollId, candidate.id);
-                  if (!lifetime.current?.signal.aborted) setPolls((current) => mergePolls(current, [result]));
+                  if (!lifetime.current?.signal.aborted) receivePollUpdate(result);
                 })}>
                 <span className="community-poll__check" aria-hidden="true">
                   {candidate.voterUserIds.includes(me?.userId ?? -1) && <img src={selectedCheckIcon} alt="" />}
@@ -308,16 +331,16 @@ export default function ServerCourseCommunityChat({ tripId, onBack, onViewCourse
     <footer className="community-chat__composer">
       <div className="community-chat__quick-actions">
         {chatActions.map(({ id, label }) => (
-          <button type="button" key={id} disabled={pending || !ready || !me}
+          <button type="button" key={id} disabled={sending || pending || !ready || !me}
             onClick={() => submit(`@도틀로 ${label}`, id)}><b>@도틀로</b> {label}</button>
         ))}
       </div>
       <form onSubmit={(event) => { event.preventDefault(); submit(message.trim(), undefined, true); }}>
         <label><span className="course-community__sr-only">채팅 메시지</span>
-          <input ref={composer} value={message} maxLength={500} disabled={pending || !ready}
+          <input ref={composer} value={message} maxLength={500} disabled={!ready}
             placeholder="메시지를 입력하거나 @도틀로를 불러보세요"
             onChange={(event) => setMessage(event.target.value)} /></label>
-        <button type="submit" disabled={!message.trim() || pending || !ready} aria-label="메시지 보내기"><img src={sendIcon} alt="" /></button>
+        <button type="submit" disabled={!ready || sending || !message.trim() || (pending && !!requestedChatAction(message.trim()))} aria-label="메시지 보내기"><img src={sendIcon} alt="" /></button>
       </form>
     </footer>
 
@@ -328,6 +351,7 @@ export default function ServerCourseCommunityChat({ tripId, onBack, onViewCourse
           await run(async () => {
             try {
               await addPlaceToItinerary(tripId, winner.placeId, day);
+              if (lifetime.current?.signal.aborted) return;
               setSelectedPollId(undefined);
               onViewCourse(day);
             } catch (reason) { throw new Error(placeDayError(reason)); }
