@@ -15,6 +15,16 @@ export function destinationParticle(city: string): "로" | "으로" {
   return finalConsonant === 0 || finalConsonant === 8 ? "로" : "으로";
 }
 
+export function placeAsObject(name: string): string {
+  const trimmed = name.trimEnd();
+  const last = trimmed.charCodeAt(trimmed.length - 1);
+  if (last >= 0xac00 && last <= 0xd7a3) {
+    return trimmed + ((last - 0xac00) % 28 ? "을" : "를");
+  }
+  if (/\d$/.test(trimmed)) return trimmed + (/[013678]$/.test(trimmed) ? "을" : "를");
+  return trimmed;
+}
+
 export function emptyDraft(): TripDraft {
   return {
     version: 1,

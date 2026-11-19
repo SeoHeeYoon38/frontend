@@ -3,9 +3,8 @@ import styled from "styled-components";
 import { updateTrip, updateTripDates } from "../../api/trips";
 import type { CompanionCode, TripResponse } from "../../api/types";
 import { apiTripToDraft, companionLabels } from "../../utils/serverTrip";
-import { formatTripDetailDateRange } from "../../utils/importedTrip";
 import { courseImportEndDate } from "../../utils/courseImport";
-import { dayCount, durationLabel, validDate } from "../../utils/trip";
+import { dateLabel, dayCount, durationLabel, validDate } from "../../utils/trip";
 import minusIcon from "../../assets/icons/counter-minus.svg";
 import plusIcon from "../../assets/icons/counter-plus.svg";
 import chevronIcon from "../../assets/my/sort-chevron.svg";
@@ -40,13 +39,14 @@ const Row = styled.div`
 
   > button {
     min-height: 36px;
-    color: #090738;
+    color: #8a8a8e;
     font-size: 13px;
     font-weight: 700;
     text-align: right;
   }
 
   > button img { width: 16px; height: 16px; }
+  > button[data-register] { color: #090738; }
   > button[aria-expanded="true"] img[data-chevron] { transform: rotate(180deg); }
   dd[data-empty] { color: #8a8a8e; }
 `;
@@ -184,6 +184,9 @@ export default function TripInformationSheet({ trip, title, movementLabel = "", 
   const peopleChanged = Boolean(choice.companion) && (register || choice.companion !== trip.companion || choice.count !== trip.companionCount);
   const datesChanged = start !== trip.startDate;
   const dirty = peopleChanged || datesChanged || name !== title || movement !== movementLabel;
+  const showFieldIcons = inlineEditors && Boolean(expanded);
+  const formatDate = (value: string) => dateLabel(value).replace(/ (.)$/, " ($1)");
+  const shownEnd = end || trip.endDate;
 
   function toggle(field: EditField) {
     setError("");
@@ -191,12 +194,13 @@ export default function TripInformationSheet({ trip, title, movementLabel = "", 
   }
   function editButton(field: EditField, label: string, open: () => void = () => toggle(field)) {
     return <button type="button" aria-label={label} aria-expanded={expanded === field} disabled={pending} onClick={open}>
-      {inlineEditors ? <img data-chevron src={chevronIcon} alt="" /> : "수정"}
+      {showFieldIcons ? <img data-chevron src={chevronIcon} alt="" /> : "수정"}
     </button>;
   }
 
   async function save() {
-    if (!dirty || saving.current) return;
+    if (saving.current) return;
+    if (!dirty) { onClose(); return; }
     const unsupported = [name !== title && "여행 이름", movement !== movementLabel && "기본 이동 수단", datesChanged && !canChangeDates && "저장된 일정의 날짜"].filter(Boolean);
     if (unsupported.length) {
       setConfirmClose(false);
@@ -242,7 +246,7 @@ export default function TripInformationSheet({ trip, title, movementLabel = "", 
   return <>
     <TripSheet key="info" title="여행 정보 수정" variant="trip-info" closeDisabled={pending}
       onClose={() => { if (dirty) setConfirmClose(true); else onClose(); }} footer={
-        <S.Primary type="button" disabled={!dirty || pending} onClick={() => void save()}>
+        <S.Primary type="button" disabled={pending} onClick={() => void save()}>
           {pending ? "저장하고 있어요" : "저장"}
         </S.Primary>
       }>
@@ -258,7 +262,7 @@ export default function TripInformationSheet({ trip, title, movementLabel = "", 
           <Row><dt>여행지</dt><dd>{[trip.city, apiTripToDraft(trip).country].filter(Boolean).join(", ")}</dd>
             {imported && <button type="button" aria-label="여행지 안내" aria-expanded={expanded === "destination"}
               onClick={() => setExpanded(expanded === "destination" ? undefined : "destination")}>
-              <img src={lockIcon} alt="" />
+              {expanded ? <img src={lockIcon} alt="" /> : "수정"}
             </button>}
           </Row>
           {expanded === "destination" && <DestinationNotice>
@@ -268,7 +272,7 @@ export default function TripInformationSheet({ trip, title, movementLabel = "", 
           </DestinationNotice>}
         </div>
         <div>
-          <Row><dt>날짜</dt><dd>{formatTripDetailDateRange(start, end || trip.endDate)}</dd>
+          <Row><dt>날짜</dt><dd>{start === shownEnd ? formatDate(start) : `${formatDate(start)} ~ ${formatDate(shownEnd)}`}</dd>
             {editButton("dates", "날짜 수정", () => { if (inlineEditors) toggle("dates"); else { setError(""); setCalendarStart(start); } })}
           </Row>
           {expanded === "dates" && <InlineDates><DateRangePicker start={start} end={end} onChange={(value) => { setStart(value); setError(""); }} /></InlineDates>}
@@ -280,11 +284,11 @@ export default function TripInformationSheet({ trip, title, movementLabel = "", 
               ? choice.companion === "ALONE" ? "혼자" : `${companionLabels[choice.companion]} ${choice.count}명`
               : "함께 가는 사람을 알려주세요"}</dd>
             <button type="button" aria-label={!choice.companion ? "동행 등록" : "동행 수정"} aria-expanded={inlineEditors ? expanded === "people" : undefined}
-              disabled={pending} onClick={() => {
+              disabled={pending} data-register={!choice.companion || undefined} onClick={() => {
                 if (inlineEditors) setExpanded(expanded === "people" ? undefined : "people");
                 else setPeopleDraft(choice);
               }}>
-              {inlineEditors ? <img data-chevron src={chevronIcon} alt="" /> : choice.companion ? "수정" : "등록"}
+              {showFieldIcons ? <img data-chevron src={chevronIcon} alt="" /> : choice.companion ? "수정" : "등록"}
             </button>
           </Row>
           {expanded === "people" && <InlinePeople>

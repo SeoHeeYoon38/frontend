@@ -65,17 +65,21 @@ function MyTripsPage() {
   ]);
   const myTrips = useMyTrips();
   const allTrips = myTrips.enabled
-    ? myTrips.trips.map(apiTripToSummary)
+    ? myTrips.trips.map((trip) => ({ ...apiTripToSummary(trip), startDate: trip.startDate }))
     : readMockTrips().filter((trip) => trip.saved).map((trip) => ({
         ...mockTripSummary(trip),
+        startDate: trip.startDate,
         status: mockTripStatus(trip),
       }));
   const savedTrip = allTrips.find((trip) => String(trip.id) === searchParams.get("savedTripId"));
   const toastMessage = searchParams.get("toast") === "saved" && savedTrip
     ? `${savedTrip.title} 일정을 저장했어요`
     : toastMessages.get(searchParams.get("toast") ?? "");
-  const upcomingTrips = allTrips.filter((trip) => trip.status === "upcoming");
-  const pastTrips = allTrips.filter((trip) => trip.status === "past");
+  const upcomingTrips = allTrips.filter((trip) => trip.status === "upcoming")
+    .sort((a, b) => a.durationLabel && b.durationLabel ? a.startDate.localeCompare(b.startDate)
+      : Number(Boolean(b.durationLabel)) - Number(Boolean(a.durationLabel)));
+  const pastTrips = allTrips.filter((trip) => trip.status === "past")
+    .sort((a, b) => b.startDate.localeCompare(a.startDate));
   const trips = tab === "past" ? pastTrips : upcomingTrips;
   const storageNotice = readTripStorageNotice();
   const filteredTrips = trips.filter((trip) =>

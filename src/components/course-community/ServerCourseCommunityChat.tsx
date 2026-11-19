@@ -9,10 +9,11 @@ import type { MemberResponse, TripResponse } from "../../api/types";
 import { apiTripToSummary } from "../../utils/serverTrip";
 import { chatActionError, visibleChatMessages, type LocalChatResult } from "../../utils/chatCoordination";
 import { chatActions, chatStarters, isChatActionLabel, requestedChatAction, type ChatAction } from "../../utils/chatActions";
-import { mergePolls, pollWinner, withPollCards } from "../../utils/chatPolls";
+import { confirmedPollAddition, mergePolls, pollWinner, withPollCards } from "../../utils/chatPolls";
 import { placeDayError } from "../../utils/placeDaySuggestion";
 import PlaceDayPicker from "../course-completion/PlaceDayPicker";
 import TripSheet from "../common/TripSheet";
+import { PlaceThumbnail } from "../common/PlacePhoto";
 import ChatPendingBubble from "./ChatPendingBubble";
 import backIcon from "../../assets/course-settings/back.svg";
 import aiAvatar from "../../assets/course-community/ai-avatar.png";
@@ -160,11 +161,11 @@ export default function ServerCourseCommunityChat({ tripId, onBack, onViewCourse
   };
 
   const memberIds = members.map((member) => member.userId);
-  const appendResult = (text: string, payload: ChatMessage["payload"], requestedAfterId?: number) => {
+  const appendResult = (text: string, payload: ChatMessage["payload"], requestedAfterId?: number, addedPlace?: LocalChatResult["addedPlace"]) => {
     const id = localId.current--;
     const afterMessageId = history.current.at(-1)?.id ?? 0;
     setLocalResults((current) => [...current, {
-      id, type: "AI", sender: null, text, payload, afterMessageId, requestedAfterId, createdAt: new Date().toISOString(),
+      id, type: "AI", sender: null, text, payload, afterMessageId, requestedAfterId, addedPlace, createdAt: new Date().toISOString(),
     }]);
   };
   const createPoll = async (direction: string, context = history.current) => {
@@ -240,7 +241,7 @@ export default function ServerCourseCommunityChat({ tripId, onBack, onViewCourse
   const winner = selectedPoll && pollWinner(selectedPoll);
   const feed = useMemo(() => withPollCards(visibleChatMessages(messages, localResults), polls), [messages, localResults, polls]);
 
-  return <main className="community-chat">
+  return <main className="community-chat community-chat--live">
     <header className="community-chat__header">
       <button type="button" aria-label="코스로 돌아가기" onClick={onBack}><img src={backIcon} alt="" /></button>
       <div><h1>{title}</h1><p>함께하는 {members.length}명</p></div>
@@ -276,6 +277,7 @@ export default function ServerCourseCommunityChat({ tripId, onBack, onViewCourse
           </div>;
         const pollId = item.payload?.card?.kind === "POLL" ? item.payload.card.pollId : undefined;
         const poll = polls.find((current) => current.pollId === pollId);
+        const addedPlace = item.payload?.card?.kind === "POLL_PLACE_ADDED" ? localResults.find((result) => result.id === item.id)?.addedPlace : undefined;
         return <article className="community-chat__ai-message" key={item.id}>
           <img className="community-chat__ai-avatar" src={aiAvatar} alt="" />
           <div><strong>도틀로 AI</strong>
@@ -291,6 +293,15 @@ export default function ServerCourseCommunityChat({ tripId, onBack, onViewCourse
                 })}
               </ul>}
             </div>
+            {addedPlace && <div className="community-chat__added-place">
+              <div><PlaceThumbnail placeId={addedPlace.placeId} name={addedPlace.name} />
+                <div className="community-chat__added-place-text">
+                  <span>{addedPlace.day}일차에 추가</span><strong>{addedPlace.name}</strong>
+                  {addedPlace.tagline && <small>{addedPlace.tagline}</small>}
+                </div>
+              </div>
+              <button type="button" onClick={() => onViewCourse(addedPlace.day)}>코스에서 보기</button>
+            </div>}
             {item.payload?.options && <><p className="community-chat__prompt">{item.payload.options.title}</p>
               <div className="community-chat__options">{item.payload.options.items.map((option) =>
                 <button type="button" key={option.id} disabled={pending || sending}
@@ -318,8 +329,9 @@ export default function ServerCourseCommunityChat({ tripId, onBack, onViewCourse
               </button>)}</div>
               {poll.status === "OPEN" && <p>마감 전에는 다른 후보로 투표를 바꿀 수 있어요.</p>}
               {poll.status === "CLOSED" && !pollWinner(poll) && <p>단독 1위가 없어 장소를 자동으로 선택하지 않아요. 일행과 다시 조율해 주세요.</p>}
-              <button className="community-poll__apply" type="button" disabled={pending || !pollWinner(poll)}
-                onClick={() => setSelectedPollId(poll.pollId)}>1위 장소 일정에 넣기</button>
+              {!localResults.some((result) => result.addedPlace && result.payload?.card?.pollId === poll.pollId) &&
+                <button className="community-poll__apply" type="button" disabled={pending || !pollWinner(poll)}
+                  onClick={() => { setError(""); setSelectedPollId(poll.pollId); }}>1위 장소 일정에 넣기</button>}
             </section>}
           </div>
         </article>;
@@ -345,15 +357,26 @@ export default function ServerCourseCommunityChat({ tripId, onBack, onViewCourse
     </footer>
 
     {selectedPoll && <TripSheet title={winner ? `${winner.name}, 언제 넣을까요?` : "투표 결과 확인"}
+      hideHeader={!!winner} contentGap={0} className={winner ? "community-poll-day-sheet" : undefined}
       closeDisabled={pending} onClose={() => setSelectedPollId(undefined)}>
-      {winner ? <PlaceDayPicker key={`${selectedPoll.pollId}:${winner.placeId}`} tripId={tripId}
-        placeId={winner.placeId} pending={pending} onConfirm={async (day) => {
+      {winner && <h2 className="community-poll-day-sheet__title">{winner.name}, 언제 넣을까요?</h2>}
+      {winner ? <PlaceDayPicker inChat key={`${selectedPoll.pollId}:${winner.placeId}`} tripId={tripId}
+        placeId={winner.placeId} pending={pending} onConfirm={async (day, date) => {
           await run(async () => {
+            const signal = lifetime.current?.signal;
             try {
-              await addPlaceToItinerary(tripId, winner.placeId, day);
-              if (lifetime.current?.signal.aborted) return;
+              const result = await addPlaceToItinerary(tripId, winner.placeId, day);
+              if (signal?.aborted) return;
+              if (!confirmedPollAddition(winner.placeId, date, result.itinerary.draft, result.diff)) {
+                throw new Error("선택한 날짜에 장소가 추가됐는지 확인하지 못했어요. 코스를 다시 확인해 주세요.");
+              }
+              const name = result.placeName || winner.name;
+              const last = name.charCodeAt(name.length - 1);
+              const objectMarker = last >= 0xac00 && last <= 0xd7a3 && (last - 0xac00) % 28 !== 0 ? "을" : "를";
+              appendResult(`모두의 의견을 모아\n${day}일차에 ${name}${objectMarker} 넣었어요.\n이동 동선도 다시 맞춰 두었어요.`,
+                { card: { kind: "POLL_PLACE_ADDED", pollId: selectedPoll.pollId } }, undefined,
+                { day, placeId: winner.placeId, name, tagline: winner.tagline });
               setSelectedPollId(undefined);
-              onViewCourse(day);
             } catch (reason) { throw new Error(placeDayError(reason)); }
           });
         }} /> : <p>투표가 마감되고 단독 1위가 정해진 후 다시 선택해 주세요.</p>}

@@ -141,7 +141,8 @@ export default function DirectPlaceSearch({
   const [destination, setDestination] = useState<CityResponse>();
   const [popular, setPopular] = useState<PopularPlaceResponse[]>();
   const [nearby, setNearby] = useState<PlaceCandidate[]>();
-  const [searchResult, setSearchResult] = useState<{ query: string; places: PlaceCandidate[] }>();
+  const [searchResult, setSearchResult] = useState<{ query: string; places: PlaceCandidate[]; failed?: boolean }>();
+  const [searchAttempt, setSearchAttempt] = useState(0);
   const [selected, setSelected] = useState<Choice[]>([]);
   const placesToAdd = selected.filter((item) => !pickedPlaceIds.has(item.placeId));
   const [recent, setRecent] = useState(() => readRecent(city));
@@ -151,7 +152,6 @@ export default function DirectPlaceSearch({
   const [busy, setBusy] = useState(false);
   const [enriching, setEnriching] = useState(false);
   const [loadError, setLoadError] = useState("");
-  const [searchError, setSearchError] = useState("");
   const [saveError, setSaveError] = useState("");
   const [reload, setReload] = useState(0);
   const savePending = useRef(false);
@@ -188,14 +188,13 @@ export default function DirectPlaceSearch({
     if (!value || !live) return;
     const controller = new AbortController();
     const timer = window.setTimeout(() => {
-      setSearchError("");
       void searchPlaces(tripId, value, controller.signal).then(
         (places) => { if (!controller.signal.aborted) setSearchResult({ query: value, places }); },
-        () => { if (!controller.signal.aborted) setSearchError("장소를 검색하지 못했어요. 다시 시도해 주세요."); },
+        () => { if (!controller.signal.aborted) setSearchResult({ query: value, places: [], failed: true }); },
       );
     }, 300);
     return () => { window.clearTimeout(timer); controller.abort(); };
-  }, [live, tripId, query]);
+  }, [live, tripId, query, searchAttempt]);
 
   function rememberSearch(value: string) {
     const next = [value, ...recent.filter((item) => item !== value)].slice(0, 5);
@@ -278,12 +277,19 @@ export default function DirectPlaceSearch({
     : demoChoices.filter((item) => item.source === "popular");
   const nearbyChoices = live ? (nearby ?? []).map(candidateChoice) : [];
   const normalizedQuery = query.trim().toLowerCase();
-  const matchingSaved = savedChoices.filter((item) =>
-    `${item.name} ${item.address}`.toLowerCase().includes(normalizedQuery));
+  const matchesQuery = (item: Choice) => `${item.name} ${item.address}`.toLowerCase().includes(normalizedQuery);
+  const matchingSaved = savedChoices.filter(matchesQuery);
   const resultsReady = !live || searchResult?.query === query.trim();
-  const foundChoices = live ? (resultsReady ? (searchResult?.places ?? []).map(candidateChoice) : [])
-    : demoChoices.filter((item) => `${item.name} ${item.address}`.toLowerCase().includes(normalizedQuery));
-  const resultChoices = foundChoices.filter((item) => !matchingSaved.some((savedItem) => savedItem.placeId === item.placeId));
+  const searchFailed = live && resultsReady && searchResult?.failed;
+  const foundChoices = !live ? demoChoices.filter(matchesQuery)
+    : searchFailed ? [...popularChoices, ...nearbyChoices].filter(matchesQuery)
+    : resultsReady ? (searchResult?.places ?? []).map(candidateChoice) : [];
+  const shownIds = new Set(matchingSaved.map((item) => item.placeId));
+  const resultChoices = foundChoices.filter((item) => {
+    if (shownIds.has(item.placeId)) return false;
+    shownIds.add(item.placeId);
+    return true;
+  });
   const filteredSaved = savedChoices.filter((item) => categoryMatches(item.category, category));
   const day = days.find((item) => item.day === selectedDay);
 
@@ -328,7 +334,7 @@ export default function DirectPlaceSearch({
             <S.SearchField>
               <img src={searchIcon} alt="" />
               <input autoFocus aria-label="장소 검색" placeholder="어디를 담을까요?" value={query}
-                onChange={(event) => { setQuery(event.target.value); setSearchResult(undefined); setSearchError(""); }}
+                onChange={(event) => { setQuery(event.target.value); setSearchResult(undefined); }}
                 onKeyDown={(event) => { if (event.key === "Enter" && query.trim()) rememberSearch(query.trim()); }} />
               {query && <button type="button" aria-label="검색어 지우기" onClick={() => { setQuery(""); setSearchResult(undefined); }}><img src={clearIcon} alt="" /></button>}
             </S.SearchField>
@@ -345,13 +351,16 @@ export default function DirectPlaceSearch({
           </S.Tabs>}
           <S.Scroll>
             {loadError && <S.Error role="alert">{loadError} <button type="button" onClick={() => { setLoadError(""); setReload((current) => current + 1); }}>다시 불러오기</button></S.Error>}
-            {searchError && <S.Error role="alert">{searchError}</S.Error>}
+            {searchFailed && <S.Error role="alert">
+              {resultChoices.length || matchingSaved.length ? "검색 결과를 모두 불러오지 못했어요." : "장소를 검색하지 못했어요."}{" "}
+              <button type="button" onClick={() => { setSearchResult(undefined); setSearchAttempt((attempt) => attempt + 1); }}>다시 시도</button>
+            </S.Error>}
             {normalizedQuery ? (
               <>
                 {matchingSaved.length > 0 && <S.Section><h2>Google Maps에 저장한 곳</h2>{matchingSaved.map(placeRow)}</S.Section>}
                 {!resultsReady && <S.State role="status">장소를 검색하고 있어요.</S.State>}
                 {resultsReady && resultChoices.length > 0 && <S.Section><h2>검색 결과 {resultChoices.length}</h2>{resultChoices.map(placeRow)}</S.Section>}
-                {resultsReady && !matchingSaved.length && !resultChoices.length && !searchError && <S.EmptyResult>
+                {resultsReady && !matchingSaved.length && !resultChoices.length && !searchFailed && <S.EmptyResult>
                   <span><img src={searchIcon} alt="" /></span><h2>검색 결과가 없어요</h2><p>철자를 확인하거나 다른 이름으로 검색해 보세요</p>
                 </S.EmptyResult>}
               </>

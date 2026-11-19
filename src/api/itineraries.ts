@@ -1,4 +1,5 @@
 import { ApiError, apiRequest, queryString } from "./client";
+import { getSavedPlaces } from "./places";
 import type {
   GeneratedItineraryResponse,
   ItineraryEditPreview,
@@ -96,18 +97,27 @@ export function addPlaceToItinerary(tripId: number, placeId: string, day: number
 }
 
 export async function addPlaceOnDate(tripId: number, placeId: string, day: number, date: string) {
+  let providerError: ApiError | undefined;
   try {
     return (await addPlaceToItinerary(tripId, placeId, day)).itinerary;
   } catch (reason) {
-    if (!(reason instanceof ApiError && reason.code === "PLACE_ADD_FAILED")) throw reason;
+    if (!(reason instanceof ApiError)) throw reason;
+    if (reason.code === "EXTERNAL_API_ERROR") providerError = reason;
+    else if (reason.code !== "PLACE_ADD_FAILED") throw reason;
   }
-  // The add endpoint saved the place, but could not fit it into its suggested route.
-  // Keep the existing order and let the manual-save endpoint validate the appended visit.
+  // Re-read the confirmed version before attempting a manual insertion.
   const latest = await getLatestItinerary(tripId);
   const alreadyIn = latest.draft.days.find((item) => item.visits.some((visit) => visit.placeId === placeId));
   if (alreadyIn?.date === date) return latest;
   if (alreadyIn) throw new Error("다른 일차에 이미 추가된 장소예요.");
   if (!latest.draft.days.some((item) => item.date === date)) throw new Error("일정의 날짜가 변경됐어요. 날짜를 다시 선택해 주세요.");
+  if (providerError) {
+    // The provider may have failed before resolving this place, or later while arranging it.
+    const saved = await getSavedPlaces(tripId);
+    if (!saved.places.some((place) => place.placeId === placeId && place.matchStatus === "MATCHED")) {
+      throw providerError;
+    }
+  }
   const days = latest.draft.days.map((item) => item.date !== date ? item : {
     ...item, visits: [...item.visits, { itemId: crypto.randomUUID(), placeId }],
   });

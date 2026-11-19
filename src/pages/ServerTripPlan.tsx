@@ -25,7 +25,7 @@ import { readPlanDay, readPlanOrigin, resumeTripPath, tripCommunityPath, tripPla
 import { apiTripToDraft, apiTripToSummary, companionLabels } from "../utils/serverTrip";
 import { editItineraryPlace, type ItineraryPlaceEdit } from "../utils/itineraryPlaceEdits";
 import { itineraryPlaceDetails, olderItinerary, type ItineraryPlaceDetails } from "../utils/itineraryPlaceDetails";
-import { dateLabel, distanceLabel, durationLabel, timeLabel } from "../utils/trip";
+import { dateLabel, distanceLabel, durationLabel, placeAsObject, timeLabel } from "../utils/trip";
 import { formatTripDetailDateRange, hasRegisteredImportedTrip, markImportedTripRegistered } from "../utils/importedTrip";
 import DirectTripBuilder from "../components/direct-trip/DirectTripBuilder";
 import CourseRouteMap from "../components/course-completion/CourseRouteMap";
@@ -412,7 +412,7 @@ function ServerTripPlan({ tripId, userId }: { tripId: number; userId: number }) 
       setMapDay(edit.day - 1);
       setNotice(`${edit.day}일차로 장소를 옮겼어요.`);
     } else {
-      setNotice(edit.kind === "remove" ? `${photoPlace.name}을 일정에서 뺐어요.` : "일정의 장소를 바꿨어요.");
+      setNotice(edit.kind === "remove" ? `${placeAsObject(photoPlace.name)} 일정에서 뺐어요.` : "일정의 장소를 바꿨어요.");
     }
     void reloadHistory().catch(() => undefined);
     void refreshInteractions().catch(() => setInteractionError("일행 의견을 불러오지 못했어요."));

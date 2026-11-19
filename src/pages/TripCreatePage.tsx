@@ -124,6 +124,7 @@ function AiTripCreatePage({
     move,
     back,
     prepareServerTrip,
+    recoverMissingDraft,
     startPlacesStep,
     generate,
   } = useTripCreate(trip, places, reservations);
@@ -149,6 +150,7 @@ function AiTripCreatePage({
         key={draft.tripId}
         tripId={Number(draft.tripId)}
         recommendationCity={draft.city}
+        onTripError={recoverMissingDraft}
         initialSelectedIds={draft.selectedPlaceIds}
         onSelectionChange={rememberPlaces}
         importView={importView}
@@ -176,6 +178,7 @@ function AiTripCreatePage({
         draft={draft}
         onChange={update}
         onGenerate={generate}
+        onTripError={recoverMissingDraft}
         error={error}
       />
     );

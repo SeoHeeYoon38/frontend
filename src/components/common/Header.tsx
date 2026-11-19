@@ -8,7 +8,7 @@ import logo from "../../assets/images/brand-dotlo-logo.png";
 import back from "../../assets/icons/nav-back.svg";
 import heart from "../../assets/figma/course-favorites.svg";
 import bell from "../../assets/icons/nav-notification.svg";
-import search from "../../assets/icons/search-default.svg";
+import searchIcon from "../../assets/icons/search-default.svg";
 import { routes } from "../../config/routes";
 import { courseFavoritesPath } from "../../utils/navigation";
 import * as S from "./Header.styled";
@@ -26,7 +26,8 @@ function Header({
   hideProgress = false,
   backDisabled = false,
 }: HeaderProps) {
-  const { search: courseCatalogSearch } = useLocation();
+  const { search } = useLocation();
+  const pastTrips = variant === "myTrips" && new URLSearchParams(search).get("tab") === "past";
   const [hasUnread, setHasUnread] = useState(false);
 
   useEffect(() => {
@@ -72,7 +73,7 @@ function Header({
             <img src={back} alt="" />
           </Link>
           <h1>코스 둘러보기</h1>
-          <Link to={courseFavoritesPath} state={{ courseCatalogSearch }} aria-label="찜 목록">
+          <Link to={courseFavoritesPath} state={{ courseCatalogSearch: search }} aria-label="찜 목록">
             <img src={heart} alt="" />
           </Link>
         </S.CourseHeader>
@@ -83,10 +84,10 @@ function Header({
       ) : variant === "myTrips" ? (
         <S.MyTripsHeader>
           <h1>마이트립</h1>
-          <Link to={`${routes.myTrips}?search=1`} aria-label="여행 검색">
-            <img src={search} alt="" />
+          <Link to={`${routes.myTrips}?${pastTrips ? "tab=past&" : ""}search=1`} aria-label="여행 검색">
+            <img src={searchIcon} alt="" />
           </Link>
-          <Link to={`${routes.myTrips}?create=1`} aria-label="새 여행 만들기">
+          <Link to={`${routes.myTrips}?${pastTrips ? "tab=past&" : ""}create=1`} aria-label="새 여행 만들기">
             <S.PlusIcon aria-hidden="true" />
           </Link>
         </S.MyTripsHeader>

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate, useNavigationType, useSearchParams } from "react-router";
 import type { TripDraft, TripPlace } from "../types/trip";
 import {
@@ -19,7 +19,7 @@ import { generateItinerary, getLatestItinerary } from "../api/itineraries";
 import { ApiError } from "../api/client";
 import { isApiEnabled } from "../api/config";
 import { hasAuthSession } from "../api/tokenStorage";
-import { confirmTrip } from "../api/trips";
+import { confirmTrip, isMissingTrip } from "../api/trips";
 import { saveFlights, saveRental, saveStays } from "../api/reservations";
 import type { ReservationResponse, TripResponse } from "../api/types";
 import { applyReservationsToDraft } from "../api/reservationAdapters";
@@ -58,7 +58,7 @@ async function latestItineraryOrNone(tripId: number, signal: AbortSignal) {
   try {
     return await getLatestItinerary(tripId, signal);
   } catch (reason) {
-    if (reason instanceof ApiError && reason.status === 404) return null;
+    if (reason instanceof ApiError && reason.code === "ITINERARY_NOT_FOUND") return null;
     throw reason;
   }
 }
@@ -129,11 +129,23 @@ function useTripCreate(
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState("");
   const [preparingTrip, setPreparingTrip] = useState(false);
+  const recoverMissingDraft = useCallback((reason: unknown) => {
+    if (trip || !isMissingTrip(reason)) return false;
+    // A deleted draft's place IDs and generation attempt belong to the old trip.
+    if (isServerTripId(draft.tripId)) clearGenerationAttempt(Number(draft.tripId));
+    const localId = crypto.randomUUID();
+    setDraft(current => ({ ...current, tripId: localId, places: [], selectedPlaceIds: [], source: "none" }));
+    setError("");
+    setParams({ step: "1" }, { replace: true });
+    window.scrollTo(0, 0);
+    return true;
+  }, [trip, draft.tripId, setParams]);
   const request = useRef<AbortController | null>(null);
   const requestLock = useRef(createRequestLock());
   const requested = Number(params.get("step") || 1);
   const bounded = [1, 2, 3].includes(requested) ? requested : 1;
-  const step = basicError(draft)
+  const needsServerDraft = isApiEnabled() && hasAuthSession() && !isServerTripId(draft.tripId);
+  const step = needsServerDraft || basicError(draft)
     ? 1
     : bounded === 3 && placesError(draft)
       ? 2
@@ -205,6 +217,7 @@ function useTripCreate(
       }
       move(2);
     } catch (reason) {
+      if (recoverMissingDraft(reason)) return;
       setError(
         reason instanceof Error
           ? reason.message
@@ -241,7 +254,10 @@ function useTripCreate(
         const finish = async (excludedPlaceIds?: string[]) => {
           setProgress(3);
           clearGenerationAttempt(tripId);
-          const confirmation = await confirmTrip(tripId, controller.signal).catch(() => null);
+          const confirmation = await confirmTrip(tripId, controller.signal).catch((reason: unknown) => {
+            if (isMissingTrip(reason)) throw reason;
+            return null;
+          });
           if (controller.signal.aborted) return;
           completed = true;
           try {
@@ -286,7 +302,8 @@ function useTripCreate(
                 await finish();
                 return;
               }
-            } catch {
+            } catch (lookupError) {
+              if (isMissingTrip(lookupError)) throw lookupError;
               // 결과 조회도 실패하면 다음 확인 때 같은 생성 요청을 보내지 않습니다.
             }
             setError("생성 결과를 아직 확인하지 못했어요. 잠시 후 다시 누르면 새 요청 없이 결과를 확인해요.");
@@ -316,7 +333,7 @@ function useTripCreate(
       }
       navigate(tripPlanPath("generated", tripDraft.tripId), { replace: true });
     } catch (reason) {
-      if (!controller.signal.aborted)
+      if (!controller.signal.aborted && !recoverMissingDraft(reason))
         setError(
           reason instanceof Error
             ? reason.message
@@ -348,6 +365,7 @@ function useTripCreate(
     move,
     back,
     prepareServerTrip,
+    recoverMissingDraft,
     startPlacesStep,
     generate,
   };

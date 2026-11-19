@@ -1,6 +1,5 @@
 import type {
   CourseDestination,
-  CourseTheme,
   TravelCourse,
 } from "../../types/course";
 import osaka from "../../assets/images/city-osaka.webp";
@@ -9,7 +8,6 @@ import kyoto from "../../assets/images/city-kyoto.webp";
 import fukuoka from "../../assets/images/city-fukuoka.webp";
 import bangkok from "../../assets/images/city-bangkok.webp";
 import danang from "../../assets/images/city-danang.webp";
-import castle from "../../assets/images/cover-osaka-castle.webp";
 import soyeon from "../../assets/images/profile-author-soyeon.png";
 import usagi from "../../assets/images/profile-author-usagi.png";
 import collector from "../../assets/images/profile-author-collector.png";
@@ -57,29 +55,6 @@ export const mockPopularCourses: TravelCourse[] = [
     author: "지우의 여행",
     image: tokyo,
     interests: ["도시 산책", "미식"],
-  },
-];
-export const mockCourseThemes: CourseTheme[] = [
-  {
-    id: "walk",
-    title: "골목 따라 도시 산책",
-    cities: ["교토", "도쿄", "가나자와"],
-    image: kyoto,
-    interest: "도시 산책",
-  },
-  {
-    id: "sights",
-    title: "명소부터 맛집까지",
-    cities: ["오사카", "후쿠오카"],
-    image: castle,
-    interest: "미식",
-  },
-  {
-    id: "sea",
-    title: "바다 보며 쉬는 여행",
-    cities: ["후쿠오카", "오키나와"],
-    image: fukuoka,
-    interest: "휴양",
   },
 ];
 export const mockTravelerCourses: TravelCourse[] = [

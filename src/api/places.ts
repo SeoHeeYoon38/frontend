@@ -1,4 +1,4 @@
-import { apiRequest, queryString } from "./client";
+import { ApiError, apiRequest, queryString } from "./client";
 import type {
   PlaceCandidate,
   PlaceCategoryCode,
@@ -126,11 +126,17 @@ export function importSharedList(
   });
 }
 
-export function enrichSavedPlaces(tripId: number, signal?: AbortSignal) {
-  return apiRequest<SavedPlaceListResponse>(
-    `/api/trips/${tripId}/places/enrich`,
-    { method: "POST", signal, timeoutMs: 120_000 },
-  );
+export async function enrichSavedPlaces(tripId: number, signal?: AbortSignal) {
+  try {
+    return await apiRequest<SavedPlaceListResponse>(
+      `/api/trips/${tripId}/places/enrich`,
+      { method: "POST", signal, timeoutMs: 120_000 },
+    );
+  } catch (reason) {
+    // Import has already persisted the rows. They can be matched manually if lookup is unavailable.
+    if (signal?.aborted || !(reason instanceof ApiError) || reason.code !== "EXTERNAL_API_ERROR") throw reason;
+    return getSavedPlaces(tripId, signal);
+  }
 }
 
 export function matchSavedPlace(

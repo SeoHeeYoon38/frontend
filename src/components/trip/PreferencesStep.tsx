@@ -90,10 +90,11 @@ interface PreferencesStepProps {
   draft: TripDraft;
   onChange: (draft: TripDraft) => void;
   onGenerate: (draft: TripDraft) => Promise<void>;
+  onTripError?: (reason: unknown) => boolean;
   error: string;
 }
 
-function PreferencesStep({ draft, onChange, onGenerate, error }: PreferencesStepProps) {
+function PreferencesStep({ draft, onChange, onGenerate, onTripError, error }: PreferencesStepProps) {
   const preferences = draft.preferences;
   const text = preferences.text;
   const excess = Math.max(0, text.length - promptLimit);
@@ -109,6 +110,7 @@ function PreferencesStep({ draft, onChange, onGenerate, error }: PreferencesStep
   const hydration = useRef<AbortController | null>(null);
   const submission = useRef(false);
   const attemptedPrompt = useRef<string | null>(null);
+  const handleTripLoadError = useEffectEvent((reason: unknown) => onTripError?.(reason));
 
   const applySavedPreferences = useEffectEvent((initial: PreferenceView | UserPreferenceView) => {
     if (initial.saved) {
@@ -126,7 +128,7 @@ function PreferencesStep({ draft, onChange, onGenerate, error }: PreferencesStep
       .then((saved) => saved.saved ? saved : getUserPreferences(signal))
       .then((saved) => { if (!signal.aborted) applySavedPreferences(saved); })
       .catch((reason: unknown) => {
-        if (!signal.aborted && !shouldUseMockFallback(reason)) {
+        if (!signal.aborted && !handleTripLoadError(reason) && !shouldUseMockFallback(reason)) {
           setAnalysisError(reason instanceof Error ? reason.message : "저장된 여행 취향을 불러오지 못했어요.");
         }
       })
@@ -180,7 +182,7 @@ function PreferencesStep({ draft, onChange, onGenerate, error }: PreferencesStep
       onChange({ ...draft, preferences: next });
       return next;
     }).catch((reason: unknown) => {
-      if (!controller.signal.aborted) {
+      if (!controller.signal.aborted && !onTripError?.(reason)) {
         setAnalysisError(reason instanceof Error ? reason.message : "여행 취향을 정리하지 못했어요. 다시 시도해 주세요.");
       }
       return null;
@@ -231,7 +233,7 @@ function PreferencesStep({ draft, onChange, onGenerate, error }: PreferencesStep
       }
       await onGenerate({ ...draft, preferences: analyzed });
     } catch (reason) {
-      setAnalysisError(reason instanceof Error ? reason.message : "여행 취향을 저장하지 못했어요. 다시 시도해 주세요.");
+      if (!onTripError?.(reason)) setAnalysisError(reason instanceof Error ? reason.message : "여행 취향을 저장하지 못했어요. 다시 시도해 주세요.");
     } finally {
       submission.current = false;
       setSubmitting(false);

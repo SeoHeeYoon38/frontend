@@ -23,7 +23,7 @@ const shareActions = [
   { label: "AirDrop", accessibilityLabel: "AirDrop으로 공유", icon: airDropIcon, method: "native" },
   { label: "메시지", accessibilityLabel: "메시지로 공유", icon: messagesIcon, method: "sms" },
   { label: "카카오톡", accessibilityLabel: "카카오톡으로 공유", icon: kakaoIcon, method: "kakao" },
-  { label: "메일", accessibilityLabel: "메일로 공유", icon: mailIcon, method: "mail" },
+  { label: "Mail", accessibilityLabel: "메일로 공유", icon: mailIcon, method: "mail" },
 ] as const;
 
 export default function ServerInviteSheet({ tripId, trip, onClose, publicShare = false }: {
@@ -150,10 +150,11 @@ export default function ServerInviteSheet({ tripId, trip, onClose, publicShare =
     }
   }
 
+  const Sheet = publicShare ? TripSheet : S.FriendInviteSheet;
   return (
-    <TripSheet title={title} onClose={onClose} minHeight={publicShare ? undefined : 412}>
+    <Sheet title={title} onClose={onClose} minHeight={publicShare ? undefined : 412}>
       <S.InviteContent ref={inviteContent}>
-        <p>{publicShare ? "링크를 받은 사람은 로그인 없이 일정을 볼 수 있어요." : "링크를 받은 친구는 일정을 함께 볼 수 있어요."}</p>
+        <p>{publicShare ? "링크를 받은 사람은 로그인 없이 일정을 볼 수 있어요." : "링크를 받은 친구는 일정을 함께 볼 수 있어요"}</p>
         {loadFailed ? (
           <>
             <p role="alert">{linkLabel}를 만들지 못했어요.</p>
@@ -165,12 +166,12 @@ export default function ServerInviteSheet({ tripId, trip, onClose, publicShare =
         ) : link ? (
           <>
             <S.LinkBox>
-              <img src={linkIcon} alt="" />
+              {publicShare && <img src={linkIcon} alt="" />}
               <span title={link}>{link}</span>
-              <button type="button" onClick={() => void shareLink("copy")}>{copiedAt ? "복사됨" : "링크 복사"}</button>
+              <button type="button" data-copied={copiedAt > 0 || undefined} onClick={() => void shareLink("copy")}>{copiedAt ? "복사됨" : "링크 복사"}</button>
             </S.LinkBox>
-            <S.ShareSection>
-              <h3>공유하기</h3>
+            <S.ShareSection aria-label="공유하기">
+              {publicShare && <h3>공유하기</h3>}
               <S.ShareList>
                 {shareActions.map(({ label, accessibilityLabel, icon, method }) => <li key={label}>
                   <button type="button" aria-label={accessibilityLabel} disabled={method === "kakao" && kakaoLoading}
@@ -197,6 +198,6 @@ export default function ServerInviteSheet({ tripId, trip, onClose, publicShare =
           </>
         ) : <p role="status">{linkLabel}를 만들고 있어요.</p>}
       </S.InviteContent>
-    </TripSheet>
+    </Sheet>
   );
 }

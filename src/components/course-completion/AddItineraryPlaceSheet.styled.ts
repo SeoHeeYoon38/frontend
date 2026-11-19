@@ -6,6 +6,7 @@ import { Primary } from "../trip/Trip.styled";
 export const Sheet = styled(TripSheet)<{ $searching: boolean }>`
   --sheet-handle-top: 10px;
   --sheet-handle-color: #d1d1d6;
+  max-height: calc(100dvh - 24px);
 
   > ${SheetHeader} {
     padding: 37px 0 14px;
