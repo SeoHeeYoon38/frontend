@@ -3,18 +3,18 @@ import TripSheet from "../common/TripSheet";
 import { SheetBody, SheetFooter, SheetHeader } from "../common/TripSheet.styled";
 import { Primary } from "../trip/Trip.styled";
 
-export const Sheet = styled(TripSheet)`
+export const Sheet = styled(TripSheet)<{ $searching: boolean }>`
   --sheet-handle-top: 10px;
   --sheet-handle-color: #d1d1d6;
 
   > ${SheetHeader} {
     padding: 37px 0 14px;
     h2 { font-size: 22px; line-height: 30px; letter-spacing: -0.11px; }
-    button { position: absolute; right: -7px; width: 30px; height: 30px; }
+    button { position: absolute; right: -8px; width: 30px; height: 30px; }
   }
 
-  > ${SheetBody} { overflow: hidden; }
-  > ${SheetFooter} { padding: 14px 0 max(24px, env(safe-area-inset-bottom)); }
+  > ${SheetBody} { margin-inline: -20px; padding-inline: 20px; overflow: hidden; }
+  > ${SheetFooter} { padding: 14px 0 max(${({ $searching }) => $searching ? 28 : 24}px, env(safe-area-inset-bottom)); }
 `;
 
 export const Content = styled.div`
@@ -36,11 +36,13 @@ export const Search = styled.div`
   background: #f3f5fa;
 
   &:focus-within, &[data-query="true"] { box-shadow: inset 0 0 0 1.5px #090738; }
+  &[data-query="true"] { padding-inline: 15.5px; }
 
   > input {
     flex: 1;
     min-width: 0;
     border: 0;
+    padding: 0;
     outline: 0;
     background: none;
     color: #1a1a1a;
@@ -50,13 +52,14 @@ export const Search = styled.div`
   }
 
   > input::placeholder { color: #8a8a8e; }
-  > button { display: grid; flex: 0 0 24px; height: 30px; place-items: center; }
+  > button { position: relative; display: grid; flex: 0 0 18px; height: 30px; place-items: center; }
+  > button::after { content: ""; position: absolute; inset: 0 -6px; }
 `;
 
 export const Tabs = styled.div`
   display: flex;
   flex-shrink: 0;
-  align-items: stretch;
+  align-items: flex-start;
   gap: 22px;
   margin: 0 -20px 12px;
   padding: 0 20px;
@@ -67,10 +70,10 @@ export const Tabs = styled.div`
   > button {
     display: inline-flex;
     flex-shrink: 0;
+    min-width: 26px;
     align-items: center;
-    gap: 6px;
+    gap: 5px;
     padding: 6px 0 12px;
-    border-bottom: 2px solid transparent;
     color: #8a8a8e;
     font-size: 15px;
     line-height: 22px;
@@ -78,22 +81,24 @@ export const Tabs = styled.div`
     white-space: nowrap;
   }
 
-  > button[aria-pressed="true"] { color: #1a1a1a; border-bottom-color: #1a1a1a; font-weight: 700; }
-  img { width: 12px; height: 12px; object-fit: contain; }
+  > button[data-saved] { min-width: 56px; }
+  > button[data-saved][aria-pressed="true"] { min-width: 75px; }
+  > button[aria-pressed="true"] { color: #1a1a1a; border-bottom: 2px solid #1a1a1a; font-weight: 700; }
+  img { width: 14px; height: 14px; object-fit: contain; }
 `;
 
 export const Caption = styled.p`
   display: flex;
   flex-shrink: 0;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   margin: 0 0 4px;
   color: #8a8a8e;
   font-size: 13px;
   line-height: 18px;
   font-weight: 700;
 
-  img { width: 12px; height: 12px; object-fit: contain; }
+  img { width: 14px; height: 14px; object-fit: contain; }
   b { color: #0079c2; }
 `;
 
@@ -123,13 +128,16 @@ export const Row = styled.div`
   text-align: left;
 
   &[aria-pressed="true"] {
+    min-height: 75px;
+    padding: 10.5px 16.5px 10.5px 10.5px;
     border-color: #090738;
     box-shadow: inset 0 0 0 0.5px #090738;
     background: #f3f5fa;
   }
 
   &[data-scheduled="true"] {
-    border-color: transparent;
+    min-height: 72px;
+    border: 0;
     background: #f3f5fa;
     opacity: 0.5;
   }

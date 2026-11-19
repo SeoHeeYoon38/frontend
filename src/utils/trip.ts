@@ -294,3 +294,7 @@ export function timeLabel(value: string) {
 }
 
 export const travelModeLabels = { WALK: "도보", TRANSIT: "대중교통", DRIVE: "차량" } as const;
+
+export function distanceLabel(meters: number) {
+  return meters < 1000 ? `${Math.round(meters)}m` : `${(meters / 1000).toFixed(1)}km`;
+}

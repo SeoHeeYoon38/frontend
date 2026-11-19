@@ -82,7 +82,7 @@
   right: 0;
   left: 0;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 14px;
   height: 46px;
   padding: 10px 20px;
@@ -110,6 +110,11 @@
   display: block;
 }
 
+.course-navigation :is(button, a):first-child {
+  width: 22px;
+  height: 22px;
+}
+
 .course-navigation a[aria-label="함께하는 여행 채팅"] img,
 .course-navigation button[aria-label="함께하는 여행 채팅"] img {
   width: 26px;
@@ -119,7 +124,7 @@
 
 .course-hero__title {
   position: absolute;
-  bottom: 20px;
+  bottom: 25px;
   left: 21px;
   display: flex;
   flex-direction: column;
@@ -131,14 +136,15 @@
 .course-hero__title > span {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   margin-bottom: 10px;
-  padding: 4px 10px;
+  padding: 4px 10px 4px 8px;
   border-radius: 999px;
   color: #fff;
   background: rgb(255 255 255 / 22%);
   backdrop-filter: blur(6px);
   font-size: 11px;
+  line-height: 15px;
   font-weight: 700;
 }
 
@@ -151,7 +157,7 @@
 .course-hero__invite {
   position: absolute;
   right: 20px;
-  bottom: 25px;
+  bottom: 23px;
   display: flex;
   align-items: center;
   gap: 4px;
@@ -170,7 +176,6 @@
 .course-hero__invite img {
   width: 16px;
   height: 16px;
-  filter: brightness(0) invert(1);
 }
 
 .course-hero__members {
@@ -198,24 +203,47 @@
 }
 
 .course-hero__members img {
+  display: block;
+  width: 24px;
+  height: 24px;
+  margin: 1px;
+  object-fit: contain;
+}
+
+.course-hero__members .course-hero__member-invite {
+  background: rgb(255 255 255 / 22%);
+  backdrop-filter: blur(7px);
+}
+
+.course-hero__member-invite :is(a, button) {
+  display: grid;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  padding: 0;
+  place-items: center;
+  background: transparent;
+  cursor: pointer;
+}
+
+.course-hero__member-invite img {
+  width: 14px;
+  height: 14px;
+  margin: 0;
 }
 
 .course-hero__title h1 {
   margin: 0;
   font-size: 26px;
-  line-height: 1.35;
+  line-height: 35px;
+  letter-spacing: -0.26px;
 }
 
 .course-hero__title p {
   margin: 4px 0 0;
   font-size: 14px;
-  line-height: 1.6;
+  line-height: 20px;
 }
 
-.course-hero__title--with-action h1,
 .course-hero__title--with-action p {
   max-width: calc(100% - 102px);
 }
@@ -269,9 +297,10 @@
 }
 
 .ai-summary__bubble b {
+  display: block;
   color: #0079c2;
   font-size: 12px;
-  line-height: 1;
+  line-height: 17px;
 }
 
 .ai-summary__bubble p {
@@ -279,7 +308,16 @@
   color: #090738;
   font-size: 14px;
   font-weight: 700;
-  line-height: 1.5;
+  line-height: 20px;
+}
+
+.server-trip-plan .ai-summary {
+  min-height: 91px;
+  margin-bottom: 8px;
+}
+
+.server-trip-plan .ai-summary__bubble {
+  align-self: stretch;
 }
 
 .course-section,
@@ -293,7 +331,7 @@
 .day-course h2 {
   margin: 0;
   font-size: 17px;
-  line-height: 1.4;
+  line-height: 24px;
 }
 
 .course-facts {
@@ -315,12 +353,12 @@
 
 .course-fact img {
   display: block;
-  margin-bottom: 4px;
+  margin-bottom: 8px;
 }
 
 .course-fact strong {
   font-size: 15px;
-  line-height: 1.4;
+  line-height: 22px;
   text-align: center;
   overflow-wrap: anywhere;
 }
@@ -328,41 +366,50 @@
 .course-fact span {
   color: #8a8a8e;
   font-size: 12px;
-  line-height: 1.4;
+  line-height: 17px;
 }
 
 .course-tabs {
   display: flex;
   gap: 24px;
   align-items: flex-end;
-  border-bottom: 1px solid #eeeef2;
+  overflow-x: auto;
+  scrollbar-width: none;
+  border-bottom: 1px solid #e4e6ec;
 }
 
 .course-tabs button {
   display: flex;
   gap: 5px;
   align-items: baseline;
-  min-width: 0;
+  flex: 0 0 auto;
   padding: 6px 0 11px;
-  border-bottom: 2px solid transparent;
-  color: #9a9aa6;
+  border: 0;
+  color: #8a8a8e;
   background: transparent;
   white-space: nowrap;
   cursor: pointer;
 }
 
 .course-tabs button.is-active {
-  border-color: #1a1a1a;
+  border-bottom: 2px solid #1a1a1a;
   color: #1a1a1a;
 }
 
 .course-tabs strong {
   font-size: 15px;
+  line-height: 22px;
+  font-weight: 500;
+}
+
+.course-tabs .is-active strong {
+  font-weight: 700;
 }
 
 .course-tabs span {
-  color: #b4b4be;
+  color: #b4b5bd;
   font-size: 12px;
+  line-height: 17px;
 }
 
 .course-tabs .is-active span {
@@ -527,6 +574,11 @@ button.course-map__number-pin {
 
 .day-course__header h2 {
   font-size: 16px;
+  line-height: 22px;
+}
+
+.server-trip-plan .day-course__header {
+  margin-top: 8px;
 }
 
 .day-course__header p {
@@ -536,6 +588,7 @@ button.course-map__number-pin {
   margin: 0;
   color: #8a8a8e;
   font-size: 13px;
+  line-height: 18px;
   font-weight: 500;
 }
 
@@ -664,7 +717,7 @@ button.course-map__number-pin {
   display: block;
   overflow: hidden;
   font-size: 15px;
-  line-height: 1.4;
+  line-height: 22px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -677,13 +730,15 @@ button.course-map__number-pin {
   margin-top: 4px;
   color: #8a8a8e;
   font-size: 12px;
-  line-height: 1.4;
+  line-height: 17px;
   white-space: nowrap;
 }
 
 .place-card__meta img {
   display: block;
   flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
 }
 
 .place-card__meta b {
@@ -699,7 +754,7 @@ button.course-map__number-pin {
   display: flex;
   gap: 10px;
   align-items: center;
-  margin-top: 1px;
+  margin-top: 4px;
   color: #8a8a8e;
   font-size: 12px;
   line-height: 17px;
@@ -830,24 +885,6 @@ button.course-map__number-pin {
     width: auto;
   }
 
-  .course-content {
-    padding-right: 14px;
-    padding-left: 14px;
-  }
-
-  .course-tabs {
-    gap: 0;
-    justify-content: space-between;
-  }
-
-  .place-card {
-    gap: 8px;
-    padding-left: 8px;
-  }
-
-  .place-card__handle {
-    width: 20px;
-  }
 }
 .travel-mode-connection {
   display: flex;
@@ -860,10 +897,20 @@ button.course-map__number-pin {
   display: flex;
   align-items: center;
   gap: 5px;
-  padding: 6px 10px;
+  padding: 5px 10px;
   border-radius: 20px;
-  background: #f1f2f7;
+  color: #5c5c63;
+  background: #f3f5fa;
   font-size: 12px;
+  font-weight: 700;
+  line-height: 17px;
+}
+
+.travel-mode-connection small {
+  color: #8a8a8e;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 17px;
 }
 
 .travel-mode-connection button img {

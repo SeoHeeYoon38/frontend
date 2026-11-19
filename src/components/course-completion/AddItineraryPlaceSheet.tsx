@@ -8,7 +8,7 @@ import searchIcon from "../../assets/course-completion/picker-search.svg";
 import clearIcon from "../../assets/course-completion/picker-clear.svg";
 import selectedIcon from "../../assets/course-completion/picker-selected.svg";
 import unselectedIcon from "../../assets/course-completion/picker-unselected.svg";
-import googleMapsLogo from "../../assets/images/brand-google-maps.webp";
+import googleMapsLogo from "../../assets/figma/course-map-google.png";
 import { straightLineMeters } from "../../utils/googleMaps";
 import { savedPlacesForTripCity } from "../../utils/tripPlaces";
 import { PlaceThumbnail } from "../common/PlacePhoto";
@@ -155,6 +155,13 @@ export default function AddItineraryPlaceSheet({
     filtered.sort((a, b) => (nearestByPlace.get(a.placeId)?.meters ?? Infinity) - (nearestByPlace.get(b.placeId)?.meters ?? Infinity));
   }
   const idsToSave = selected.filter((placeId) => !scheduledDays.has(placeId));
+  // The reference shows five full cards (three for search). A selected card's
+  // outline adds one pixel; an already-scheduled card has no outline.
+  const previewRows = filtered.slice(0, term ? 3 : 5);
+  const restingHeight = previewRows.reduce((height, place) => {
+    if (scheduledDays.has(place.placeId)) return height - 2;
+    return selected.includes(place.placeId) ? height + 1 : height;
+  }, term ? 501 : 716);
 
   function toggle(placeId: string) {
     setError("");
@@ -215,7 +222,8 @@ export default function AddItineraryPlaceSheet({
       title={replacement ? "비슷한 곳으로 바꾸기" : `${day}일차에 장소 추가`}
       variant="course"
       contentGap={0}
-      courseHeight={term ? 502 : 718}
+      $searching={Boolean(term)}
+      courseHeight={restingHeight}
       closeIcon={closeIcon}
       onClose={onClose}
       closeDisabled={pending}
@@ -236,7 +244,7 @@ export default function AddItineraryPlaceSheet({
         </S.Search>
         {!term && <S.Tabs aria-label="장소 분류">
           {tabs.map(([id, label]) => (
-            <button key={id} type="button" aria-pressed={tab === id} disabled={pending} onClick={() => setTab(id)}>
+            <button key={id} type="button" data-saved={id === "saved" || undefined} aria-pressed={tab === id} disabled={pending} onClick={() => setTab(id)}>
               {id === "saved" && tab === "saved" && <img src={googleMapsLogo} alt="" />}
               {label}
             </button>

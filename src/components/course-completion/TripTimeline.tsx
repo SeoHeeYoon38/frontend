@@ -4,7 +4,9 @@ import dragHandleIcon from "../../assets/course-completion/drag-handle.svg";
 import removeIcon from "../../assets/course-completion/remove.svg";
 import foodIcon from "../../assets/course-completion/category-food.svg";
 import cafeIcon from "../../assets/course-completion/category-cafe.svg";
-import sightIcon from "../../assets/course-completion/category-airport.svg";
+import sightIcon from "../../assets/icons/category-sightseeing-small.svg";
+import shoppingIcon from "../../assets/icons/category-shopping.svg";
+import placeIcon from "../../assets/course-completion/icon-pin.svg";
 import likeIcon from "../../assets/course-community/like.svg";
 import commentIcon from "../../assets/course-community/comment.svg";
 
@@ -19,6 +21,13 @@ interface TimelineVisit {
   connection?: ReactNode;
   reactions?: { likeCount: number; commentCount: number };
 }
+
+const categoryIcons: Record<string, string> = {
+  맛집: foodIcon,
+  카페: cafeIcon,
+  쇼핑: shoppingIcon,
+  명소: sightIcon,
+};
 
 export default function TripTimeline({ day, visits, onOpenPlace, onEdit, shared = false }: {
   day: number;
@@ -44,7 +53,7 @@ export default function TripTimeline({ day, visits, onOpenPlace, onEdit, shared 
               tabIndex={photoPlaceId && onOpenPlace ? 0 : undefined}
               onClick={() => photoPlaceId && onOpenPlace?.(id, photoPlaceId, name)}
               onKeyDown={(event) => {
-                if (photoPlaceId && onOpenPlace && (event.key === "Enter" || event.key === " ")) {
+                if (event.target === event.currentTarget && photoPlaceId && onOpenPlace && (event.key === "Enter" || event.key === " ")) {
                   event.preventDefault();
                   onOpenPlace(id, photoPlaceId, name);
                 }
@@ -58,7 +67,7 @@ export default function TripTimeline({ day, visits, onOpenPlace, onEdit, shared 
                 {added && <span className="place-card__added">새로 추가</span>}
                 <strong>{name}</strong>
                 <div className="place-card__meta">
-                  <img src={category.includes("카페") ? cafeIcon : category.includes("맛집") ? foodIcon : sightIcon} alt="" />
+                  <img src={categoryIcons[category] ?? placeIcon} alt="" />
                   <b>{category}</b>
                   {(timing || address) && <span className="place-card__divider" />}
                   <span>{timing || address}</span>

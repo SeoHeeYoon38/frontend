@@ -11,7 +11,7 @@ import { PlaceThumbnail } from "../common/PlacePhoto";
 import SheetHandle from "../common/SheetHandle";
 import CourseRouteMap, { type RouteMapPlace } from "../course-completion/CourseRouteMap";
 import { straightLineMeters } from "../../utils/googleMaps";
-import { dateLabel } from "../../utils/trip";
+import { dateLabel, distanceLabel } from "../../utils/trip";
 
 export interface CourseMapStop extends RouteMapPlace {
   category?: string;
@@ -43,10 +43,6 @@ const sampleStops = [
   { id: "yasaka", x: 188, y: 436, leg: sampleLeg3, detail: "해 질 무렵 골목 끝에 보이는 오층탑" },
   { id: "gion", x: 89, y: 290, detail: "저녁 등불이 켜진 전통 거리 산책" },
 ];
-
-function distanceLabel(meters: number) {
-  return meters < 1000 ? `${Math.round(meters)}m` : `${(meters / 1000).toFixed(1)}km`;
-}
 
 export default function CourseMapScreen({ title, city, days, tripId, photoCourseId, sampleMap, activeDay, initialSelectedId, onBack, onDayChange, onOpenPlace }: CourseMapScreenProps) {
   const [selectedId, setSelectedId] = useState(initialSelectedId);

@@ -448,8 +448,8 @@ export const Facts = styled.div`
     gap: 4px;
   }
 
-  img { width: 24px; height: 24px; margin-bottom: 4px; }
-    strong { color: #1a1a1a; font-size: 15px; line-height: 22px; text-align: center; overflow-wrap: anywhere; }
+  img { width: 24px; height: 24px; margin-bottom: 8px; }
+  strong { color: #1a1a1a; font-size: 15px; line-height: 22px; text-align: center; overflow-wrap: anywhere; }
   span { color: #8a8a8e; font-size: 12px; line-height: 17px; }
 `;
 
@@ -638,8 +638,9 @@ export const ScheduleHeader = styled.div`
 
   > div {
     display: flex;
+    width: 100%;
     align-items: center;
-    gap: 7px;
+    gap: 8px;
   }
 
   strong {
@@ -651,7 +652,11 @@ export const ScheduleHeader = styled.div`
   span {
     color: #8a8a8e;
     font-size: 13px;
+    line-height: 18px;
   }
+  strong + span { margin-left: auto; }
+  span + span { display: inline-flex; align-items: center; gap: 8px; }
+  span + span::before { content: ""; width: 1px; height: 10px; background: #d1d1d6; }
 
   button {
     display: flex;
@@ -677,20 +682,22 @@ export const Timeline = styled.ol`
   > li {
     position: relative;
     padding-left: 38px;
-    margin-bottom: 12px;
   }
 
   > li:focus-visible { outline: 2px solid #090738; outline-offset: 3px; }
 
-  > li:not(:last-child)::before {
+  > li:not(:only-child)::before {
     content: "";
     position: absolute;
     left: 12px;
-    top: 27px;
-    bottom: -12px;
+    top: 0;
+    bottom: 0;
     width: 2px;
-    border-left: 2px dashed #d4d4df;
+    background: #d1d1d6;
   }
+  > li:last-child:not(:first-child)::before { height: 26px; }
+  > li:last-child:not(:first-child) { padding-bottom: 4px; }
+  > li + li > span:first-child { top: 26px; }
 `;
 
 export const TimelineNumber = styled.span`
@@ -817,12 +824,28 @@ export const AddedToast = styled.div`
 `;
 
 export const TravelRow = styled.div`
-  min-height: 31px;
+  min-height: 47px;
   display: flex;
   align-items: center;
-  padding-left: 13px;
+  gap: 8px;
+  padding: 10px 0 10px 4px;
   color: ${muted};
-  font-size: 10px;
+  font-size: 12px;
+  line-height: 17px;
+
+  .direct-leg-mode {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 10px;
+    border-radius: 99px;
+    color: #5c5c63;
+    background: #f3f5fa;
+    font-size: inherit;
+    line-height: inherit;
+    font-weight: 700;
+  }
+  img { width: 16px; height: 16px; }
 `;
 
 export const SearchHeader = styled.header`
