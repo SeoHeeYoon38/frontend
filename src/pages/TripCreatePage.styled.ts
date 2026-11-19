@@ -48,6 +48,13 @@ export const GenerationCopy = styled.div`
     letter-spacing: -0.11px;
     margin: 0;
   }
+
+  p {
+    margin: 12px 0 0;
+    color: #646472;
+    font-size: 14px;
+    line-height: 20px;
+  }
 `;
 export const GenerationIllustration = styled.img`
   flex-shrink: 0;

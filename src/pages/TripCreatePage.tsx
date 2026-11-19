@@ -128,6 +128,13 @@ function AiTripCreatePage({
     startPlacesStep,
     generate,
   } = useTripCreate(trip, places, reservations);
+  const [showGenerationWait, setShowGenerationWait] = useState(false);
+
+  useEffect(() => {
+    if (!generating) return;
+    const timeout = window.setTimeout(() => setShowGenerationWait(true), 30_000);
+    return () => window.clearTimeout(timeout);
+  }, [generating]);
 
   function rememberPlaces(saved: SavedPlaceResponse[]) {
     const places = saved.map((place) => savedPlaceToTripPlace(place, draft.city));
@@ -177,7 +184,10 @@ function AiTripCreatePage({
       <PreferencesStep
         draft={draft}
         onChange={update}
-        onGenerate={generate}
+        onGenerate={(nextDraft) => {
+          setShowGenerationWait(false);
+          return generate(nextDraft);
+        }}
         onTripError={recoverMissingDraft}
         error={error}
       />
@@ -193,6 +203,9 @@ function AiTripCreatePage({
             <br />
             만들고 있어요
           </h1>
+          {showGenerationWait && (
+            <p>일정을 만들고 이동 시간과 영업시간을 확인하고 있어요. 조금 더 걸릴 수 있어요.</p>
+          )}
         </S.GenerationCopy>
         <S.GenerationSteps>
           {phases.map((phase, index) => (
