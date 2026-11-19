@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router";
 import SheetHandle from "../components/common/SheetHandle";
-import { onboardingPreferencesToInput } from "../api/adapters";
+import { hotSpringPreference, onboardingPreferencesToInput } from "../api/adapters";
 import {
   canStartGoogleLogin,
   completeSignup,
@@ -96,7 +96,7 @@ const preferenceOptions = [
   "야경",
   "사진 명소",
   "액티비티",
-  "온천과 휴식",
+  hotSpringPreference,
   "골목 산책",
 ];
 

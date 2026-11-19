@@ -20,14 +20,16 @@ export function reorderVisit(ids: string[], itemId: string, offset: -1 | 1) {
 export function editedItineraryDays(
   dates: string[],
   days: Record<number, string[]>,
-  places: Record<string, { visit: ItineraryVisitInput }>,
+  places: Record<string, { visit: ItineraryVisitInput; travelModeFrom?: string }>,
 ): ItineraryDayInput[] {
-  return dates.map((date, index) => ({
-    date,
-    visits: (days[index + 1] ?? []).map((id) => {
+  return dates.map((date, index) => {
+    const ids = days[index + 1] ?? [];
+    const visits = ids.map((id, position) => {
       const place = places[id];
       if (!place) throw new Error("편집한 장소 정보를 찾지 못했어요. 여행 일정을 다시 열어 주세요.");
-      return { ...place.visit };
-    }),
-  }));
+      const from = ids[position - 1] ?? `@${date}`;
+      return place.travelModeFrom === from ? { ...place.visit } : { ...place.visit, travelMode: null };
+    });
+    return { date, visits };
+  });
 }

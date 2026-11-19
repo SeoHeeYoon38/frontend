@@ -95,6 +95,19 @@ test("온보딩 관심사를 사용자 기본 취향 요청으로 변환한다",
   );
 });
 
+test("온천과 휴식은 단독 선택과 전체 선택 모두 취향 메모에 한 번만 담긴다", () => {
+  const hotSpring = onboardingPreferencesToInput(["온천과 휴식", "온천과 휴식"]);
+  assert.deepEqual(hotSpring.interests, []);
+  assert.deepEqual(hotSpring.notes, ["온천과 휴식"]);
+
+  const all = onboardingPreferencesToInput([
+    "맛집 탐방", "카페 투어", "자연 풍경", "역사와 문화", "쇼핑",
+    "야경", "사진 명소", "액티비티", "온천과 휴식", "골목 산책",
+  ]);
+  assert.deepEqual(all.interests, ["FOOD", "CAFE", "NATURE", "CULTURE", "SHOPPING", "NIGHTLIFE", "SIGHTSEEING", "ACTIVITY"]);
+  assert.deepEqual(all.notes, ["온천과 휴식"]);
+});
+
 test("사용자 기본 취향 응답을 여행 취향 화면 모델로 재사용한다", () => {
   const preferences = preferenceResultToDraft(
     {
@@ -104,7 +117,7 @@ test("사용자 기본 취향 응답을 여행 취향 화면 모델로 재사용
         dayStart: "LATE",
         interests: ["CAFE", "NATURE"],
         avoid: [],
-        notes: [],
+        notes: ["온천과 휴식"],
       },
       chips: [
         { type: "PACE", value: "RELAXED", label: "여유롭게" },
@@ -122,6 +135,7 @@ test("사용자 기본 취향 응답을 여행 취향 화면 모델로 재사용
   assert.deepEqual(preferences.tastes, ["카페", "자연"]);
   assert.deepEqual(preferences.pace, ["여유롭게", "적게 걷기", "늦게 시작"]);
   assert.equal(preferences.analyzed, true);
+  assert.deepEqual(preferences.apiProfile?.notes, ["온천과 휴식"]);
 });
 
 test("백엔드 코스 목록을 홈과 코스 둘러보기 화면 모델로 변환한다", () => {

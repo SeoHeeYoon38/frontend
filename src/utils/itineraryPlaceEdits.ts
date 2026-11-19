@@ -1,4 +1,4 @@
-import type { ItineraryDayInput } from "../api/types.ts";
+import type { ItineraryDayInput, ItineraryVisitInput } from "../api/types.ts";
 
 export type ItineraryPlaceEdit =
   | { kind: "remove" }
@@ -10,13 +10,21 @@ export function editItineraryPlace(days: ItineraryDayInput[], itemId: string, ed
   const visit = source?.visits.find((item) => item.itemId === itemId);
   if (!source || !visit) throw new Error("현재 일정에서 이 장소를 찾지 못했어요. 일정을 다시 열어 주세요.");
 
+  // A day's first leg comes from that day's starting point. Other legs come from the previous visit.
+  const origins = new Map(days.flatMap((day) => day.visits.map((item, index) =>
+    [item, day.visits[index - 1] ?? day.date] as const)));
+  function withVisits(day: ItineraryDayInput, visits: ItineraryVisitInput[]): ItineraryDayInput {
+    return { ...day, visits: visits.map((item, index) => origins.get(item) === (visits[index - 1] ?? day.date)
+      ? item : { ...item, travelMode: null }) };
+  }
+
   if (edit.kind === "replace") {
     if (source.visits.some((item) => item.placeId === edit.placeId)) {
       throw new Error("이미 이날 일정에 있는 장소예요.");
     }
-    return days.map((day) => day === source ? { ...day, visits: day.visits.map((item) =>
+    return days.map((day) => day === source ? withVisits(day, day.visits.map((item) =>
       item.itemId === itemId ? { ...item, itemId: edit.itemId, placeId: edit.placeId } : item,
-    ) } : day);
+    )) : day);
   }
 
   const target = edit.kind === "move" ? days[edit.day - 1] : undefined;
@@ -25,8 +33,8 @@ export function editItineraryPlace(days: ItineraryDayInput[], itemId: string, ed
   }
 
   return days.map((day) => {
-    if (day === source) return { ...day, visits: day.visits.filter((item) => item.itemId !== itemId) };
-    if (day === target) return { ...day, visits: [...day.visits, visit] };
+    if (day === source) return withVisits(day, day.visits.filter((item) => item.itemId !== itemId));
+    if (day === target) return withVisits(day, [...day.visits, visit]);
     return day;
   });
 }

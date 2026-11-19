@@ -28,4 +28,9 @@ test("날짜 추천의 주요 오류를 구분하고 일반 오류 메시지를 
   assert.match(placeDayError({ code: "STAY_REQUIRED" }), /숙소/);
   assert.match(placeDayError({ code: "ITINERARY_NOT_FOUND" }), /먼저 저장/);
   assert.equal(placeDayError(new Error("외부 서비스 오류")), "외부 서비스 오류");
+  assert.equal(placeDayError({ code: "PLACE_ADD_FAILED", message: "숙소 체크인 전에 방문을 배치할 수 없습니다." }),
+    "숙소 체크인 전에 방문을 배치할 수 없습니다.");
+  assert.match(placeDayError({ status: 409, code: "ITINERARY_VERSION_CONFLICT" }), /최신 일정/);
+  assert.match(placeDayError({ status: 502, code: "EXTERNAL_API_ERROR" }), /다시 시도/);
+  assert.match(placeDayError({ status: 500, code: "INTERNAL_SERVER_ERROR" }), /다시 시도/);
 });

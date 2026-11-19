@@ -4,6 +4,7 @@ import type {
   TripPlace,
   Stay,
 } from "../types/trip";
+import type { PlaceCategoryCode } from "../api/types";
 
 export const DRAFT_KEY = "dotlo:trip-draft:v1";
 export const companions: Companion[] = ["혼자", "친구", "연인", "가족"];
@@ -289,6 +290,13 @@ export function readDraft(value: string | null): TripDraft {
           !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(f.departure))
       )
         return emptyDraft();
+    // Drafts saved by older editors could include OTHER, which the preference API rejects.
+    if (d.preferences.apiProfile) {
+      const selectable = (code: PlaceCategoryCode) => code !== "OTHER";
+      d.preferences.apiProfile.interests = d.preferences.apiProfile.interests.filter(selectable);
+      d.preferences.apiProfile.avoid = d.preferences.apiProfile.avoid.filter(selectable);
+      d.preferences.tastes = d.preferences.tastes.filter((label) => label !== "기타");
+    }
     return {
       ...d,
       selectedPlaceIds: d.selectedPlaceIds.filter((id) =>

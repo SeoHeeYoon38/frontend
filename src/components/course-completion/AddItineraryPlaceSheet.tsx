@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { addPlaceOnDate, getLatestItinerary } from "../../api/itineraries";
+import { addPlaceOnDate, reloadAfterPlaceAddError } from "../../api/itineraries";
 import { getNearbyPlaces, getPopularPlaces, getSavedPlaces, searchPlaces } from "../../api/places";
 import { getTripCity } from "../../api/trips";
 import type { ItineraryVersionView, PlaceCategoryCode, SavedPlaceResponse } from "../../api/types";
@@ -91,12 +91,14 @@ export default function AddItineraryPlaceSheet({
   const [error, setError] = useState("");
   const [attempt, setAttempt] = useState(0);
   const [addedCount, setAddedCount] = useState(0);
-  const saving = useRef(false);
+  const saving = useRef<AbortController | null>(null);
   const searchInput = useRef<HTMLInputElement>(null);
   const term = query.trim();
   const latitude = anchor?.latitude;
   const longitude = anchor?.longitude;
   const sameCategory = replacement?.category === "OTHER" ? undefined : replacement?.category;
+
+  useEffect(() => () => saving.current?.abort(), [tripId]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -179,7 +181,9 @@ export default function AddItineraryPlaceSheet({
 
   async function addSelectedPlaces() {
     if (!idsToSave.length || saving.current) return;
-    saving.current = true;
+    const controller = new AbortController();
+    const { signal } = controller;
+    saving.current = controller;
     setPending(true);
     setError("");
     const addedIds: string[] = [];
@@ -190,32 +194,33 @@ export default function AddItineraryPlaceSheet({
         return;
       }
       for (const placeId of idsToSave) {
-        try {
-          itinerary = await addPlaceOnDate(tripId, placeId, day, date);
-        } catch (reason) {
-          const latest = await getLatestItinerary(tripId).catch(() => undefined);
-          if (!latest) throw reason;
-          itinerary = latest;
-          const alreadyIn = latest.draft.days.find((item) => item.visits.some((visit) => visit.placeId === placeId));
-          if (alreadyIn && alreadyIn.date !== date) {
-            throw new Error("다른 일차에 이미 추가된 장소예요. 최신 일정으로 갱신했어요.");
-          }
-          if (!alreadyIn) throw reason;
-        }
+        signal.throwIfAborted();
+        itinerary = await addPlaceOnDate(tripId, placeId, day, date, signal);
         addedIds.push(placeId);
       }
     } catch (reason) {
-      setError(placeDayError(reason));
-    } finally {
-      if (itinerary) {
-        const { places } = await getSavedPlaces(tripId).catch(() => ({ places: undefined }));
-        const completed = addedIds.length === idsToSave.length;
-        setAddedCount((count) => count + addedIds.length);
-        setSelected((current) => current.filter((place) => !addedIds.includes(place.placeId)));
-        onSaved?.(itinerary, selected.filter((place) => addedIds.includes(place.placeId)), places, completed);
+      if (!signal.aborted) {
+        try {
+          const latest = replacement ? undefined : await reloadAfterPlaceAddError(tripId, reason, signal);
+          itinerary = latest ?? itinerary;
+          if (!signal.aborted) setError(placeDayError(reason));
+        } catch (loadError) {
+          if (!signal.aborted) setError(placeDayError(loadError));
+        }
       }
-      saving.current = false;
-      setPending(false);
+    } finally {
+      if (itinerary && !signal.aborted) {
+        const places = addedIds.length ? await getSavedPlaces(tripId, signal).catch(() => undefined) : undefined;
+        if (!signal.aborted) {
+          const scheduled = new Set(itinerary.draft.days.flatMap((item) => item.visits.map((visit) => visit.placeId)));
+          setAddedCount((count) => count + addedIds.length);
+          setSelected((current) => current.filter((place) => !scheduled.has(place.placeId)));
+          onSaved?.(itinerary, selected.filter((place) => addedIds.includes(place.placeId)), places?.places,
+            addedIds.length === idsToSave.length);
+        }
+      }
+      if (saving.current === controller) saving.current = null;
+      if (!signal.aborted) setPending(false);
     }
   }
 
@@ -234,7 +239,9 @@ export default function AddItineraryPlaceSheet({
       onClose={onClose}
       closeDisabled={pending}
       footer={<>
-        {error && <ErrorText role="alert">{addedCount ? `${addedCount}곳을 추가했어요. ` : ""}{error}</ErrorText>}
+        {error && <ErrorText role="alert">
+          {addedCount > 0 && <span>{addedCount}곳을 추가했어요. </span>}<span>{error}</span>
+        </ErrorText>}
         <S.Save type="button" disabled={!idsToSave.length || pending} onClick={() => void addSelectedPlaces()}>
           {buttonLabel}
         </S.Save>

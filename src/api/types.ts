@@ -116,13 +116,14 @@ export interface PlaceImportResponse {
 export type TravelPace = "RELAXED" | "NORMAL" | "PACKED";
 export type WalkingPreference = "LESS" | "NORMAL" | "MORE";
 export type DayStartPreference = "EARLY" | "NORMAL" | "LATE";
+export type PreferenceCategoryCode = Exclude<PlaceCategoryCode, "OTHER">;
 
 export interface PreferenceProfile {
   pace: TravelPace;
   walking: WalkingPreference;
   dayStart: DayStartPreference;
-  interests: PlaceCategoryCode[];
-  avoid: PlaceCategoryCode[];
+  interests: PreferenceCategoryCode[];
+  avoid: PreferenceCategoryCode[];
   notes: string[];
 }
 
@@ -160,7 +161,7 @@ export interface ItineraryVisitInput {
   placeId: string;
   stayMinutes?: number;
   fixedStart?: string;
-  travelMode?: "WALK" | "TRANSIT" | "DRIVE";
+  travelMode?: "WALK" | "TRANSIT" | "DRIVE" | null;
 }
 
 export interface ItineraryDayInput {

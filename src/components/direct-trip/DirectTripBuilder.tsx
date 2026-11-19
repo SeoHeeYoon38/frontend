@@ -139,7 +139,7 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
   const preparingRequest = useRef<AbortController | null>(null);
   useEffect(() => () => preparingRequest.current?.abort(), []);
   const { validation, checking, checkError, resetCheck, validate } = useItineraryCheck(Number(draft.tripId));
-  const [livePlaces, setLivePlaces] = useState<Record<string, DirectTripPlace & { visit: ItineraryVisitInput }>>(() =>
+  const [livePlaces, setLivePlaces] = useState<Record<string, DirectTripPlace & { visit: ItineraryVisitInput; travelModeFrom?: string }>>(() =>
     Object.fromEntries((existing?.days ?? []).flatMap((day) => day.visits.map((visit, index) => {
       const id = visit.itemId ?? `${day.date}-${index}`;
       const saved = existing?.places.find((place) => place.placeId === visit.placeId);
@@ -154,6 +154,7 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
         longitude: place?.longitude,
         source: "google",
         visit: { ...visit, itemId: id },
+        travelModeFrom: index === 0 ? `@${day.date}` : day.visits[index - 1].itemId ?? `${day.date}-${index - 1}`,
       }];
     }))),
   );
@@ -286,12 +287,14 @@ function DirectTripBuilder({ existing }: { existing?: ExistingTrip } = {}) {
 
   const applyTravelMode = (mode: TravelLeg["mode"], all: boolean) => {
     if (!travelSelection) return;
-    const ids = all ? Object.values(dayPlaces).flatMap((ids) => ids.slice(1)) : [travelSelection.toId];
     setLivePlaces((current) => {
       const updated = { ...current };
-      for (const id of ids) {
-        const place = current[id];
-        if (place) updated[id] = { ...place, visit: { ...place.visit, travelMode: mode } };
+      for (const ids of Object.values(dayPlaces)) {
+        ids.slice(1).forEach((id, index) => {
+          if (!all && id !== travelSelection.toId) return;
+          const place = current[id];
+          if (place) updated[id] = { ...place, visit: { ...place.visit, travelMode: mode }, travelModeFrom: ids[index] };
+        });
       }
       return updated;
     });
